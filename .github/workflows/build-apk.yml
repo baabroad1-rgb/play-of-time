@@ -67,6 +67,28 @@ jobs:
           printf '\n84831b9409646a918e30573bab4c9c91346d8abd\n' \
             > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
+      # Debug-сборки подписываются ключом ~/.android/debug.keystore, и он свой
+      # на каждой машине. Если собирать на GitHub с его собственным ключом,
+      # Android отказывается ставить APK поверх установленного с ноутбука:
+      # "App not installed as package conflicts with an existing package".
+      # Поэтому кладём сюда тот же ключ, которым подписывает ноутбук Алекса —
+      # Gradle подхватывает его из этого пути сам, правки build.gradle.kts не нужны.
+      - name: Положить общий debug-ключ подписи
+        shell: bash
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
+            echo "Секрет DEBUG_KEYSTORE_B64 не задан — сборка будет подписана"
+            echo "случайным ключом GitHub и не встанет поверх установленного APK."
+            exit 1
+          fi
+          mkdir -p "$HOME/.android"
+          echo "$DEBUG_KEYSTORE_B64" | base64 -d > "$HOME/.android/debug.keystore"
+          ls -l "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" \
+                  -storepass android -alias androiddebugkey | head -3
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Собрать debug-APK
