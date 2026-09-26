@@ -29,11 +29,11 @@ val readVersionPatch: Int = (versionProps.getProperty("versionPatch") ?: "0").to
 val readVersionName: String = "$readVersionBase.${"%02d".format(readVersionPatch)}"
 
 android {
-    namespace = "ru.iflex.timemvp"
+    namespace = "online.playoftime"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "ru.iflex.timemvp.quest"
+        applicationId = "online.playoftime"
         minSdk = 27
         targetSdk = 36
         versionCode = readVersionCode

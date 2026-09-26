@@ -24,7 +24,7 @@
          Имя разрешения — литерал, а не ${applicationId}: его объявляет ЭТО
          приложение, а запрашивает по этой же строке новое. -->
     <permission
-        android:name="ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA"
+        android:name="online.playoftime.permission.EXPORT_PLAY_DATA"
         android:label="@string/permission_export_play_data_label"
         android:description="@string/permission_export_play_data_description"
         android:protectionLevel="signature" />
@@ -34,10 +34,23 @@
          обращении. Отдельное от EXPORT_PLAY_DATA, потому что то signature —
          его получает только приложение с тем же ключом подписи. -->
     <permission
-        android:name="ru.iflex.timemvp.quest.permission.READ_PLAY_DATA"
+        android:name="online.playoftime.permission.READ_PLAY_DATA"
         android:label="@string/permission_read_play_data_label"
         android:description="@string/permission_read_play_data_description"
         android:protectionLevel="dangerous" />
+    <!-- Перенос истории из предыдущего приложения (до переименования пакета).
+         Разрешение объявлено ТАМ и имеет уровень signature: система выдаст
+         его молча, потому что подпись у обоих приложений одна. -->
+    <uses-permission android:name="ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA" />
+
+    <!-- Android 11+ по умолчанию скрывает другие приложения. Без этого блока
+         старое приложение просто не найдётся, причём молча: resolver вернёт
+         null, как будто данных нет. -->
+    <queries>
+        <package android:name="ru.iflex.timemvp.quest" />
+        <provider android:authorities="ru.iflex.timemvp.quest.provider" />
+    </queries>
+
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
@@ -76,7 +89,7 @@
             android:name=".core.export.PlayDataProvider"
             android:authorities="${applicationId}.provider"
             android:exported="true"
-            android:readPermission="ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA">
+            android:readPermission="online.playoftime.permission.EXPORT_PLAY_DATA">
 
             <!-- Права разные по адресам. По умолчанию (строка выше) провайдер
                  требует signature — так закрыты /v1/export/*, они для переезда
@@ -85,13 +98,13 @@
                  общее правило для совпавшего пути. Данные те же самые. -->
             <path-permission
                 android:pathPrefix="/v1/attempts"
-                android:readPermission="ru.iflex.timemvp.quest.permission.READ_PLAY_DATA" />
+                android:readPermission="online.playoftime.permission.READ_PLAY_DATA" />
             <path-permission
                 android:pathPrefix="/v1/sessions"
-                android:readPermission="ru.iflex.timemvp.quest.permission.READ_PLAY_DATA" />
+                android:readPermission="online.playoftime.permission.READ_PLAY_DATA" />
             <path-permission
                 android:pathPrefix="/v1/meta"
-                android:readPermission="ru.iflex.timemvp.quest.permission.READ_PLAY_DATA" />
+                android:readPermission="online.playoftime.permission.READ_PLAY_DATA" />
         </provider>
 
     </application>

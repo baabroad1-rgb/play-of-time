@@ -10,12 +10,12 @@
 Добавьте в свой `AndroidManifest.xml`:
 
 ```xml
-<uses-permission android:name="ru.iflex.timemvp.quest.permission.READ_PLAY_DATA" />
+<uses-permission android:name="online.playoftime.permission.READ_PLAY_DATA" />
 
 <!-- Android 11+ прячет чужие приложения. Без этого блока провайдер просто
      не найдётся, причём молча — resolver вернёт null. -->
 <queries>
-    <provider android:authorities="ru.iflex.timemvp.quest.provider" />
+    <provider android:authorities="online.playoftime.provider" />
 </queries>
 ```
 
@@ -26,9 +26,9 @@
 
 | URI | Что отдаёт |
 |---|---|
-| `content://ru.iflex.timemvp.quest.provider/v1/attempts` | все попытки |
-| `content://ru.iflex.timemvp.quest.provider/v1/sessions` | все сессии |
-| `content://ru.iflex.timemvp.quest.provider/v1/meta` | одна строка: версии и объём данных |
+| `content://online.playoftime.provider/v1/attempts` | все попытки |
+| `content://online.playoftime.provider/v1/sessions` | все сессии |
+| `content://online.playoftime.provider/v1/meta` | одна строка: версии и объём данных |
 
 Только чтение. `insert`, `update`, `delete` бросают исключение.
 
@@ -38,7 +38,7 @@
 Пример:
 
 ```kotlin
-val uri = Uri.parse("content://ru.iflex.timemvp.quest.provider/v1/attempts")
+val uri = Uri.parse("content://online.playoftime.provider/v1/attempts")
 contentResolver.query(uri, null, null, null, null)?.use { c ->
     val startTime = c.getColumnIndexOrThrow("startTime")
     val endTime   = c.getColumnIndexOrThrow("endTime")

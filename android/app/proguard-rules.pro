@@ -14,11 +14,11 @@
 
 # ── Kotlinx serialization ────────────────────────────────────────────────
 -keepattributes RuntimeVisibleAnnotations, AnnotationDefault
--keep,includedescriptorclasses class ru.iflex.timemvp.**$$serializer { *; }
--keepclassmembers class ru.iflex.timemvp.** {
+-keep,includedescriptorclasses class online.playoftime.**$$serializer { *; }
+-keepclassmembers class online.playoftime.** {
     *** Companion;
 }
--keepclasseswithmembers class ru.iflex.timemvp.** {
+-keepclasseswithmembers class online.playoftime.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
@@ -28,16 +28,16 @@
 -dontwarn androidx.compose.**
 
 # ── Koin ──────────────────────────────────────────────────────────────────
--keep class ru.iflex.timemvp.features.**.MainViewModel { *; }
--keep class ru.iflex.timemvp.features.**.SettingsViewModel { *; }
--keep class ru.iflex.timemvp.features.**.StatsViewModel { *; }
--keep class ru.iflex.timemvp.features.**.AboutViewModel { *; }
--keep class ru.iflex.timemvp.core.** { *; }
--keep class ru.iflex.timemvp.database.** { *; }
--keep class ru.iflex.timemvp.features.**.domain.** { *; }
--keep class ru.iflex.timemvp.use_case.** { *; }
--keep class ru.iflex.timemvp.KoinModule { *; }
--keep class ru.iflex.timemvp.KoinModuleKt { *; }
+-keep class online.playoftime.features.**.MainViewModel { *; }
+-keep class online.playoftime.features.**.SettingsViewModel { *; }
+-keep class online.playoftime.features.**.StatsViewModel { *; }
+-keep class online.playoftime.features.**.AboutViewModel { *; }
+-keep class online.playoftime.core.** { *; }
+-keep class online.playoftime.database.** { *; }
+-keep class online.playoftime.features.**.domain.** { *; }
+-keep class online.playoftime.use_case.** { *; }
+-keep class online.playoftime.KoinModule { *; }
+-keep class online.playoftime.KoinModuleKt { *; }
 
 # ── Room ──────────────────────────────────────────────────────────────────
 -keep class * extends androidx.room.RoomDatabase { *; }
