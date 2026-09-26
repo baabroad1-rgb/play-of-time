@@ -1,0 +1,47 @@
+name: Проверить API сайта
+
+# Разовая проверка после того, как выкладка затёрла файлы в api/.
+# Дёргает эндпоинты снаружи и показывает, что они отвечают. Ничего не меняет.
+#
+# Данные в запросах заведомо негодные — нас интересует не результат, а то,
+# отвечает ли скрипт осмысленной ошибкой (значит, живой) или падает с 500
+# (значит, сломан).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Опрос эндпоинтов
+        shell: bash
+        run: |
+          base="https://playoftime.online/api"
+
+          show() {
+            echo "──────────────────────────────────────────"
+            echo "$1"
+            shift
+            code=$(curl -s -o body.txt -w "%{http_code}" "$@")
+            echo "HTTP $code"
+            head -c 600 body.txt
+            echo
+          }
+
+          show "leaderboard.php" "$base/leaderboard.php"
+
+          show "set_name.php (пустой POST)" \
+            -X POST -H "Content-Type: application/json" \
+            -d '{}' "$base/set_name.php"
+
+          show "set_name.php (правдоподобные, но чужие данные)" \
+            -X POST -H "Content-Type: application/json" \
+            -d '{"playerId":"00000000-0000-4000-8000-000000000000","syncToken":"0000000000000000000000000000000000000000000000000000000000000000","name":"test"}' \
+            "$base/set_name.php"
+
+          show "sync.php (пустой POST)" \
+            -X POST -H "Content-Type: application/json" \
+            -d '{}' "$base/sync.php"
+
+          show "latest_apk.php (только заголовки)" -I "$base/latest_apk.php"
