@@ -110,7 +110,7 @@ jobs:
 
       - name: Положить APK на хостинг в downloads/
         env:
-          FTP_HOST: ${{ secrets.PATH }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.LOGIN }}
           FTP_PASSWORD: ${{ secrets.PASSWORD }}
           APK: ${{ steps.apk.outputs.path }}
