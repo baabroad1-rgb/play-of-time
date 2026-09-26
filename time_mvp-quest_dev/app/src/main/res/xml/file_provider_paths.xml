@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="excel_export" path="excel/" />
+    <!-- ⚠️ ВРЕМЕННАЯ ЗАПЛАТКА — УДАЛИТЬ ПРИ ВЫХОДЕ В GOOGLE PLAY (core/update/UpdateApi.kt). -->
+    <cache-path name="app_update" path="update/" />
+</paths>

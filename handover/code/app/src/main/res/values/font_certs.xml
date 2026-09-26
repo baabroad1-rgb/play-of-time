@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SHA-256 certificate fingerprints for the Google Fonts provider
+  (com.google.android.gms.fonts / com.google.android.gms).
+  Required by androidx.compose.ui:ui-text-google-fonts.
+  Source: https://developer.android.com/develop/ui/views/text/fonts/downloadable-fonts
+-->
+<resources>
+    <array name="com_google_android_gms_fonts_certs">
+        <item>@array/com_google_android_gms_fonts_certs_prod</item>
+    </array>
+
+    <string-array name="com_google_android_gms_fonts_certs_prod">
+        <item>
+            MIIEQzCCAyugAwIBAgIJAMLgh0ZkSjCNMA0GCSqGSIb3DQEBBAUAMHQxCzAJBgNV
+            BAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFBYDVQQHEw1Nb3VudGFpbiBW
+            aWV3MRQwEgYDVQQKEwtHb29nbGUgSW5jMRAwDgYDVQQLEwdBbmRyb2lkMRAwDgYD
+            VQQDEwdBbmRyb2lkMB4XDTExMDkxNDIwMjgzNloXDTQxMDkwNjIwMjgzNlowdDEL
+            MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDU1vdW50
+            YWluIFZpZXcxFDASBgNVBAoTC0dvb2dsZSBJbmMxEDAOBgNVBAsTB0FuZHJvaWQx
+            EDAOBgNVBAMTB0FuZHJvaWQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+            AQC4OF8a7bEHe3DH2+LWrNaejbMXx3NN76BSQV7T7VvxMy4PJNKDO6o4t0EjSwi
+            Rk5hBVxDIbPoMwTQBhNXBJp3kd4BNLAIOkNLSXqNbFfWi3apWJIFhZ9hN5JCfMqO
+            ANP6yHCbNNwHLAUFjFMPDL+FPE+Rql7ANqDOHdWFl6g0h6e7/kULuWfLM8KVJ8e
+            YL3VKeMWoVBIQQlkKQaBHcXQjFH8TSKZ+1hNEfN8KKTL/JFzPTvbGIrGKYxJVqz
+            pv9r9RnGg4RwRIZyqC3VCvNM3HIXM30G3SWH8AZOwWdJUWiF4b7DhCZ8oFnVlVH
+            nBEBOjhRq5AozEIy7Ff/AgMBAAGjgdowgdcwHQYDVR0OBBYEFMd9jMIhF1Ylmn/T
+            gtDr45e3LnMpMIGnBgNVHSMEgZ8wgZyAFMd9jMIhF1Ylmn/TgtDr45e3LnMphXik
+            djB0MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+            TW91bnRhaW4gVmlldzEUMBIGA1UEChMLR29vZ2xlIEluYzEQMA4GA1UECxMHQW5k
+            cm9pZDEQMA4GA1UEAxMHQW5kcm9pZIIJAMLgh0ZkSjCNMAwGA1UdEwQFMAMBAf8w
+            DQYJKoZIhvcNAQEEBQADggEBABnTDPEF+3iSP0wNyuQLpFbeNL8htGdKqG6HNGVB
+            dZMJPLpUiuAXxjhKLHJH3AXPBa1nEPyOJsKqHHcKN5uXHyNbSSJJhHdwomQoXZI
+            i0V3RFPRsUFbwXDWkEq/RhiZZpN1nI4Rd2Ur5OqWF+5XKKExQVWHAuS0k6MEPFX
+            5VZp0Rb/uPPivgHcwLlVOPJnSP9u0LKGb6VyMsFdK7A7AeXMxZCo5+fqc5UsDrr5
+            M7qjg9n7SWBr/CyQDxnAAZJaYGKS0Z4bGWJJyQcXZkFf9pVJHQKqFmhcxXVvPvt5
+            y1rn0RpjMikqSMVAHEcpJ8tpMZCrPXzWgp5D14V+hJ4=
+        </item>
+    </string-array>
+</resources>

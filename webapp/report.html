@@ -1,0 +1,3058 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Play of Time — Your Results</title>
+<style>
+  /* Single-theme cream page (Alex 2026-09-15: "убери жёлтую подложку, а
+     кремовую раздвинь до границ экрана" — the darker amber #F2B70D page
+     background from the 09-13 card redesign is gone; --page now equals
+     --surface's own cream, so the reading area reaches the full screen edge
+     to edge instead of floating as a bordered/shadowed box on a darker page.
+     --border/--shadow-* stay as they were — a popover or tooltip floating
+     ABOVE the (now uniformly cream) page still reads as distinct via its own
+     border + real drop-shadow, not via a background-color difference. Still
+     single-theme, still no dark-mode variant — that part of the 09-12
+     instruction stands.) */
+  .viz-root {
+    color-scheme: light;
+    --page:           #FBE7A6;
+    --surface:        #FBE7A6;
+    --text-primary:   #2A1E00;
+    --text-secondary: rgba(42,30,0,0.72);
+    --text-muted:     rgba(42,30,0,0.55);
+    --gridline:       rgba(42,30,0,0.14);
+    --baseline:       rgba(42,30,0,0.30);
+    --border:         rgba(42,30,0,0.14);
+    --shadow-sm:      0 1px 2px rgba(42,30,0,0.06);
+    --shadow-lg:      0 14px 32px rgba(42,30,0,0.16);
+    --good:           #1F7A3D;
+    --critical:       #A6392C;
+    /* Legend-row tap highlight on the faces — deliberately NOT good/critical
+       (those mean favorable/unfavorable; this just means "look here"). */
+    --ch-highlight:   #1D6FA8;
+    /* Warm olive marker used only for the narrative h4 border-left accent
+       now (the legend dots + radar profile shapes that used to share this
+       color family were removed with buildRadar() on 2026-09-13, when the
+       Chernoff-face profile replaced it). */
+    --before-mark:    #9C8A3D;
+    --chip-bg:        rgba(42,30,0,0.09);
+    --chip-bg-active: #2A1E00;
+    --chip-fg-active: #F2B70D;
+  }
+
+  * { box-sizing: border-box; }
+  /* UA default body margin (8px) was never reset here -- inside the native
+     WebView (transparent background, sits on a near-black dialog panel,
+     see ReportDialog in LeaderboardScreen.kt) that stray margin let the
+     black panel show through as a thin band above the cream page. Harmless
+     in a real browser tab (just 8px of extra white), a real bug in-app. */
+  html, body { margin: 0; }
+  .viz-root {
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
+    /* Alex 2026-09-15: "уменьши отступы бежевой плашки от краев экрана в
+       два раза" -- halved on every edge (was 34px / clamp(14px,3vw,36px) /
+       64px). */
+    padding: 17px clamp(7px, 1.5vw, 18px) 32px;
+  }
+  /* Widened from 640px (Alex 2026-09-15: "за счёт этого в принципе расширь
+     ширину" — freed up now that the card no longer needs to visually float
+     as a bordered box on a darker page, see .card below). Still capped, not
+     removed outright — this page's real, primary home is the in-app WebView
+     popup (a phone-width Dialog, see ReportDialog in LeaderboardScreen.kt),
+     where a max-width this size never actually binds; the cap only matters
+     when the page is opened in a real desktop browser tab. */
+  .wrap{ max-width: 880px; margin: 0 auto; }
+
+  /* Title now spans the full row on its own line, lang toggle directly
+     underneath it (Alex 2026-09-15: "заголовок... на всю ширину строки,
+     спустив переключатель языков сразу под заглавие") — supersedes the
+     2026-09-13 side-by-side layout this replaced. #langSeg itself is still
+     only POPULATED once buildLangSeg() runs after load, this just fixes
+     where that slot lives. */
+  .title-row{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+  /* Fluid, not fixed (Alex 2026-09-15: "пусть в первой строчке уместятся
+     четыре слова your play of time results") — a flat 27px wrapped to two
+     lines once the card's own horizontal padding was halved (below) and
+     narrowed the content column on a phone-width viewport. clamp() scales
+     with the viewport instead of a single breakpoint, so it keeps fitting
+     on one line down to genuinely narrow widths instead of just the one
+     size that happened to have been tested. */
+  h1{ font-size: clamp(19px, 6.2vw, 27px); font-weight: 780; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .lede{ color: var(--text-secondary); font-size: 14.5px; max-width: 58ch; margin: 8px 0 4px; }
+  .sample-note{ font-size: 12px; color: var(--text-muted); max-width: 58ch; margin: 6px 0 0; font-style: italic; }
+
+  /* No longer a floating bordered/shadowed box (Alex 2026-09-15: "убери
+     желтую подложку, а кремовую раздвинь до границ экрана") — page and card
+     are now the same cream color (see --page/--surface above), so a card
+     outline here would just draw an unwanted seam down the middle of an
+     otherwise uniform background. Padding stays, for the same breathing
+     room the content always had.
+     2026-09-15: "плашку надо и расширить и повысить... по ширине уменьши
+     поля в два раза" — horizontal padding halved (16-28px clamp → 8-14px)
+     to use more of the available width; top padding also cut (18px → 10px,
+     asymmetric — bottom keeps its own room) so the title sits higher,
+     matching the same "use the available space" ask. */
+  .card{
+    padding: 10px clamp(8px, 2vw, 14px) 18px;
+  }
+  .card + .card{ margin-top: 12px; }
+
+  .seg{ display:inline-flex; background:var(--chip-bg); border-radius:999px; padding:3px; gap:2px; flex:none; }
+  .seg button{
+    font: inherit; font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+    padding: 6px 16px; border-radius: 999px; background: transparent; color: var(--text-secondary);
+  }
+  .seg button.active{ background: var(--chip-bg-active); color: var(--chip-fg-active); }
+
+  .periods{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  @media (max-width: 620px){ .periods{ grid-template-columns: 1fr; } }
+  .period-box{ border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .period-box .ptitle{ font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px; }
+  .presets{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 10px; }
+  .chip{
+    font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--border); cursor: pointer;
+    padding: 5px 11px; border-radius: 999px; background: var(--chip-bg); color: var(--text-secondary);
+  }
+  .chip.active{ background: var(--chip-bg-active); color: var(--chip-fg-active); border-color: transparent; }
+  .date-row{ display:flex; align-items:center; gap:8px; }
+  .date-row input[type=date]{
+    font: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .date-row .to{ color: var(--text-muted); font-size: 12px; }
+  .range-summary{ margin-top: 8px; font-size: 12.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .range-summary b{ color: var(--text-secondary); font-weight: 600; }
+
+  /* Кликабельные слова-периоды прямо в предложении — основной способ задать
+     период; текст и график читаются на одном экране без переключения вкладок
+     (Alex 2026-09-08). */
+  .period-words{
+    font-size: 15px; margin: 4px 0 18px; color: var(--text-secondary);
+  }
+  .pword{
+    font: inherit; font-weight: 700; color: var(--text-primary); background: none;
+    border: none; border-bottom: 2px solid transparent; cursor: pointer;
+    padding: 0 1px; margin: 0 1px;
+  }
+  .pword:hover{ color: var(--good); }
+  .pword.active{ color: var(--good); border-bottom-color: var(--good); }
+
+  .advanced-toggle{
+    font: inherit; font-size: 12px; color: var(--text-muted); background:none; border:none;
+    cursor:pointer; text-decoration: underline; text-underline-offset: 2px; padding: 0;
+  }
+  .periods{ display:none; }
+  .periods.show{ display:grid; }
+
+  .narrative{
+    font-size: 14.5px; line-height: 1.6; color: var(--text-secondary);
+  }
+  .narrative b{ color: var(--text-primary); }
+  .narrative h4{
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); margin: 20px 0 8px; padding-left: 10px;
+    border-left: 3px solid var(--before-mark);
+  }
+  .narrative h4:first-child{ margin-top: 0; }
+  .narrative p{ margin: 0 0 8px; }
+  .narrative .cross-link{
+    display: block; margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--border); color: var(--text-secondary); font-style: italic;
+  }
+  /* Заголовок — обычное предложение ("Игрок «n»: сегодня по сравнению с ...»),
+     а не служебный ярлык — слова-периоды подчёркнуты и кликабельны прямо в
+     тексте (Alex 2026-09-08: "не просто в заголовке пишешь... слова подчёркиваешь
+     по тапу выводишь доступные периоды"). Redesign 2026-09-13: lives directly
+     on the card now (was nested inside .narrative, which moved to the second
+     card) — it's the control for BOTH cards' data, so it sits with the
+     headline/tiles it visually governs, not buried in the deep-dive text. */
+  /* Pinned header — just the faces now (Alex 2026-09-13, restructure: period
+     pickers moved to live under each face as its own clickable label instead
+     of a separate sentence above; see .face-label below). Negative margin +
+     matching padding extends the background to cover the card's own
+     left/right padding too, so scrolled content can't peek out from under
+     the sides of the pinned bar. */
+  .sticky-top{
+    position: sticky; top: 0; z-index: 5;
+    background: var(--surface);
+    margin: 0 -24px; padding: 0 24px 6px;
+  }
+  /* Shared clickable-underline look for anything that opens the period
+     popover — the two face-label buttons now (see .face-label below); kept
+     as its own class since the popover's own outside-click-closes check
+     (see "pword-inline" below in the script) still keys off it. */
+  .pword-inline{
+    font: inherit; font-weight: 700; color: var(--text-primary); background: none;
+    border: none; cursor: pointer; padding: 0; margin:0;
+    text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+  }
+  .pword-inline:hover{ color: var(--good); }
+
+  .popover{
+    position: fixed; z-index: 40; display:none; min-width: 180px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.2); padding: 6px;
+  }
+  .popover.show{ display:block; }
+  .popover button.opt{
+    display:block; width:100%; text-align:left; font: inherit; font-size: 13px;
+    padding: 8px 10px; border:none; background:none; cursor:pointer; border-radius: 7px;
+    color: var(--text-primary);
+  }
+  .popover button.opt:hover{ background: var(--chip-bg); }
+  .popover button.opt:disabled{
+    color: var(--text-muted); cursor: not-allowed; opacity: .5;
+  }
+  .popover button.opt:disabled:hover{ background: none; }
+  .popover .pdivider{ height:1px; background:var(--gridline); margin:5px 2px; }
+  .popover .custom-row{ display:flex; gap:6px; padding: 6px 8px 2px; }
+  .popover .custom-row input[type=date]{
+    font: inherit; font-size: 12.5px; color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 6px; width: 100%;
+  }
+  .popover .apply-btn{
+    display:block; width: calc(100% - 16px); margin: 6px 8px 2px; text-align:center;
+    font: inherit; font-size: 12.5px; font-weight:700; color: var(--chip-fg-active);
+    background: var(--chip-bg-active); border: none; border-radius: 7px; padding: 7px; cursor:pointer;
+  }
+  /* .month-nav is now ONLY the persistent header pager (periodNavArrow()) —
+     the popover used to have its own internal prev/next+Apply picker here
+     too (Alex 2026-09-14), removed 2026-09-15 as a redundant second pager
+     duplicating the header one. */
+  .month-nav{
+    font: inherit; font-size: 15px; font-weight: 700; color: var(--text-primary);
+    background: var(--chip-bg); border: none; border-radius: 6px; width: 28px; height: 28px; cursor: pointer;
+  }
+  .month-nav:disabled{ color: var(--text-muted); cursor: not-allowed; opacity: .5; }
+
+  /* Chernoff-face profile — replaces the radar/profile chart entirely
+     (Alex 2026-09-13: "да, конечно заменяют. графики убираем"). Each of the
+     9 metrics drives one facial feature (see the CH_FEATURES/CH_SYMMETRIC
+     config + chFaceParams()/chFaceSvg() in the script below) instead of a
+     9-axis polygon — the whole point is that "better/worse overall" reads
+     as a gestalt at a glance, no per-axis reading required. The exact
+     feature<->metric mapping and its "How to read" text live in a collapsed
+     <details> so returning users aren't forced to re-see it every time
+     (same pattern as the "Show as table" toggle below), while first-time/
+     curious users can expand it. */
+  /* Enlarged + made genuinely responsive (Alex 2026-09-13: "уже мелковато, а
+     при переносе на мобилку будет совсем сложно" — the faces are the whole
+     point of this page, they need to actually be legible, not a fixed small
+     pixel size that's cramped everywhere). flex:1 1 0 + min-width:0 splits
+     the row evenly and lets each face's own width:100% SVG (see chFaceSvg)
+     shrink to whatever a narrow phone actually has room for — never
+     overflows — while the raised max-width lets it grow noticeably bigger
+     on anything wider than a phone. */
+  /* 2026-09-18: restructured into TWO separate flex rows — .faces-row (just
+     the two SVGs) and .face-labels-row (just the two labels), instead of
+     one row of [svg+label] columns. Needed because aligning the OLD
+     combined columns by flex-end (tried first) aligned the columns'
+     OVERALL bottoms — svg+label together — which over-corrected: a
+     shorter square got pushed down by its own label-row's height
+     difference too, on top of the square-height difference, breaking the
+     "minimal gap above a small head" property this was supposed to
+     preserve. Isolating the SVGs into their own row means flex-end there
+     aligns ONLY the squares' own bottoms with each other — precisely
+     "морда должны быть выровнены по нижнему краю" (Alex 2026-09-18) — with
+     nothing else able to perturb that. #faces itself is now just a plain
+     wrapper around both rows, no flex of its own.
+     Trade-off, stated plainly (not hidden): when the two current heads are
+     genuinely different sizes, the SMALLER one's own top-gap-to-caption
+     will show some extra space proportional to how much smaller it is
+     than its sibling THIS render — there's no way to have both squares'
+     bottoms coincide AND both squares' tops sit at one single fixed
+     distance from one shared caption line unless the two heads happen to
+     be the same size. This is much smaller in practice than the old
+     worst-case-sized gap (tens of px, not ~137px), and only shows up when
+     the two periods being compared actually differ in head size. */
+  .faces-wrap{ margin: 0; }
+  .faces-row{ display:flex; justify-content:center; align-items:flex-end; gap:16px; }
+  .face-labels-row{ display:flex; justify-content:center; gap:16px; margin-top:0; }
+  /* Fixed, deterministic width -- NOT flex:1 1 0's content-driven share
+     (Alex 2026-09-17: "определи квадрат за пределы которого морды не
+     выйдут... оставь место ровно для таких квадратов"). flex:1 1 0 already
+     measured equal in every viewport this session checked directly, so
+     that wasn't the actual mismatch -- explicit width just makes it
+     impossible for a future longer label string on one side to ever throw
+     the two columns out of sync with each other, on principle, rather than
+     relying on flex distribution happening to land equal. min() caps at
+     the old 240px on wide screens, halves the available width (minus the
+     gap) on narrow ones -- same responsive behavior as before. */
+  .face-visual{ flex: 0 0 auto; width: min(240px, calc((100% - 16px)/2)); min-width: 0; }
+  .face-label-col{ flex: 0 0 auto; width: min(240px, calc((100% - 16px)/2)); min-width: 0; text-align:center; }
+  /* Real button — opens that side's period popover. Sits BELOW its face
+     (Alex 2026-09-17: "перенеси подписи под морды" — reverses the
+     above-placement from 2026-09-14). Since the face is now the FIRST
+     child in its column, both squares already start at y=0 with nothing
+     above them to possibly mismatch — no min-height reservation trick
+     needed the way the above-placed version required (that fix is gone,
+     it'd just be dead weight/empty space now). Dotted underline + hover
+     color matches every other clickable-period control on the page
+     (.pword-inline). */
+  .face-label{
+    font: inherit; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); background: none; border: none; cursor: pointer;
+    text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+  }
+  .face-label:hover{ color: var(--good); }
+  /* Wraps the label + its optional ‹› pager (periodNavArrow(), only present
+     when that side's selection is a week or month) so all three center as
+     one unit below the face. margin-top (not the old margin-bottom) is
+     the one gap between the two — no min-height, so a side with no pager
+     (shorter row) doesn't reserve space it doesn't use. */
+  /* Plain small top margin now (was margin-top:auto pinning to a
+     stretched column's bottom — that mechanism is gone along with
+     .faces-wrap's align-items:stretch, see its own comment; minimal
+     total height wins over a shared bottom line now). */
+  .face-label-row{ display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px; }
+  .face-label-row .period-nav{ width:20px; height:20px; font-size:12px; }
+  /* Stands in for chFaceSvg() on a side with no attempts (Alex 2026-09-17
+     bug fix — see buildFaces()'s own comment: the label row, with the
+     period button and ‹› pager, is what actually lets a viewer get OUT of
+     this state, so it's never removed, only the face itself). The
+     padding-top:103px "center on the real face's own middle" version was
+     WRONG — Alex, precisely: "вот до этой последней строчки [...] data
+     starts to show up after roughly 500 attempts at Level 2" — the gap
+     from THAT line down to this text has to be minimal, full stop; a
+     103px offset to vertically center the text is exactly the gap that
+     breaks. No padding-top at all — this text starts flush against the
+     sample-note paragraph, same as the real face's own top edge does. */
+  .face-empty{
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: 0 12px;
+    font-size: 12px; line-height: 1.4; color: var(--text-muted);
+  }
+  .face-note{ text-align:center; font-size: 12.5px; color: var(--text-muted); margin: 0 0 18px; }
+  /* Chernoff-faces credit footer (kept standalone — Alex 2026-09-15: the
+     separate "How to read these faces" toggle + its row-by-row legend
+     panel is GONE, merged entirely into "Here's how you're doing" below
+     (see the .metric-name/.feature-icon/.feature-hint rules above) — this
+     is just the small Wikipedia attribution line that used to sit at the
+     bottom of that panel, now sitting under the faces on its own). */
+  /* Divider flipped to border-BOTTOM (Alex 2026-09-18: "подними над
+     чертой под которой он сейчас" — the credit text used to sit BELOW its
+     own dividing line; now the line sits below the text instead, same
+     DOM position, nothing else moved). */
+  .fl-credit{
+    margin: 10px 0 22px; padding-bottom: 10px; border-bottom: 1px solid var(--gridline);
+    font-size: 10.5px; color: var(--text-muted); text-align: center;
+  }
+  .fl-credit a{ color: inherit; }
+
+  /* "Cards written into the text" (Alex 2026-09-13) — replaces the tile
+     grid entirely. The exact number now sits INSIDE the narrative sentence
+     as a small pill, right before the metric name, instead of living next
+     to the text in its own box — magazine-style inline data (the same
+     device data journalism uses for an in-line stat inside a paragraph). */
+  .inline-chip{
+    display:inline-block; font-size: 12px; font-weight: 780; font-variant-numeric: tabular-nums;
+    padding: 1px 8px; border-radius: 999px; margin-right: 7px; vertical-align: 1px;
+  }
+  .inline-chip.good{     color: var(--good);     background: rgba(31,122,61,0.14); }
+  .inline-chip.critical{ color: var(--critical); background: rgba(166,57,44,0.14); }
+  .inline-chip.flat{     color: var(--text-muted); background: rgba(42,30,0,0.08); }
+  /* Absolute было/стало, packed into the SAME pill as the % (Alex
+     2026-09-18, second try: "рядом с процентами, на одной плашке" — not a
+     separate clause down in the sentence). Lighter weight/slightly
+     smaller than the % itself so the pill still reads "percent first,
+     absolute values as a footnote to it" at a glance. */
+  .chip-vals{ font-weight: 500; opacity: .75; font-size: 11px; }
+
+  .foot-row{ display:flex; justify-content: space-between; align-items:center; margin-top: 18px; }
+  .foot-note{ font-size: 12px; color: var(--text-muted); max-width: 56ch; }
+  .table-toggle{
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    background: none; border: 1px solid var(--border); border-radius: 7px;
+    padding: 6px 12px; cursor: pointer;
+  }
+
+  /* Committing to a narrow (640px) page (see .wrap above) means a 5-column
+     table can genuinely be wider than the viewport on a phone — scroll the
+     table itself sideways, never the page body (per this project's own
+     "wide content gets its own overflow-x:auto container" rule). */
+  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; display:none; margin-top: 16px; }
+  .table-scroll.show{ display:block; }
+  table.data-table{ width:100%; min-width: 480px; border-collapse: collapse; font-size: 13px; }
+  table.data-table th, table.data-table td{
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gridline);
+  }
+  table.data-table th{ color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+  table.data-table td.num{ font-variant-numeric: tabular-nums; text-align: right; }
+  table.data-table td.dir-good{ color: var(--good); font-weight: 600; }
+  table.data-table td.dir-critical{ color: var(--critical); font-weight: 600; }
+  table.data-table td.dir-flat{ color: var(--text-muted); }
+  /* Merges the legend into the table (Alex 2026-09-14: "совместим
+     объяснялку и саму таблицу") — this row sits directly under its data
+     row, softer/smaller so it doesn't compete with the numbers, wrapping
+     freely inside the table's own width rather than forcing extra
+     horizontal scroll. */
+  table.data-table tr.table-caption-row td{
+    padding: 2px 10px 12px; border-bottom: 1px solid var(--gridline);
+    font-size: 12px; line-height: 1.5; color: var(--text-secondary);
+  }
+  .table-caption-text{ margin-right: 8px; }
+  .table-caption-note{ font-style: italic; color: var(--text-muted); }
+  .table-show-btn{
+    display: inline-block; margin-top: 4px; font: inherit; font-size: 11.5px; font-weight: 700;
+    color: var(--chip-fg-active); background: var(--chip-bg-active); border: none;
+    border-radius: 999px; padding: 4px 10px; cursor: pointer; white-space: nowrap;
+  }
+  .table-show-btn:hover{ opacity: 0.85; }
+
+  /* Legend merged into "Here's how you're doing" (Alex 2026-09-15): the
+     metric name gets a tap-tooltip sourced from the FIRST half of its
+     legend sentence (what the parameter means); a "мордочка" icon + the
+     SECOND half (how the facial feature reacts) follow the paragraph —
+     tapping that text animates the feature, tapping the icon shows the
+     FULL legend sentence in the same tooltip AND animates. A tap-triggered
+     tooltip (not the native `title` attribute) is used throughout since
+     this page is viewed inside a touch-only WebView with no hover state. */
+  .metric-name{ cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+  .feature-icon{ cursor:pointer; margin-left: 4px; }
+  /* Was plain --text-secondary (Alex 2026-09-15: "выдели в тексте элемент
+     запускающий анимацию" — real bug, not just wording: --text-secondary is
+     the SAME color as the paragraph text around it, and `cursor:pointer`
+     shows only for a mouse, not on the touch-only WebView this page actually
+     runs in — the tap target was there but had ZERO visible affordance).
+     Reuses --ch-highlight, the color already reserved project-wide for
+     exactly "tap this to see it move on the faces" (see its own definition
+     above), plus the same dotted underline .metric-name uses so both tap
+     targets in a paragraph read as one consistent interactive style. */
+  .feature-hint{
+    cursor:pointer; color: var(--ch-highlight); font-weight: 600;
+    text-decoration: underline dotted; text-underline-offset: 2px;
+  }
+  /* Amber, not the page's own cream/--surface (Alex 2026-09-16: "давай
+     делать бабл другим цветом... тем, который используется в качестве
+     бэкграунда в about" — the native About screen's own card background,
+     #F5C02E, AboutCardBg in AboutScreen.kt; border matches the native
+     cheer-up bubble's #FFD35E rim for the same amber "info callout" family
+     — a real color already established elsewhere in the app, not invented
+     for this one box). Text stays the same dark brown the bubble/card use
+     on this amber (#2A1E00) rather than --text-primary, which is tuned for
+     the page's own cream background and reads too light on solid amber. */
+  .metric-tooltip{
+    position: fixed; max-width: 320px; font-size: 12px; line-height: 1.45;
+    color: #2A1E00; background: #F5C02E; border: 1px solid #FFD35E;
+    border-radius: 8px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); z-index: 50;
+  }
+  .metric-tooltip[hidden]{ display:none; }
+  /* Tapping the drawn feature directly on either face does the same thing
+     as tapping its mordochka text (Alex 2026-09-15) — no visual restyle of
+     the faces themselves (they're meant to read as a face, not a button
+     grid), just a pointer cursor for anyone testing with a mouse. */
+  #faces [data-feature]{ cursor: pointer; }
+
+  /* Режим "только мордочка" для карточки на экране Analytics (Alex 2026-09-21):
+     ?mode=face&fromMs=..&toMs=..&min=..  Страница подменяет body одной
+     мордочкой периода, прозрачный фон, без пунктирного квадрата. */
+  html.face-mode, body.face-mode{ margin:0; background:transparent !important; overflow:hidden; }
+  #faceOnly{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
+    --surface:#FBE7A6; --text-primary:#2A1E00; --good:#1F7A3D; --border:rgba(42,30,0,0.14); }
+  #faceOnly svg{ width:100% !important; height:100% !important; }
+  #faceOnly svg rect{ display:none; }
+  #faceOnly.blurred svg{ filter: blur(5px); }
+</style>
+</head>
+<body>
+
+<div class="viz-root">
+  <div class="wrap">
+    <div class="card">
+      <!-- Alex 2026-09-13, restructure: "ваши результаты и краткая инструкция
+           сверху на той же плашке что и лица" — title/intro now live INSIDE
+           the card (were floating on the bare page above it) so they read as
+           one unit with the faces below, not a separate header + a card. -->
+      <div class="title-row">
+        <h1 id="pageTitle">Ваш результат в Play of Time</h1>
+        <div class="seg" id="langSeg"></div>
+      </div>
+      <p class="lede" id="pageLede">Два лица — «было» и «стало» — показывают сразу все 9 психологических
+        измерений: задайте любой период и период сравнения и считайте общее впечатление на глаз, без
+        чтения цифр.</p>
+
+      <p id="loadingMsg" style="font-size:14px; color:var(--text-secondary);">Loading your results…</p>
+      <p id="errorMsg" hidden style="font-size:14px; color:var(--critical);"></p>
+
+      <div id="reportBody" hidden>
+      <!-- Pinned while scrolling -- just the faces now (period pickers moved
+           to live directly under each face as its clickable label -- Alex:
+           "переключатели периодов спусти под лица"); the legend/narrative/
+           table below scroll underneath it. See .sticky-top. -->
+      <div class="sticky-top">
+        <div id="faces" class="faces-wrap"></div>
+      </div>
+      <div class="fl-credit" id="faceCredit"></div>
+
+      <div class="narrative">
+        <div id="narrativeText"></div>
+      </div>
+
+      <div class="foot-row">
+        <p class="foot-note" id="footNote"></p>
+        <button class="table-toggle" id="tableToggle">Показать таблицей</button>
+      </div>
+
+      <!-- Moved here from up near the lede (Alex 2026-09-18: "фразу про
+           диагностик акюраси убери в конец текста, перед таблицей") —
+           same #sampleNote element/id, just relocated in the DOM; render()
+           still fills it the same way, no JS change needed. -->
+      <p class="sample-note" id="sampleNote"></p>
+
+      <div class="table-scroll" id="tableScroll">
+      <table class="data-table" id="dataTable">
+        <thead><tr id="tableHeadRow"></tr></thead>
+        <tbody id="dataTableBody"></tbody>
+      </table>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Внутри .viz-root, а не снаружи — иначе токены --surface/--border/--text-*
+       (объявлены на .viz-root) не наследуются, и popover рендерится
+       прозрачным/нечитаемым (был реальный баг, Alex поймал визуально). -->
+  <div class="popover" id="periodPopover"></div>
+  <div class="metric-tooltip" id="metricTooltip" hidden></div>
+</div>
+
+<script>
+let DATA = null;
+
+const AIM = 3000.0;
+const ACC_ORD = {ds:1, cs:2, ms:3};
+
+// Английские названия — не изобретены заново, а взяты из уже установленного
+// словаря приложения (About screen, GetQuestSummaryUseCase.kt, аналитический
+// экран): Excitation/Inhibition — устоявшаяся "павловская пара" (комментарий
+// в коде), Luck Coefficient — дословно из the myth.docx, Pace of Learning —
+// название реального экрана аналитики, Feedback Use — формулировка из
+// cheer_ups.docx ("use the last attempt's result to set up the next one").
+// early/late: Alex explicitly asked twice for "Overwhelming"/"Overrelaxed"
+// (2026-09-08) — flagged once that Excitation/Inhibition were already the
+// project's established terms, he insisted, using his exact wording.
+const METRICS = [
+  {key:"eff",        label:"Скорость обучения",              label_en:"Pace of Learning",       favorable:"up"},
+  {key:"hit",         label:"Точность попадания в цель",       label_en:"Hit Rate",                favorable:"up"},
+  {key:"early",       label:"Возбуждение",                      label_en:"Overwhelming",            favorable:"down"},
+  {key:"late",        label:"Торможение",                       label_en:"Overrelaxed",             favorable:"down"},
+  {key:"gcv",         label:"Разброс ошибки",                   label_en:"Error Stability",         favorable:"down"},
+  {key:"focus",       label:"Устойчивость состояния",           label_en:"State Steadiness",        favorable:"down"},
+  {key:"consist",     label:"Использование обратной связи",     label_en:"Feedback Use",            favorable:"up"},
+  {key:"lucky",       label:"Коэффициент удачи",                label_en:"Luck Coefficient",        favorable:"up"},
+];
+const FLAT_EPS = 0.12; // ±12% относительного изменения считается шумом
+
+// Тот же тон, что в narrative_engine_ru_relative.py (голос Алекса, cheer_ups.docx
+// / the myth.docx) + психологический слой через "возможно" (Alex 2026-09-08).
+// Порт 1:1, чтобы текст на этой странице и текстовый движок никогда не расходились
+// в формулировках ("текст про одно, диаграмма про другое" — уже была такая жалоба).
+// Три слоя в каждой фразе (Alex 2026-09-08): физиология → психология (разными
+// переходами, не только "за этим стоит") → конкретный ответ.
+// Формула ответа (Alex 2026-09-08, второй заход): направление ответа зависит
+// от того, БЛАГОПРИЯТЕН ли сдвиг для ЭТОЙ конкретной метрики (см. favorable в
+// METRICS — оно разное: у early/late/gcv/focus благоприятно
+// "down", у eff/hit/consist/lucky благоприятно "up"), а не от сырого
+// направления числа:
+//   благоприятный сдвиг → "вы что-то нашли/нащупали — попробуйте осознать,
+//     что именно, и закрепить это осознанно";
+//   неблагоприятный сдвиг → "что-то было упущено — постарайтесь вспомнить,
+//     что именно, и вернуть/восстановить это".
+// Формулировки внутри каждого полюса намеренно разные (не шаблонная фраза
+// x18), но держатся этой пары глаголов — "нашли/осознать/закрепить" vs
+// "упустили/вспомнить/восстановить" — везде.
+const PHRASES = {
+  early: { // favorable: down — down хороший, up плохой
+    up:   "усилилось на {d}. Вы чаще были перевозбуждены и торопили момент, вместо того чтобы дождаться его. Что-то из привычного спокойствия было упущено — постарайтесь вспомнить, что раньше помогало сдерживать этот порыв, и попробуйте перед действием один медленный вдох-выдох.",
+    down: "снизилось на {d}. Вы стали реже перевозбуждаться и торопить момент — это в вашу пользу. Вы нашли то, что помогает сохранять спокойствие — постарайтесь осознать, что именно, и повторяйте это осознанно.",
+  },
+  late: { // favorable: down
+    up:   "выросло на {d}. Вы чаще были излишне расслаблены и упускали момент. Что-то из прежней собранности было упущено — постарайтесь вспомнить, что помогало не затягивать с реакцией, и восстановите это перед стартом.",
+    down: "снизилось на {d}. Вы стали реже упускать момент из-за излишней расслабленности. Вы нашли то, что помогает держать момент в фокусе — постарайтесь осознать, что именно, и держите это под рукой.",
+  },
+  hit: { // favorable: up
+    up:   "выросла на {d} — заметный практический результат. Вы нашли рабочий подход — постарайтесь осознать, что именно сработало, и закрепите это сознательно.",
+    down: "снизилась на {d}. Что-то из прежнего настроя было упущено — постарайтесь вспомнить, какой темп раньше давал лучший результат, и вернитесь к нему.",
+  },
+  lucky: { // favorable: up
+    up:   "вырос на {d}. Работает накопленное умение управлять собой. Вы нашли что-то, что помогает управлять собой в моменте — постарайтесь осознать, что было иначе в этот период, и закрепите эти условия сознательно.",
+    down: "снизился на {d}. Граница между вашим умением и случайностью стала менее отчётливой. Ощущение контроля было на время упущено — постарайтесь вспомнить, что раньше давало этот ресурс, и выделите больше времени на отдых перед следующей попыткой.",
+  },
+  focus: { // favorable: down
+    up:   "снизилась: колебания между перевозбуждением и заторможенностью участились на {d}. Что-то из прежней устойчивости было упущено — постарайтесь вспомнить, что помогало держаться одного настроя, и задержитесь на секунду перед началом, чтобы выбрать его осознанно.",
+    down: "выросла на {d}: вы реже перескакиваете между крайностями и дольше удерживаетесь в одном устойчивом состоянии. Вы нашли то, что помогает удерживать это состояние дольше — постарайтесь осознать, что именно, и закрепите это осознанно.",
+  },
+  consist: { // favorable: up
+    up:   "улучшилось на {d}. Вы заметно чаще используете результат предыдущей попытки, чтобы настроиться на следующую. Вы нашли рабочую привычку — постарайтесь осознать, что именно в ней работает, и закрепите её сознательно.",
+    down: "ослабло на {d}. Попытки становятся более разрозненными. Привычка опираться на обратную связь была на время упущена — постарайтесь вспомнить, как вы её использовали раньше, и отмечайте после каждой попытки, что пошло не так.",
+  },
+  gcv: { // favorable: down — переписано под новое имя "Разброс ошибки"
+    // (было "Устойчивость личной погрешности", женский род — глаголы
+    // согласовывались с "устойчивость". Новое имя мужского рода
+    // ("разброс") + текст теперь говорит про сам разброс напрямую, а не
+    // через инверсию "устойчивости", раз слово "устойчивость" из названия
+    // убрано).
+    up:   "вырос на {d}: размер ваших ошибок стал менее предсказуемым — промахи то маленькие, то крупные. Часть прежней стабильности была упущена — постарайтесь вспомнить, что раньше давало ресурс на стабильность, и по возможности снизьте нагрузку в других сферах.",
+    down: "снизился на {d}: размер ваших ошибок стал более однородным и предсказуемым. Вы нашли то, что помогает держать промах стабильным по величине — постарайтесь осознать, что именно, и закрепите это сознательно.",
+  },
+  eff: { // favorable: up
+    up:   "выросла на {d} — заметный прогресс в точности восприятия времени и уровне саморегуляции. Вы нащупали то, что держит вовлечённость на этом уровне — постарайтесь осознать, что именно, и закрепите это сознательно.",
+    down: "снизилась на {d}. Что-то из прежнего интереса к процессу было упущено — постарайтесь вспомнить, что именно вас увлекало, и попробуйте вернуть это.",
+  },
+};
+
+// Английская версия — 1:1 та же структура (физиология → психология →
+// found/missed-ответ), не сокращённый пересказ. Alex 2026-09-08: "переведи
+// все шкалы на английский".
+const PHRASES_EN = {
+  early: { // favorable: down
+    up:   "increased by {d}. You were overexcited more often, rushing the moment instead of waiting for it. Something in your usual calm may have slipped — try to recall what used to help hold that impulse back, and try one slow breath before you act next time.",
+    down: "eased by {d}. You overexcited and rushed the moment less often — that's working in your favor. You found something that helps you stay calm — try to recognize exactly what, and repeat it deliberately.",
+  },
+  late: { // favorable: down
+    up:   "grew by {d}. You were too relaxed more often and missed the moment. Something in your prior sharpness may have slipped — try to recall what helped you not drag out the reaction, and bring that back before you start.",
+    down: "eased by {d}. You missed the moment from being too relaxed less often. You found something that keeps the moment in focus — try to recognize what exactly, and keep it close at hand.",
+  },
+  hit: { // favorable: up
+    up:   "rose by {d} — a real practical gain. You found an approach that works — try to recognize what exactly, and lock it in deliberately.",
+    down: "dropped by {d}. Something in your prior rhythm may have slipped — try to recall what pace used to give the best result, and return to it.",
+  },
+  lucky: { // favorable: up
+    up:   "rose to {d}. Accumulated self-management is at work. You found something that helps you manage yourself in the moment — try to recognize what was different this period, and lock in those conditions deliberately.",
+    down: "dropped to {d}. The line between your skill and chance has blurred. That sense of control may have slipped for a while — try to recall what gave you that resource before, and set aside more time to rest before the next attempt.",
+  },
+  focus: { // favorable: down
+    up:   "eased: swings between overexcitement and sluggishness came {d} more often. Something in your prior steadiness may have slipped — try to recall what helped you hold one mindset, and pause a second before starting to choose it deliberately.",
+    down: "strengthened by {d}: you swing between extremes less and hold a steady state longer. You found something that helps you hold that state longer — try to recognize what exactly, and lock it in deliberately.",
+  },
+  consist: { // favorable: up
+    up:   "improved by {d}. You're noticeably more often using the previous attempt's result to set up the next one. You found a habit that works — try to recognize what exactly makes it work, and lock it in deliberately.",
+    down: "weakened by {d}. Attempts are getting more disconnected from each other. The habit of leaning on feedback may have slipped for a while — try to recall how you used it before, and note after each attempt what went differently.",
+  },
+  gcv: { // favorable: down
+    up:   "eased by {d}: your typical error has become less stable and harder to compensate for. Some of your prior stability may have slipped — try to recall what used to give you the resource for it, and ease the load elsewhere where you can.",
+    down: "strengthened by {d}: your typical error is becoming more stable and predictable. You found something that keeps your error stable — try to recognize what exactly, and lock it in deliberately.",
+  },
+  eff: { // favorable: up
+    up:   "rose by {d} — real progress in time-perception accuracy and self-regulation. You found what's holding engagement at this level — try to recognize what exactly, and lock it in deliberately.",
+    down: "eased by {d}. Some of your prior interest in the process may have slipped — try to recall what used to draw you in, and try to bring it back.",
+  },
+};
+
+// Связки между показателями (Alex 2026-09-08): если два показателя сдвинулись
+// СОГЛАСОВАННО (или, наоборот, разошлись по смыслу интересным образом),
+// добавляем отдельное предложение, собирающее их в одну картину — а не
+// оставляем 9 разрозненных пунктов. rawA/rawB — сырое направление числа
+// ("up"/"down"), не "хорошо/плохо" (favorable у метрик разное).
+const CROSS_LINKS = [
+  { keys:["early","focus"], want:["up","up"],
+    text:(a,b)=>`Рост показателя «${a}» здесь идёт рука об руку с ростом «${b}» — оба отражают одно и то же: в этот период было труднее удерживать ровный настрой.`,
+    text_en:(a,b)=>`The rise in "${a}" here goes hand in hand with the rise in "${b}" — both reflect the same thing: it was harder to hold a steady mood this period.` },
+  { keys:["hit","eff"], want:["up","up"],
+    text:(a,b)=>`Рост «${a}» хорошо согласуется с ростом «${b}» — результат и его внутренняя основа двигаются в одну сторону.`,
+    text_en:(a,b)=>`The rise in "${a}" lines up well with the rise in "${b}" — the result and what underlies it are moving the same direction.` },
+  { keys:["hit","lucky"], want:["up","up"],
+    text:(a,b)=>`Рост «${a}» подкреплён ростом «${b}» — улучшение результата подтверждается ростом мастерства.`,
+    text_en:(a,b)=>`The rise in "${a}" is backed by the rise in "${b}" — the better result is confirmed by growing skill.` },
+  { keys:["consist","gcv"], want:["up","down"],
+    text:(a,b)=>`То, что «${a}» улучшилось, а «${b}» одновременно сузился, — одно и то же явление, увиденное с разных сторон.`,
+    text_en:(a,b)=>`"${a}" improving while "${b}" narrowed at the same time is the same underlying thing, seen from two sides.` },
+  { keys:["late","consist"], want:["up","down"],
+    text:(a,b)=>`Рост «${a}» и снижение «${b}» совпадают — оба указывают на общее снижение включённости в этот период.`,
+    text_en:(a,b)=>`The rise in "${a}" and the drop in "${b}" coincide — both point to lower overall engagement this period.` },
+  { keys:["focus","gcv"], want:["down","down"],
+    text:(a,b)=>`«${a}» и «${b}» снижаются вместе — один и тот же процесс растущей внутренней собранности, увиденный с двух сторон.`,
+    text_en:(a,b)=>`"${a}" and "${b}" are dropping together — one and the same process of growing inner composure, seen from two sides.` },
+  { keys:["early","late"], want:["down","up"],
+    text:(a,b)=>`Снижение «${a}» сопровождается ростом «${b}» — маятник качнулся из одной крайности в другую, от импульсивности к нерешительности. Стоит поискать золотую середину между ними.`,
+    text_en:(a,b)=>`The drop in "${a}" comes with a rise in "${b}" — the pendulum swung from one extreme to the other, from impulsiveness to hesitation. Worth looking for a middle ground between them.` },
+];
+
+// Комментарий для метрик, которые НЕ сдвинулись (Alex 2026-09-12: good/poor
+// решается относительно ЛИЧНОЙ исторической медианы игрока — см.
+// historicalDistribution(); Alex 2026-09-15: "добавь психологии... не только
+// в изменённые параметры но и те которые не изменились" — the flat two-line
+// good/poor template from 09-12 explicitly skipped per-metric physiology on
+// the theory that "steady" has nothing to explain; that theory was wrong —
+// steady-and-strong vs. steady-and-weak are just as real a psychological
+// state as a change is, per-metric like PHRASES, not a generic template).
+const STEADY_PHRASES = {
+  eff: {
+    good: "держится стабильно на хорошем уровне: вовлечённость в процесс держится ровно, прогресс копится незаметно, но верно. Постарайтесь осознать, что именно в вашем подходе удерживает эту вовлечённость, и сохраняйте это сознательно.",
+    poor: "держится стабильно в более слабой половине: интерес к процессу давно не разгонялся, прогресс идёт медленнее, чем мог бы. Постарайтесь вспомнить, что раньше вас увлекало в этом занятии, и попробуйте вернуть именно это чувство.",
+  },
+  hit: {
+    good: "держится стабильно высоко: вы регулярно попадаете точно в тройку — рабочий подход уже найден и не даёт сбоев. Постарайтесь осознать, что именно вы делаете стабильно правильно, и не меняйте это без причины.",
+    poor: "держится стабильно в более слабой половине: точных попаданий по-прежнему немного. Постарайтесь вспомнить, какой темп или настрой раньше давал лучший результат, и вернитесь именно к нему.",
+  },
+  early: {
+    good: "держится стабильно низко: вы редко перевозбуждаетесь и торопите момент — спокойствие уже вошло в привычку. Постарайтесь осознать, что именно помогает удерживать этот настрой, и поддерживайте это сознательно.",
+    poor: "держится стабильно высоко: вы по-прежнему часто торопите момент, вместо того чтобы дождаться его. Постарайтесь вспомнить, что раньше помогало сдерживать этот порыв, и попробуйте один медленный вдох-выдох перед действием.",
+  },
+  late: {
+    good: "держится стабильно низко: момент редко упускается из-за излишней расслабленности — собранность уже вошла в привычку. Постарайтесь осознать, что именно держит вас в фокусе, и поддерживайте это сознательно.",
+    poor: "держится стабильно высоко: момент по-прежнему часто упускается из-за расслабленности. Постарайтесь вспомнить, что раньше помогало не затягивать с реакцией, и верните это перед стартом.",
+  },
+  gcv: {
+    good: "держится стабильно низко: размер ваших ошибок предсказуем — промахи однородны по величине. Постарайтесь осознать, что помогает держать эту стабильность, и не меняйте условия без нужды.",
+    poor: "держится стабильно высоко: размер ошибок по-прежнему скачет — промахи то маленькие, то крупные. Постарайтесь вспомнить, что раньше давало ресурс на стабильность, и по возможности снизьте нагрузку в других сферах.",
+  },
+  focus: {
+    good: "держится стабильно низко: вы редко перескакиваете между перевозбуждением и заторможенностью, подолгу удерживая один настрой. Постарайтесь осознать, что именно помогает держаться этого состояния, и закрепляйте это сознательно.",
+    poor: "держится стабильно высоко: колебания между крайностями по-прежнему частые. Постарайтесь вспомнить, что помогало держаться одного настроя, и задержитесь на секунду перед стартом, чтобы выбрать его осознанно.",
+  },
+  consist: {
+    good: "держится стабильно высоко: вы регулярно опираетесь на результат прошлой попытки, чтобы точнее настроиться на следующую — рабочая привычка уже закрепилась. Постарайтесь осознать, что именно в ней работает, и не теряйте её.",
+    poor: "держится стабильно в более слабой половине: попытки по-прежнему разрозненны, обратная связь используется редко. Постарайтесь вспомнить, как вы её использовали раньше, и отмечайте после каждой попытки, что пошло не так.",
+  },
+  lucky: {
+    good: "держится стабильно выше случайности: работает накопленное умение управлять собой. Постарайтесь осознать, что именно даёт этот ресурс, и закрепляйте эти условия сознательно.",
+    poor: "держится стабильно на уровне случайности: граница между умением и удачей по-прежнему размыта. Постарайтесь вспомнить, что раньше давало ощущение контроля, и выделите больше времени на отдых перед следующей попыткой.",
+  },
+};
+const STEADY_PHRASES_EN = {
+  eff: {
+    good: "is holding steady in your strong half: engagement with the process is holding even, and progress keeps quietly building. Try to recognize what in your approach holds that engagement, and keep it deliberately.",
+    poor: "is holding steady in your weaker half: interest in the process hasn't picked up in a while, progress is slower than it could be. Try to recall what used to draw you in, and bring that feeling back.",
+  },
+  hit: {
+    good: "is holding steady high: you're regularly landing a clean three — a working approach is already in place. Try to recognize what you're doing consistently right, and don't change it without reason.",
+    poor: "is holding steady in your weaker half: clean hits are still rare. Try to recall what pace or mindset used to give the best result, and return to exactly that.",
+  },
+  early: {
+    good: "is holding steady low: you rarely overexcite and rush the moment — calm has become a habit. Try to recognize what helps you keep that state, and support it deliberately.",
+    poor: "is holding steady high: you're still often rushing the moment instead of waiting for it. Try to recall what used to help hold that impulse back, and try one slow breath before you act.",
+  },
+  late: {
+    good: "is holding steady low: the moment is rarely missed from being too relaxed — sharpness has become a habit. Try to recognize what keeps you focused, and support it deliberately.",
+    poor: "is holding steady high: the moment is still often missed from being too relaxed. Try to recall what helped you not drag out the reaction, and bring that back before you start.",
+  },
+  gcv: {
+    good: "is holding steady low: the size of your errors is predictable — misses are consistent in scale. Try to recognize what keeps that stability, and don't change conditions without need.",
+    poor: "is holding steady high: your error size is still swinging — misses are sometimes small, sometimes large. Try to recall what used to give you the resource for stability, and ease the load elsewhere where you can.",
+  },
+  focus: {
+    good: "is holding steady low: you rarely swing between overexcitement and sluggishness, holding one mindset for longer. Try to recognize what helps you hold that state, and lock it in deliberately.",
+    poor: "is holding steady high: swings between extremes are still frequent. Try to recall what helped you hold one mindset, and pause a second before starting to choose it deliberately.",
+  },
+  consist: {
+    good: "is holding steady high: you're regularly using the previous attempt's result to set up the next one — a working habit is already in place. Try to recognize what makes it work, and don't lose it.",
+    poor: "is holding steady in your weaker half: attempts are still disconnected from each other, feedback is rarely used. Try to recall how you used it before, and note after each attempt what went differently.",
+  },
+  lucky: {
+    good: "is holding steady above chance: accumulated self-management is at work. Try to recognize what gives you that resource, and lock in those conditions deliberately.",
+    poor: "is holding steady near chance level: the line between skill and luck is still blurred. Try to recall what used to give you that sense of control, and set aside more time to rest before the next attempt.",
+  },
+};
+
+function narrate(rows, scopeAfter, scopeBefore, lang, historicalDist){
+  const order = ["eff","hit","early","late","gcv","focus","consist","lucky"];
+  const table = lang === "en" ? PHRASES_EN : PHRASES;
+  const steadyTable = lang === "en" ? STEADY_PHRASES_EN : STEADY_PHRASES;
+  const labelKey = lang === "en" ? "label_en" : "label";
+  const linkTextKey = lang === "en" ? "text_en" : "text";
+  // Подзаголовки + один <p> на показатель (Alex 2026-09-11: "сложно понять
+  // структуру текста, дал бы подзаголовки") — раньше все сдвиги склеивались
+  // в один сплошной абзац.
+  const items = [];
+  const steadyItems = [];
+  const rawDirByKey = {}; // для CROSS_LINKS — сырое направление, не favorable-mapped
+  // Legend merge (Alex 2026-09-15): the metric name becomes a tap-tooltip
+  // sourced from the legend's own "what this parameter means" half, and the
+  // sentence is followed by a мордочка icon + the legend's "how the feature
+  // reacts" half — tapping that text animates the feature, tapping the icon
+  // shows the FULL legend sentence in the same tooltip and animates too.
+  // Absolute было/стало (was/now), IN the same chip/pill as the % change,
+  // not tacked onto the end of the sentence (Alex 2026-09-18, correcting
+  // the first attempt at this: "они должны быть рядом с процентами, на
+  // одной плашке" — one pill, not a separate clause three lines later).
+  // Reuses fmtVal(), the SAME per-metric formatter the data table already
+  // uses (%, ×, ms — whichever fits that key), so the two can't drift into
+  // different units for the same metric.
+  // Skipped entirely for metrics whose own NATIVE unit is already percent
+  // (hit/focus/consist/eff/gcv — see fmtVal's own %-branch) — Alex
+  // 2026-09-18, third pass: "там где параметр измеряется в процентах не
+  // надо значения показывать" — showing "+50.0% (0.5%→0.7%)" puts two
+  // different percentages (the CHANGE and the raw VALUE) right next to
+  // each other in the same pill, which reads as one confusing number, not
+  // two distinct ones. ms/×-valued metrics (early/late/lucky) keep it —
+  // no such collision there.
+  const CH_PERCENT_METRICS = new Set(["hit", "focus", "consist", "eff", "gcv"]);
+  const beforeAfterTxt = r => `${fmtVal(r.key, r.before)}→${fmtVal(r.key, r.after)}`;
+  const chipAndName = (r, key, chipClass, chipLabel) => {
+    const halves = legendHalvesForKey(key, lang);
+    const nameHtml = halves
+      ? `<b class="metric-name" data-tip="${halves.param}">${r[labelKey]}</b>`
+      : `<b>${r[labelKey]}</b>`;
+    const faceHtml = halves
+      ? ` <span class="feature-icon" data-key="${key}" data-tip="${halves.row.desc}" role="button" tabindex="0">🙂</span> <span class="feature-hint" data-key="${key}" role="button" tabindex="0">${halves.feature}</span>`
+      : "";
+    const valsHtml = CH_PERCENT_METRICS.has(key) ? "" : ` <span class="chip-vals">(${beforeAfterTxt(r)})</span>`;
+    const chip = `<span class="inline-chip ${chipClass}">${chipLabel}${valsHtml}</span>`;
+    return {chip, nameHtml, faceHtml};
+  };
+  order.forEach(key => {
+    const r = rows.find(x => x.key === key);
+    // delta === null — недостаточно данных для сравнения вообще (нет "до"
+    // или "после"); тут действительно нечего сказать, молчим как и раньше.
+    if (!r || r.delta === null) return;
+    if (Math.abs(r.delta) >= FLAT_EPS*100){
+      const rawDir = r.delta > 0 ? "up" : "down"; // направление СЫРОГО числа, не "хорошо/плохо"
+      rawDirByKey[key] = rawDir;
+      const tmpl = table[key][rawDir];
+      if (!tmpl) return;
+      const deltaTxt = Math.abs(r.delta).toFixed(1) + "%";
+      const text = tmpl.replace("{d}", deltaTxt).replace("{S}", "в этот период");
+      // Inline chip (Alex 2026-09-13: "вписать карточки в текст") — the
+      // number that used to live in a separate tile now sits right inside
+      // the sentence, before the metric name. r.dir is always "good" or
+      // "critical" here (never "flat"/"na") since we only reach this branch
+      // when |delta| already cleared FLAT_EPS.
+      const {chip, nameHtml, faceHtml} = chipAndName(r, key, r.dir, pctLabel(r.delta));
+      items.push(`<p>${chip}${nameHtml} ${text}${faceHtml}</p>`);
+    } else {
+      // Не сдвинулось (Alex 2026-09-12: "комментировать надо не только
+      // изменённые параметры, но и те что остались неизменными — поощрять
+      // если хорошо, призывать улучшить если плохо"). "Хорошо/плохо" —
+      // ОТНОСИТЕЛЬНО ЛИЧНОЙ исторической медианы игрока (historicalDist),
+      // не выдуманного порога; если истории мало (< 2 недельных бакета) —
+      // молчим, как и для delta === null, а не гадаем.
+      const med = historicalDist && historicalDist[key] && historicalDist[key].length >= 2
+        ? median(historicalDist[key]) : null;
+      if (med === null || r.after === null) return;
+      const isGood = r.favorable === "up" ? r.after >= med : r.after <= med;
+      const {chip, nameHtml, faceHtml} = chipAndName(r, key, "flat", "≈");
+      steadyItems.push(`<p>${chip}${nameHtml} ${steadyTable[key][isGood ? "good" : "poor"]}${faceHtml}</p>`);
+    }
+  });
+  if (!items.length && !steadyItems.length){
+    return lang === "en"
+      ? `<p>Not enough history yet to say what held steady or what shifted.</p>`
+      : `<p>Пока недостаточно истории, чтобы сказать, что сдвинулось, а что осталось стабильным.</p>`;
+  }
+  const crossItems = [];
+  CROSS_LINKS.forEach(link => {
+    const [ka, kb] = link.keys;
+    if (rawDirByKey[ka] !== link.want[0] || rawDirByKey[kb] !== link.want[1]) return;
+    const ra = rows.find(x => x.key === ka), rb = rows.find(x => x.key === kb);
+    if (!ra || !rb) return;
+    crossItems.push(`<p>${link[linkTextKey](ra[labelKey], rb[labelKey])}</p>`);
+  });
+  const headingWhat = lang === "en" ? "Here's how you're doing:" : "Вот как вы справляетесь:";
+  const headingSteady = lang === "en" ? "Holding steady" : "Держится стабильно";
+  const headingLinks = lang === "en" ? "How they connect" : "Связи между показателями";
+  let out = "";
+  if (items.length) out += `<h4>${headingWhat}</h4>` + items.join("");
+  if (steadyItems.length) out += `<h4>${headingSteady}</h4>` + steadyItems.join("");
+  if (crossItems.length) out += `<h4>${headingLinks}</h4>` + crossItems.join("");
+  return out;
+}
+
+function geomMean(values){
+  const pos = values.filter(v => v > 0);
+  if (!pos.length) return 0;
+  return Math.exp(pos.reduce((s,v)=>s+Math.log(v),0)/pos.length);
+}
+
+// Most frequent rounded ERROR (not duration) on one side — same idea as the
+// native app's "Modes of Deviation" (top repeating early/late deviation,
+// count>=2 so a single unrepeated attempt can't pass as a "mode"). Rounded
+// to the SAME precision grid as `hit` above (factor=10^accOrd) so it's
+// comparable across deci/centi/milli levels. Returns the mode's absolute
+// magnitude, or null if nothing repeats on that side.
+function modeOfSide(errs, factor, sidePredicate){
+  const counts = new Map();
+  errs.filter(sidePredicate).forEach(e => {
+    const r = Math.round(e*factor)/factor;
+    counts.set(r, (counts.get(r)||0)+1);
+  });
+  let best = null, bestCount = 1; // require count >= 2 to count as a real mode
+  counts.forEach((c, v) => {
+    if (c > bestCount || (c === bestCount && best !== null && Math.abs(v) < Math.abs(best))){
+      best = v; bestCount = c;
+    }
+  });
+  return best === null ? null : Math.abs(best);
+}
+
+// Attempts whose duration missed the 3.000s aim by more than this are
+// outliers, not signal (Alex 2026-09-16: "все что больше 500 мс от 3.000 мы
+// считаем выбросом и не принимаем в расчет") — excluded from the deviation-
+// MAGNITUDE family below (early/late/mode/tail/CV/gcv — everything computed
+// straight FROM the raw ms error) before those stats are built. Deliberately
+// NOT applied to: n/hit/wins (a huge miss is still a real miss for hit
+// rate's own denominator — dropping it would inflate hit rate, not clean it
+// up), lucky (same denominator reasoning), focus/consist (sign-change /
+// did-it-get-closer comparisons between consecutive attempts, not a
+// magnitude reading), earlyShare/lateShare (still legitimately an early or
+// late miss, just an extreme one — which side it fell on doesn't stop being
+// true because it was big). Flag it if that scope turns out too narrow.
+const CH_OUTLIER_MS = 500;
+
+function metricsFor(attempts, accOrd){
+  const n = attempts.length;
+  if (n === 0) return null;
+  const errs = attempts.map(a => a.e);
+  const devErrs = errs.filter(e => Math.abs(e) <= CH_OUTLIER_MS);
+
+  const early = geomMean(devErrs.filter(e=>e<0).map(e=>-e));
+  const late  = geomMean(devErrs.filter(e=>e>0));
+  const factor = Math.pow(10, accOrd);
+  const earlyMode = modeOfSide(devErrs, factor, e => e < 0);
+  const lateMode  = modeOfSide(devErrs, factor, e => e > 0);
+  // How OFTEN each side happens, not how BIG it is when it does — a
+  // genuinely separate statistic from early/late's own geomean (Alex
+  // 2026-09-14: "одному параметру соответствует ОДНА черта лица" — brow and
+  // eye-openness used to BOTH react to the same early/late magnitude, which
+  // is two facial features driven by one parameter; eye-openness now reacts
+  // to this instead, so each row in the legend maps to exactly one feature).
+  const earlyCnt = errs.filter(e=>e<0).length, lateCnt = errs.filter(e=>e>0).length;
+  const sideTotal = earlyCnt + lateCnt;
+  const earlyShare = sideTotal ? earlyCnt/sideTotal : null;
+  const lateShare  = sideTotal ? lateCnt/sideTotal  : null;
+
+  const aimR = Math.round(AIM/1000*factor);
+  let wins = 0;
+  attempts.forEach(a => { if (Math.round((a.e+AIM)/1000*factor) === aimR) wins++; });
+  const hit = 100*wins/n;
+
+  // earlyTail/lateTail are the SAME two numbers range_span sums together
+  // (P3 and P97) — kept separate instead of combined, so each can drive its
+  // own side of a paired feature (Alex 2026-09-14: ears — the single worst
+  // miss caused specifically by rushing vs specifically by over-relaxing).
+  // range_span as a combined figure is no longer used on the face at all
+  // (head roundness now shows hit instead — see CH_FEATURES/CH_SYMMETRIC).
+  // Percentiled over devErrs (outlier-excluded, see CH_OUTLIER_MS) — indexed
+  // by devErrs' OWN length, not the outer n, so P3/P97 stay meaningful
+  // percentiles of the array actually being sliced rather than reaching past
+  // its end (or under-reaching) whenever attempts and devErrs differ in size.
+  const sortedDev = devErrs.slice().sort((a,b)=>a-b);
+  const dn = sortedDev.length;
+  const loIdx = Math.min(Math.max(Math.floor(dn*0.03),0), dn-1);
+  const hiIdx = Math.min(Math.max(Math.floor(dn*0.97),0), dn-1);
+  const earlyTail = dn ? Math.abs(sortedDev[loIdx]) : 0;
+  const lateTail = dn ? Math.abs(sortedDev[hiIdx]) : 0;
+  // lucky's own dispersion/slots stay on the RAW (unfiltered) range — that's
+  // a separate, not-yet-decided theoretical question (see chat), so this
+  // outlier exclusion doesn't reach into it by accident just because it
+  // shares earlyTail/lateTail's old source variables.
+  const sortedErr = errs.slice().sort((a,b)=>a-b);
+  const rawLoIdx = Math.min(Math.max(Math.floor(n*0.03),0), n-1);
+  const rawHiIdx = Math.min(Math.max(Math.floor(n*0.97),0), n-1);
+  const rangeSpan = Math.abs(sortedErr[rawLoIdx]) + Math.abs(sortedErr[rawHiIdx]);
+  const slots = Math.max(Math.floor(rangeSpan/1.0),1) + 1;
+  const dispersion = 1/slots;
+  const luckyWins = attempts.filter(a => Math.abs(a.e) < 0.5).length;
+  const lucky = dispersion>0 ? (luckyWins/n)/dispersion : 0;
+
+  // session groups, sorted by attempt-number, for focus/consistency/SC
+  const bySession = {};
+  attempts.forEach(a => { (bySession[a.s] ||= []).push(a); });
+  const groups = Object.values(bySession).map(g => g.slice().sort((a,b)=>a.n-b.n));
+
+  let alt=0, valid=0;
+  groups.forEach(g => { for(let i=1;i<g.length;i++){ const ea=g[i-1].e, eb=g[i].e; if(ea!==0&&eb!==0){ valid++; if((ea<0)!==(eb<0)) alt++; } } });
+  const focus = valid? 100*alt/valid : null;
+
+  let drops=0, pairs=0;
+  groups.forEach(g => { for(let i=1;i<g.length;i++){ pairs++; if(Math.abs(g[i].e) < Math.abs(g[i-1].e)) drops++; } });
+  const consist = pairs? 100*drops/pairs : null;
+
+  const absErr = devErrs.map(Math.abs).filter(v=>v>0);
+  let gcv = 0;
+  if (absErr.length){
+    const ln = absErr.map(Math.log);
+    const lnMean = ln.reduce((s,v)=>s+v,0)/ln.length;
+    const lnStd = Math.sqrt(ln.reduce((s,v)=>s+(v-lnMean)**2,0)/ln.length);
+    gcv = (Math.exp(lnStd)-1)*100;
+  }
+  // Same geometric-CV formula as gcv above, but scoped to ONE side only —
+  // gcv is "how consistent is my error size overall", this is "how
+  // consistent is it specifically when I'm early" vs "...when I'm late"
+  // (Alex 2026-09-14: eye width is a PAIRED feature, so it needs a genuinely
+  // paired early/late statistic, not the single "hit" value it had before —
+  // magnitude already went to brow, frequency to eyeOpen, mode to pupils,
+  // this is the 4th distinct one). null when a side has under 2 attempts —
+  // a "spread" of one value isn't meaningful.
+  function cvOfSide(vals){
+    const abs = vals.filter(v=>v>0);
+    if (abs.length < 2) return null;
+    const ln = abs.map(Math.log);
+    const lnMean = ln.reduce((s,v)=>s+v,0)/ln.length;
+    const lnStd = Math.sqrt(ln.reduce((s,v)=>s+(v-lnMean)**2,0)/ln.length);
+    return (Math.exp(lnStd)-1)*100;
+  }
+  const earlyCV = cvOfSide(devErrs.filter(e=>e<0).map(e=>-e));
+  const lateCV  = cvOfSide(devErrs.filter(e=>e>0));
+
+  const levelFactor = Math.pow(10, accOrd-3);
+  const peakScm = 99*levelFactor;
+  const scored = [];
+  groups.forEach(g => {
+    for(let i=1;i<g.length-1;i++){
+      const p=g[i-1].e, c=g[i].e, nx=g[i+1].e;
+      const tPrev=Math.abs(p), tCurr=Math.abs(c), tNext=Math.abs(nx);
+      const denom = 3*tCurr + tPrev + tNext + Math.abs(c-nx) + Math.abs(c-p) - Math.abs(nx-p)/3 + 1;
+      scored.push(99/denom*levelFactor);
+    }
+  });
+  const eff = scored.length ? (scored.reduce((s,v)=>s+v,0)/scored.length)/peakScm*100 : null;
+
+  return {n, early, late, earlyMode, lateMode, earlyShare, lateShare, earlyCV, lateCV, earlyTail, lateTail, hit, lucky, focus, consist, gcv, eff};
+}
+
+// Понедельник недели, которой принадлежит дата — ключ бакета для
+// historicalDistribution() ниже.
+function weekKey(dateStr){
+  const d = new Date(dateStr + "T00:00:00Z");
+  const day = (d.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+  d.setUTCDate(d.getUTCDate() - day);
+  return d.toISOString().slice(0,10);
+}
+
+function median(values){
+  if (!values.length) return null;
+  const s = values.slice().sort((a,b)=>a-b);
+  const mid = Math.floor(s.length/2);
+  return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+}
+
+// Личное историческое распределение каждой метрики (Alex 2026-09-12: "надо
+// комментировать и то что осталось неизменным — поощрять если хорошо,
+// призывать улучшить если плохо" — критерий выбран явно: ОТНОСИТЕЛЬНО ЛИЧНОЙ
+// ИСТОРИИ игрока, не выдуманный внешний порог). `attempts` — это уже
+// server-side отфильтрованная под ТЕКУЩИЙ уровень точности история
+// (report_data.php, правило D13) — недельные бакеты внутри неё не могут
+// зацепить данные другого уровня, сравнение остаётся честным даже когда
+// "прошлое" в этом смысле означает "пару недель назад на этом же уровне".
+function historicalDistribution(attempts, accOrd){
+  const buckets = {};
+  attempts.forEach(a => {
+    const wk = weekKey(a.t.slice(0,10));
+    (buckets[wk] ||= []).push(a);
+  });
+  const dist = {};
+  Object.values(buckets).forEach(bucketAttempts => {
+    // Меньше 5 попыток в неделе — слишком шумная оценка метрики, пропускаем
+    // бакет целиком, а не тянем разброс с одной-двух попыток.
+    if (bucketAttempts.length < 5) return;
+    const m = metricsFor(bucketAttempts, accOrd);
+    if (!m) return;
+    Object.keys(m).forEach(k => {
+      if (k === "n" || m[k] === null) return;
+      (dist[k] ||= []).push(m[k]);
+    });
+  });
+  return dist;
+}
+
+function filterByDate(attempts, from, to){
+  const f = from, t = to + "T23:59:59";
+  return attempts.filter(a => a.t >= f && a.t <= t);
+}
+
+function relDelta(before, after){
+  if (before === null || after === null || before <= 0) return null;
+  return (after-before)/before*100;
+}
+
+function direction(favorable, delta){
+  if (delta === null) return "na";
+  if (Math.abs(delta) < FLAT_EPS*100) return "flat";
+  const up = delta > 0;
+  return (favorable === "up") === up ? "good" : "critical";
+}
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+// The ONE real-calendar "today" reference for the whole page (Alex
+// 2026-09-17: "отлистать назад а потом долистать до сегодня снова
+// показывается та же морда словно данные есть" — a real bug: 3 different
+// functions each computed their OWN idea of "today", and only ONE of them
+// (setDefaultRanges, fixed earlier the same session) used the real date;
+// applyDefaultDay() and stepPeriod()'s "day" branch still anchored to
+// b.max (the date of the player's OWN last attempt) — so paging the day
+// picker forward to "offset 0" landed back on b.max, which silently has
+// data whenever the player hasn't played YET today, contradicting the
+// correct empty state the page shows on first load. Computed once here,
+// used everywhere "today" means the actual calendar day, not "whatever
+// the last attempt happens to be".
+const REAL_TODAY = fmtDate(new Date());
+function daysAgoDate(lastDate, days){
+  const d = new Date(lastDate); d.setUTCDate(d.getUTCDate()-days); return fmtDate(d);
+}
+function startOfMonth(dateStr){ const d = new Date(dateStr+"T00:00:00Z"); d.setUTCDate(1); return fmtDate(d); }
+function endOfMonth(dateStr){ const d = new Date(dateStr+"T00:00:00Z"); d.setUTCMonth(d.getUTCMonth()+1); d.setUTCDate(0); return fmtDate(d); }
+function addMonthsToDate(dateStr, n){ const d = new Date(dateStr+"T00:00:00Z"); d.setUTCMonth(d.getUTCMonth()+n); return fmtDate(d); }
+
+const RU_MONTH_NAMES = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const EN_MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const RU_MONTH_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+const EN_MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtMonthYear(dateStr, lang){
+  const d = new Date(dateStr+"T00:00:00Z");
+  return (lang==="en"?EN_MONTH_NAMES:RU_MONTH_NAMES)[d.getUTCMonth()] + " " + d.getUTCFullYear();
+}
+function fmtDayMonthShort(dateStr, lang){
+  const d = new Date(dateStr+"T00:00:00Z");
+  return d.getUTCDate() + " " + (lang==="en"?EN_MONTH_SHORT:RU_MONTH_SHORT)[d.getUTCMonth()];
+}
+// Exact-selection labels (Alex 2026-09-14: "в название над мордой выводить
+// ровно то что выбрано") — "7-13 Sep" when both ends share a month, else
+// "28 Aug - 3 Sep" spelled out fully so a range crossing a month boundary
+// doesn't read as ambiguous.
+function fmtRangeShort(from, to, lang){
+  const df = new Date(from+"T00:00:00Z"), dt = new Date(to+"T00:00:00Z");
+  if (from === to) return fmtDayMonthShort(from, lang);
+  if (df.getUTCMonth() === dt.getUTCMonth() && df.getUTCFullYear() === dt.getUTCFullYear()){
+    return df.getUTCDate() + "–" + dt.getUTCDate() + " " + (lang==="en"?EN_MONTH_SHORT:RU_MONTH_SHORT)[dt.getUTCMonth()];
+  }
+  return fmtDayMonthShort(from, lang) + " – " + fmtDayMonthShort(to, lang);
+}
+
+let state = { player: "me", lang: "en", aFrom:"", aTo:"", bFrom:"", bTo:"", aSel:{type:"today"}, bSel:{type:"week"} };
+
+function midDate(minStr, maxStr){
+  const min = new Date(minStr+"T00:00:00"), max = new Date(maxStr+"T00:00:00");
+  const mid = new Date((min.getTime()+max.getTime())/2);
+  return fmtDate(mid);
+}
+
+// Все UI-строки, не завязанные на PHRASES/METRICS/CROSS_LINKS/relative-time
+// (у тех своя ru/en логика выше) — переключаются языковым тумблером рядом с
+// выбором игрока (Alex 2026-09-08: "переведи все шкалы на английский").
+const STR = {
+  ru: {
+    title: "Ваш результат в Play of Time",
+    lede: "Два лица — «было» и «стало» — показывают сразу все 9 психологических измерений: задайте любой период и период сравнения и считайте общее впечатление на глаз, без чтения цифр.",
+    faceBefore: "Было",
+    faceAfter: "Стало",
+    faceNoData: "Нет попыток за этот период — выберите другой выше.",
+    na: "н/д",
+    footNote: acc => `Уровень точности: ${acc.toUpperCase()} (ваш текущий уровень). Проценты — относительное изменение периода к периоду сравнения; направление цвета зависит от того, какая сторона благоприятна для каждого конкретного показателя.`,
+    showTable: "Показать таблицей",
+    hideTable: "Скрыть таблицу",
+    tableHead: ["Показатель", "Было (сравнение)", "Стало (период)", "Изменение, %", "Направление"],
+    dir: {good:"благоприятно", critical:"неблагоприятно", flat:"в пределах шума", na:"нет данных"},
+    customDates: "Произвольные даты ⋯",
+    apply: "Применить",
+    loading: "Загружаем ваши результаты…",
+    noData: "На этом уровне точности пока нет ни одной попытки — отчёту не из чего строить лица. Сыграйте хотя бы одну сессию и возвращайтесь.",
+    loadError: "Не удалось загрузить данные. Попробуйте открыть отчёт заново из приложения.",
+    sampleNote: "Точность интерпретации растёт вместе с числом попыток. Более-менее достоверные данные появляются примерно после 500 попыток на втором уровне.",
+    sameLevelHint: "Недоступно: сравниваются только результаты одного уровня точности, а этот период уходит на другой уровень.",
+    noAttemptsHint: "Недоступно: в этом периоде нет ни одной попытки.",
+  },
+  en: {
+    title: "Your Play of Time Results",
+    lede: "Two faces — \"before\" and \"after\" — show all 9 psychological measures at once: pick any period and a comparison period and read the overall impression at a glance, no numbers required.",
+    faceBefore: "Before",
+    faceAfter: "After",
+    faceNoData: "No attempts in this period — pick another one above.",
+    na: "n/a",
+    footNote: acc => `Precision level: ${acc.toUpperCase()} (your current level). Percentages are the relative change of the period vs. the comparison period; the color direction depends on which side is favorable for that particular metric.`,
+    showTable: "Show as table",
+    hideTable: "Hide table",
+    tableHead: ["Metric", "Before (comparison)", "After (period)", "Change, %", "Direction"],
+    dir: {good:"favorable", critical:"unfavorable", flat:"within noise", na:"no data"},
+    customDates: "Custom dates ⋯",
+    apply: "Apply",
+    loading: "Loading your results…",
+    noData: "No attempts at this precision level yet — there's nothing for the report to build faces from. Play at least one session, then come back.",
+    loadError: "Couldn't load your data. Try opening the report again from the app.",
+    sampleNote: "Diagnostic accuracy improves with more attempts. Reasonably reliable data starts to show up after roughly 500 attempts at Level 2.",
+    sameLevelHint: "Unavailable: only results within the same precision level are compared, and this period reaches into a different level.",
+    noAttemptsHint: "Unavailable: there are no attempts in this period.",
+  },
+};
+function t(){ return STR[state.lang]; }
+
+// Alex 2026-09-14: side A (the subject being examined) only ever needs
+// "right now"-ish presets, so its own menu is a short list + Custom; side B
+// (what it's compared against) is where the full set of historical-reference
+// presets lives. Alex 2026-09-15, two steps: (1) added Yesterday alongside
+// Today — Today alone was too narrow (a prior edit that same day briefly
+// gave A the FULL preset list B has instead — rejected as scope creep, reverted
+// to just Yesterday); (2) then merged Today+Yesterday into ONE steppable "Day"
+// entry ("уберем и тудэй и естудей... переключать будем аналогично месяцам,
+// но первое значение будет не число а yesterday") — same switchable-with-
+// persistent-pager pattern Week/Month already use (see applyDefaultDay()/the
+// "day" case in describeSelection()/periodNavArrow()/stepPeriod()), landing
+// on Yesterday by default rather than Today.
+const PERIOD_OPTIONS_A = [
+  {key:"day",       label:"День",        label_en:"Day"},
+];
+const PERIOD_OPTIONS_B = [
+  {key:"yesterday", label:"Вчера",       label_en:"Yesterday"},
+  {key:"daybefore", label:"Позавчера",   label_en:"Day before yesterday"},
+  {key:"week",      label:"Неделя",      label_en:"Week"},
+  {key:"month",     label:"Месяц",       label_en:"Month"},
+  {key:"all",       label:"Всё время",   label_en:"All time"},
+];
+
+function presetRangeFrom(key, refDate, minDate){
+  switch(key){
+    case "today":     return {from:refDate, to:refDate};
+    // "Day" defaults to yesterday (Alex 2026-09-15) — same range as the old
+    // standalone "yesterday" preset, just reachable via the "day" menu entry
+    // now instead of its own row.
+    case "day":       { const y = daysAgoDate(refDate,1); return {from:y, to:y}; }
+    case "yesterday": { const y = daysAgoDate(refDate,1); return {from:y, to:y}; }
+    case "daybefore": { const d = daysAgoDate(refDate,2); return {from:d, to:d}; }
+    case "week":      return {from:daysAgoDate(refDate,6), to:refDate};
+    case "month":     return {from:daysAgoDate(refDate,29), to:refDate};
+    case "all":       return {from:minDate, to:refDate};
+  }
+}
+
+function buildLangSeg(){
+  const el = document.getElementById("langSeg");
+  el.innerHTML = "";
+  [["ru","RU"],["en","EN"]].forEach(([code,label]) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.className = code===state.lang ? "active" : "";
+    b.onclick = () => { state.lang = code; buildLangSeg(); render(); };
+    el.appendChild(b);
+  });
+}
+
+function playerBounds(){
+  const atts = DATA[state.player].attempts;
+  return { min: atts[0].t.slice(0,10), max: atts[atts.length-1].t.slice(0,10) };
+}
+
+// Real attempt count for an exact date range (Alex 2026-09-16: "пользователь
+// не должен иметь возможности выбрать день где не было попыток или
+// недостаточно попыток"). playerBounds() only bounds the OUTER min/max dates
+// a player has ever played — individual days/weeks/months inside that span
+// can still be empty (a skipped day, a short first week of a new level).
+// The popover's own preset menu already checked this per-option (see
+// openPeriodPopover()'s noAttempts check, Alex 2026-09-14); this is the same
+// check exposed for the ‹›pager and the custom-date form, neither of which
+// had it — the pager only checked calendar bounds, so it could still step
+// onto an empty day/week/month even though the menu's own defaults couldn't.
+function attemptsCountInRange(from, to){
+  return filterByDate(DATA[state.player].attempts, from, to).length;
+}
+
+function setDefaultRanges(){
+  const b = playerBounds();
+  // A defaults to Today — but if today genuinely has zero attempts yet,
+  // walk backward to the nearest day that DOES (Alex 2026-09-18: "сделай
+  // органически... две морды всегда", "убери эту подпись об отсутствии
+  // периода" — Face A should never land on the "no attempts" placeholder
+  // by default; it should just show the closest real day instead, same
+  // as the Day-picker's own fallback already does, but automatically on
+  // load rather than requiring a manual "Day" pick first). The label
+  // stays honest — dayOffset feeds describeSelection() same as the Day
+  // picker, so this reads as "Yesterday"/"3 days ago"/etc., never a lie
+  // that a non-today day is "Today".
+  let day = REAL_TODAY, offset = 0;
+  while (attemptsCountInRange(day, day) === 0 && day >= b.min){
+    offset += 1;
+    day = daysAgoDate(REAL_TODAY, offset);
+  }
+  state.aFrom = day; state.aTo = day;
+  state.aSel = offset === 0 ? {type:"today"} : {type:"day", dayOffset: offset};
+  // B defaults to "the week right before today" — same spirit as the old
+  // shared default (today vs. the preceding stretch), now expressed as B's
+  // own "week" preset instead of a hardcoded one-off.
+  const refB = daysAgoDate(b.max, 1);
+  const bb = presetRangeFrom("week", refB, b.min);
+  // Clamp to the level boundary (Alex 2026-09-11) — a "week" preset's from-date
+  // is computed purely by calendar math and doesn't know DATA only contains
+  // the current tier; for a player with a short current-level history the
+  // naive "week" window can reach earlier than any same-tier attempt exists.
+  state.bFrom = bb.from < b.min ? b.min : bb.from; state.bTo = bb.to;
+  state.bSel = {type:"week"};
+}
+
+// ---------- Popover: клик по слову-периоду в заголовке предложения ----------
+const popover = document.getElementById("periodPopover");
+
+function closePopover(){ popover.classList.remove("show"); }
+
+// Exact label for whatever was actually picked (Alex 2026-09-14: "в
+// название над мордой выводить ровно то что выбрано") — replaces the old
+// approximate "about a week ago" style guessing from raw dates with the
+// real selection state (state.aSel/bSel), which every apply-path above now
+// records alongside the dates themselves.
+function describeSelection(which, lang){
+  const sel = (which === "A" ? state.aSel : state.bSel) || {type:"custom"};
+  const from = which === "A" ? state.aFrom : state.bFrom;
+  const to = which === "A" ? state.aTo : state.bTo;
+  if (sel.type === "today") return lang === "en" ? "Today" : "Сегодня";
+  if (sel.type === "yesterday") return lang === "en" ? "Yesterday" : "Вчера";
+  if (sel.type === "daybefore") return lang === "en" ? "Day before yesterday" : "Позавчера";
+  // "Day" (Alex 2026-09-15) — the merged, steppable Today/Yesterday/further-
+  // back entry. dayOffset 0/1/2 reuse the exact same words the old separate
+  // presets used, so a viewer sees no difference once they land on one of
+  // those three; anything further back is just the actual date.
+  if (sel.type === "day"){
+    if (sel.dayOffset === 0) return lang === "en" ? "Today" : "Сегодня";
+    if (sel.dayOffset === 1) return lang === "en" ? "Yesterday" : "Вчера";
+    if (sel.dayOffset === 2) return lang === "en" ? "Day before yesterday" : "Позавчера";
+    return fmtDayMonthShort(from, lang);
+  }
+  if (sel.type === "week") return (lang === "en" ? "Week — " : "Неделя — ") + fmtRangeShort(from, to, lang);
+  if (sel.type === "month") return fmtMonthYear(sel.monthStart || from, lang);
+  return fmtRangeShort(from, to, lang); // custom
+}
+
+// Both sides anchor to the SAME reference point (b.max = today) — Alex
+// 2026-09-14: "одинаковые периоды, очевидно должны давать одинаковые лица".
+// B used to anchor to "the day before A" instead, so picking the SAME
+// preset label (e.g. "Today") on both sides silently produced two
+// different dates — the labels lied about what was actually selected. The
+// staggered "B = the stretch right before A" default is still exactly what
+// a first-time viewer sees (setDefaultRanges() computes that independently,
+// once, before either popover is ever opened) — this only changes what
+// happens when the popover itself is used afterward, so an explicit pick
+// means exactly what its label says.
+function applyInlinePreset(which, key){
+  const b = playerBounds();
+  const r = presetRangeFrom(key, b.max, b.min);
+  if (which === "A"){ state.aFrom = r.from; state.aTo = r.to; state.aSel = {type:key}; }
+  else { state.bFrom = r.from; state.bTo = r.to; state.bSel = {type:key}; }
+  render();
+}
+
+function showCustomDateForm(which){
+  popover.innerHTML = "";
+  const b = playerBounds();
+  const row = document.createElement("div");
+  row.className = "custom-row";
+  const fromInput = document.createElement("input"); fromInput.type = "date";
+  const toInput = document.createElement("input"); toInput.type = "date";
+  // Same level-boundary rule as the preset menu (Alex 2026-09-11): the
+  // custom-range picker can't reach earlier than the current tier's own
+  // earliest attempt either — DATA itself is already server-filtered to one
+  // accuracy tier (report_data.php), so b.min IS "when this level started."
+  // Upper bound was missing entirely (Alex 2026-09-14: "custom dates не
+  // работает вообще") — without max=b.max nothing stopped picking a future
+  // date past the player's own last attempt, silently yielding an empty face.
+  fromInput.min = b.min; toInput.min = b.min;
+  fromInput.max = b.max; toInput.max = b.max;
+  fromInput.value = which === "A" ? state.aFrom : state.bFrom;
+  toInput.value   = which === "A" ? state.aTo   : state.bTo;
+  row.appendChild(fromInput); row.appendChild(toInput);
+  popover.appendChild(row);
+  const applyBtn = document.createElement("button");
+  applyBtn.className = "apply-btn"; applyBtn.textContent = t().apply;
+  applyBtn.onclick = () => {
+    // "to" before "from" used to apply silently and just show nothing
+    // sensible — swap them instead of accepting an inverted range.
+    let from = fromInput.value, to = toInput.value;
+    if (!from || !to) return;
+    if (from > to){ const tmp = from; from = to; to = tmp; }
+    // Same "no empty periods" rule as the preset menu/pager (Alex
+    // 2026-09-16) — a custom range's min/max only bound it to the current
+    // tier, they don't guarantee any attempt actually falls inside it.
+    // Refuse silently applying an empty range; show the same hint text the
+    // disabled preset options already use, and leave the form open so the
+    // dates stay editable instead of just closing on a no-op.
+    if (attemptsCountInRange(from, to) === 0){
+      let err = popover.querySelector(".custom-err");
+      if (!err){
+        err = document.createElement("div");
+        err.className = "custom-err";
+        err.style.cssText = "padding:4px 8px 2px; font-size:12px; color:var(--text-muted);";
+        popover.insertBefore(err, applyBtn);
+      }
+      err.textContent = t().noAttemptsHint;
+      return;
+    }
+    if (which === "A"){ state.aFrom = from; state.aTo = to; state.aSel = {type:"custom"}; }
+    else { state.bFrom = from; state.bTo = to; state.bSel = {type:"custom"}; }
+    render();
+    closePopover();
+  };
+  popover.appendChild(applyBtn);
+}
+
+// "Month"/"Week" apply the most recent calendar month / trailing week
+// immediately and close the popover, exactly like every other preset — Alex
+// 2026-09-15: "то ни одной листалки то сразу две... убери первую, оставь
+// только ту которая в заголовке морды остается". Until today, picking
+// "Month" here opened a SECOND prev/next+Apply picker inside the popover
+// (showMonthPicker(), same for showWeekPicker()) — genuinely redundant with
+// the persistent ‹›pager that already lives on the face's own label
+// (periodNavArrow()/stepPeriod() below), added in an earlier pass without
+// noticing the two now did the same job two different ways. Only the label
+// pager survives; this just lands on the latest month/week and the label's
+// own arrows take it from there.
+function applyMonthOrWeek(which, key){
+  const b = playerBounds();
+  if (key === "month"){
+    const monthStart = startOfMonth(b.max);
+    const from = monthStart < b.min ? b.min : monthStart;
+    const to = endOfMonth(monthStart) > b.max ? b.max : endOfMonth(monthStart);
+    const sel = {type:"month", monthStart};
+    if (which === "A"){ state.aFrom = from; state.aTo = to; state.aSel = sel; }
+    else { state.bFrom = from; state.bTo = to; state.bSel = sel; }
+  } else { // week
+    const shownEnd = b.max;
+    const from = daysAgoDate(shownEnd, 6);
+    const sel = {type:"week"};
+    if (which === "A"){ state.aFrom = from; state.aTo = shownEnd; state.aSel = sel; }
+    else { state.bFrom = from; state.bTo = shownEnd; state.bSel = sel; }
+  }
+  render();
+}
+
+// "Day" (side A only) — merges the old separate "Today"/"Yesterday" rows
+// into one steppable entry (Alex 2026-09-15), landing on Yesterday by
+// default ("первое значение будет не число а yesterday") rather than Today.
+// dayOffset counts days back from the player's own most recent attempt
+// (0 = today, 1 = yesterday, 2 = day before yesterday, 3+ = an actual date)
+// — periodNavArrow()/stepPeriod() below step this ±1 the same way they step
+// a month or a week.
+function applyDefaultDay(which){
+  const from = daysAgoDate(REAL_TODAY, 1);
+  const sel = {type:"day", dayOffset:1};
+  if (which === "A"){ state.aFrom = from; state.aTo = from; state.aSel = sel; }
+  else { state.bFrom = from; state.bTo = from; state.bSel = sel; }
+  render();
+}
+
+function openPeriodPopover(anchorEl, which){
+  popover.innerHTML = "";
+  // Comparisons must stay inside ONE precision level (Alex 2026-09-11,
+  // restating/enforcing D13 at the menu level too — DATA is already
+  // server-filtered to the player's current accuracy tier only, so b.min is
+  // literally "the first attempt at this level"). A preset whose nominal
+  // range would need to reach earlier than that is disabled outright rather
+  // than silently clipped — picking "Month" a week into a new level should
+  // read as unavailable, not quietly show a shrunk, mislabeled window.
+  const b = playerBounds();
+  const player = DATA[state.player];
+  // Side A only ever offers Today (+ Custom below) — side B carries every
+  // historical-reference preset (Alex 2026-09-14, see PERIOD_OPTIONS_A/B).
+  const options = which === "A" ? PERIOD_OPTIONS_A : PERIOD_OPTIONS_B;
+  // Same reference point (today) for BOTH sides — see applyInlinePreset()'s
+  // comment: a preset picked here must mean exactly what its label says,
+  // not something silently offset by which side's popover it was opened from.
+  options.forEach(opt => {
+    const range = presetRangeFrom(opt.key, b.max, b.min);
+    const wrongLevel = range.from < b.min;
+    // Alex 2026-09-14: "выбор периода не может приводить к тому что
+    // 'недостаточно попыток... уточните период'. Все такие периоды должны
+    // быть задизейблены" — a preset can stay inside the current tier
+    // (passing the wrongLevel check above) and STILL land on zero attempts
+    // (e.g. "Yesterday" when nothing was played yesterday); check the real
+    // attempt count for this exact range, not just the tier boundary.
+    // "Week"/"Month" no longer get an exemption here (Alex 2026-09-15
+    // removed their own internal pager — see applyMonthOrWeek()'s own
+    // comment) — they apply a single concrete range immediately now, same
+    // as every other preset, so the same check applies the same way.
+    const noAttempts = !wrongLevel && filterByDate(player.attempts, range.from, range.to).length === 0;
+    const disabled = wrongLevel || noAttempts;
+    const btn = document.createElement("button");
+    btn.className = "opt";
+    btn.textContent = state.lang === "en" ? opt.label_en : opt.label;
+    btn.disabled = disabled;
+    // Alex 2026-09-13: "подсказку про то что сравниваются только результаты
+    // одного уровня можно приделать к задизейбленным периодам" — a hover
+    // hint explaining WHY, right on the greyed-out option, instead of a
+    // standing sentence on the page that only matters for these few cases.
+    if (wrongLevel) btn.title = t().sameLevelHint;
+    else if (noAttempts) btn.title = t().noAttemptsHint;
+    if (!disabled){
+      if (opt.key === "month" || opt.key === "week") btn.onclick = () => { applyMonthOrWeek(which, opt.key); closePopover(); };
+      else if (opt.key === "day") btn.onclick = () => { applyDefaultDay(which); closePopover(); };
+      else btn.onclick = () => { applyInlinePreset(which, opt.key); closePopover(); };
+    }
+    popover.appendChild(btn);
+  });
+  const divider = document.createElement("div");
+  divider.className = "pdivider";
+  popover.appendChild(divider);
+  const customBtn = document.createElement("button");
+  customBtn.className = "opt"; customBtn.textContent = t().customDates;
+  // stopPropagation is load-bearing here (Alex 2026-09-14: "custum day так
+  // и не работает... тупо не реагирует") — showCustomDateForm() replaces
+  // the popover's own content (popover.innerHTML = "") SYNCHRONOUSLY inside
+  // this same click, which detaches customBtn from the DOM before the click
+  // event finishes bubbling. The document-level "click outside closes the
+  // popover" listener below then sees a target that's no longer contained
+  // in the popover (because it's now an orphaned node, not because the
+  // click was actually outside) and closes the popover we just repopulated
+  // — a real event-bubbling race, reproduced by clicking through the real
+  // UI, not a guess.
+  customBtn.onclick = (e) => { e.stopPropagation(); showCustomDateForm(which); };
+  popover.appendChild(customBtn);
+
+  const r = anchorEl.getBoundingClientRect();
+  popover.style.left = Math.min(r.left, window.innerWidth - 220) + "px";
+  popover.style.top = (r.bottom + 6) + "px";
+  popover.classList.add("show");
+}
+
+document.addEventListener("click", e => {
+  if (popover.classList.contains("show") && !popover.contains(e.target) && !e.target.classList.contains("pword-inline")){
+    closePopover();
+  }
+});
+
+function pctLabel(v){ return (v>0?"+":"") + v.toFixed(1) + "%"; }
+
+// Legend merged into the narrative (Alex 2026-09-15): a single shared
+// tap-tooltip reused by both the metric name (shows the parameter-meaning
+// half) and the "мордочка" icon (shows the full legend sentence). A tap
+// tooltip rather than the native `title` attribute — this page runs inside
+// a touch-only WebView with no hover state, so `title` would never show.
+const metricTooltip = document.getElementById("metricTooltip");
+// clickEvent is optional — when given (a face tap), the anchor RECT is the
+// tapped feature's own <svg> (the whole face), not just the tapped point,
+// so the box clears the entire face and can't land on a neighbouring
+// feature; the metric-name/мордочка callers in the narrative pass no click
+// event and anchor to their own element's rect, as before.
+// Flexible above/below placement (Alex 2026-09-16: "надписи перекрывают
+// объект который они объясняют" — the old rule always clamped to
+// window-top when there wasn't room above, which is exactly what let the
+// box land ON the thing it explains; superseded here, not the earlier
+// "prefer above" rule itself, which still wins whenever it actually fits).
+// Real measured space, not a guess: place above when it fits; else below
+// when THAT fits; only when neither does (a very short viewport) pick
+// whichever side has more room and accept the smaller residual overlap —
+// height is read via offsetHeight after the real text is already in the
+// box, since length varies a lot row to row and a fixed guess would be
+// wrong about as often as it was right.
+function showMetricTooltip(anchorEl, text, clickEvent){
+  metricTooltip.textContent = text;
+  metricTooltip.hidden = false;
+  const h = metricTooltip.offsetHeight;
+  const rect = clickEvent
+    ? (anchorEl.closest("svg") || anchorEl).getBoundingClientRect()
+    : anchorEl.getBoundingClientRect();
+  const gap = 8;
+  const left = Math.max(6, Math.min(
+    clickEvent ? clickEvent.clientX : rect.left,
+    window.innerWidth - 330
+  ));
+  const spaceAbove = rect.top - gap;
+  const spaceBelow = window.innerHeight - rect.bottom - gap;
+  let top;
+  if (spaceAbove >= h) top = rect.top - h - gap;
+  else if (spaceBelow >= h) top = rect.bottom + gap;
+  else top = (spaceAbove >= spaceBelow)
+    ? Math.max(6, rect.top - h - gap)
+    : Math.min(window.innerHeight - h - 6, rect.bottom + gap);
+  metricTooltip.style.left = left + "px";
+  metricTooltip.style.top = top + "px";
+}
+document.addEventListener("click", e => {
+  if (!metricTooltip.hidden && !metricTooltip.contains(e.target) && !e.target.closest(".metric-name, .feature-icon, [data-feature]")){
+    metricTooltip.hidden = true;
+  }
+});
+
+// Chernoff-face profile (replaces buildRadar() above, 2026-09-13 — see
+// scratchpad/chernoff_full_v4.py for the full derivation/road-test history:
+// a self-referential diffScale bug on early/late, a "size only" legibility
+// complaint fixed by switching eye-openness/nose to shape/angle channels, a
+// left/right symmetry rework so each side reacts to its OWN metric
+// (early->left, late->right) via the same norm() every other feature uses
+// instead of a relative skew ratio, and a geometry-safety clamp layer so
+// amplifying the response range can't make a brow line cross into an eye).
+// CH_FEATURES/CH_SYMMETRIC is a config table on purpose (Alex 2026-09-12:
+// "чтобы в последствии было просто переназначать черты лица конкретным
+// переменным, и отдельно изменять коэффициенты для каждой из черт") —
+// reassign a feature to a different metric by changing its "metric" field;
+// change how strongly ONE feature reacts by changing its own "amp", without
+// touching any other feature.
+const CH_FAV = {}; METRICS.forEach(m => { CH_FAV[m.key] = m.favorable; });
+// earlyMode/lateMode aren't among the 9 METRICS (they're derived straight
+// from the raw errors — see modeOfSide() above), so they need their own
+// favorable-direction entries here: smaller = closer to a clean three = better.
+CH_FAV.earlyMode = "down";
+CH_FAV.lateMode = "down";
+// "down" here isn't a real value-judgment on which side you lean toward —
+// it's just the internal convention that makes chSym()'s bad=1-chNorm(...)
+// math point the right direction (higher share -> more strain on that
+// side's eye-openness). See CH_SYMMETRIC.eyeOpen below.
+CH_FAV.earlyShare = "down";
+CH_FAV.lateShare = "down";
+CH_FAV.earlyCV = "down";
+CH_FAV.lateCV = "down";
+CH_FAV.earlyTail = "down";
+CH_FAV.lateTail = "down";
+
+// Fixed, absolute theoretical scale for a metric's raw value — decided
+// 2026-09-16 for early/late: "норма" (n=0, undrawn) is the 2.500-3.500s
+// window around the 3.000s aim, and 500ms is the edge of it ("если человек
+// более-менее нормален, полсекунды он точно способен различить" — beyond
+// that the deviation reads as unambiguous, n=1, clamped). Replaces chNorm()'s
+// default RELATIVE scale (sized off whatever the two currently-compared
+// periods happen to contain) for exactly the keys listed here; every other
+// key not yet given a theoretical bound still uses the relative fallback.
+// Theoretical geometric CV of pure zero-mean Gaussian motor noise, with NO
+// systematic bias and no outliers — i.e. the ceiling for "just hand tremor,
+// nothing structured" (Alex 2026-09-16: "чистый шум это абсолютный минимум
+// т.е. экстремальное состояние черты, которое должно случаться крайне
+// редко" — confirmed as the EXTREME/n=1 end, not the neutral middle: real
+// players correct/control at least somewhat, so hitting genuine pure-noise
+// scatter should be rare). Derivation: for X = σ·|Z| (Z standard normal,
+// any σ), Var(ln X) = Var(ln|Z|) — σ drops out entirely, so this is a
+// universal constant, independent of precision level. Z² ~ χ²(1), and for a
+// χ²(k) variable Var(ln X) = trigamma(k/2); at k=1, trigamma(1/2) = π²/2,
+// so Var(ln|Z|) = π²/8, std = π/(2√2) ≈ 1.1107, and
+// GCV = (e^std − 1) × 100 ≈ 203.65%.
+const CH_GEOM_CV_PURE_NOISE = (Math.exp(Math.sqrt(Math.PI*Math.PI/8)) - 1) * 100;
+
+const CH_THEORY_MAX = {
+  early:     500, // ms
+  late:      500, // ms
+  // Same physical quantity as early/late (signed ms deviation from the
+  // 3.000s aim) — just the near-worst single miss (P3/P97) instead of the
+  // typical one — so the same 500ms "reliably distinguishable" edge applies.
+  earlyTail: 500, // ms
+  lateTail:  500, // ms
+  // modeOfSide() picks the most frequent rounded |error| on that side —
+  // still the same signed-ms-from-aim quantity, just "most common" instead
+  // of "typical"/"near-worst". Same 500ms edge.
+  earlyMode: 500, // ms
+  lateMode:  500, // ms
+  // See CH_GEOM_CV_PURE_NOISE above — same formula, gcv just isn't split by
+  // side (early+late combined).
+  earlyCV: CH_GEOM_CV_PURE_NOISE, // %
+  lateCV:  CH_GEOM_CV_PURE_NOISE, // %
+  gcv:     CH_GEOM_CV_PURE_NOISE, // %
+  // earlyShare/lateShare/focus/consist/hit/eff are all count/total ratios —
+  // bounded 0-1 (or 0-100, depending which unit metricsFor() stores them
+  // in) by construction, no theoretical DECISION needed the way early/late
+  // or the CV family needed one (Alex 2026-09-16: "если в процентах...
+  // вопрос отпадает" — true for an actual proportion, unlike CV/gcv, which
+  // are ALSO percent-valued but are a coefficient of variation, not a
+  // share). Originally left OUT of this table on the assumption that
+  // chNorm()'s relative fallback (divide by max(before,after)*1.15) would
+  // behave the same as a real fixed bound "in the typical case" — checked
+  // that live and it's WRONG: the relative fallback divides by the
+  // player's own HISTORICAL max for that metric, which is very often well
+  // under 1/100, so the same raw value reads as a much bigger fraction on
+  // the relative scale than it would on the true 0-1/0-100 scale. Added
+  // here for real, now that the gap is actually confirmed, not assumed.
+  earlyShare: 1,   // fraction, 0-1
+  lateShare:  1,   // fraction, 0-1
+  focus:      100, // %
+  consist:    100, // %
+  hit:        100, // %
+  eff:        100, // %
+};
+function chNorm(key, set_, before, after){
+  let f;
+  if (CH_THEORY_MAX[key] != null){
+    f = (set_[key]||0) / CH_THEORY_MAX[key];
+  } else {
+    const mx = Math.max(before[key]||0, after[key]||0, 1e-9) * 1.15;
+    f = (set_[key]||0) / mx;
+  }
+  if (CH_FAV[key] === "down") f = 1 - f;
+  return Math.max(0, Math.min(1, f));
+}
+function chOverall(set_, before, after){
+  const keys = Object.keys(CH_FAV);
+  return keys.reduce((s,k) => s + chNorm(k, set_, before, after), 0) / keys.length;
+}
+
+const CH_AMP = 2.2; // road-tested amplitude multiplier (Alex 2026-09-13: "сильнее меняй... расширь диапазон на 20")
+// pupilR removed from here (Alex 2026-09-14: pupils now need their OWN
+// left/right values, not one shared number — see CH_SYMMETRIC.pupil below).
+// smile moved off "__overall__" onto "lucky" directly (Alex 2026-09-14:
+// "коэфициент удачи жестко закрепляю за ртом. чем выше коэфициент тем
+// сильнеей улыбка").
+const CH_FEATURES = {
+  eyeDx:       {metric:"focus",       mode:"centered",        base:20.0, amp:11   * CH_AMP},
+  noseTilt:    {metric:"consist",     mode:"inverted_direct", base:0.0,  amp:22   * CH_AMP},
+  scaleFactor: {metric:"gcv",         mode:"centered",        base:1.0,  amp:0.30 * CH_AMP},
+  // eccFactor used to be range_span — that's now split into earlyTail/
+  // lateTail on the ears instead (Alex 2026-09-14: range_span was already
+  // computed as P3+P97, i.e. two side-specific numbers just summed together
+  // — un-summing them gives ears a real paired statistic for free, no new
+  // math invented). Head roundness picks up hit instead, freed by that move.
+  eccFactor:   {metric:"hit",         mode:"centered",        base:1.0,  amp:0.30 * CH_AMP},
+  mouthLen:    {metric:"eff",         mode:"centered",        base:20.0, amp:16   * CH_AMP},
+  smile:       {metric:"lucky",       mode:"centered",        base:0.0,  amp:44   * CH_AMP},
+};
+// Symmetric features: left half reacts to metricL, right half to metricR —
+// each independently, via the SAME chNorm() used everywhere else (not a
+// relative skew between the two) — so "how far off is early" and "how far
+// off is late" each show up on their own side of the face.
+// pupil (Alex 2026-09-14): left pupil <- earlyMode (most frequent early
+// error), right pupil <- lateMode (most frequent late error) — closer to
+// zero (a clean three) on that side = bigger pupil on that side, a POSITIVE
+// read ("bigger = better, more adapted to your own quirks" — his words).
+// mode:"div_inverse" is deliberately NOT the same linear base-bad*amp
+// formula brow/eyeOpen use — Alex explicitly asked for DIVISION ("С
+// ДЕЛЕНИЕМ!!!!"): 1/(x+eps) so a mode that's genuinely near zero produces a
+// much sharper jump in size than the same absolute improvement further from
+// zero would, instead of scaling flat. See chDivCurve() below.
+// eyeOpen reacts to earlyShare/lateShare (how OFTEN each side happens), NOT
+// early/late (how BIG it is) — that used to be the SAME pair brow uses,
+// meaning one parameter (early/late magnitude) drove two different facial
+// features at once. eyeWidth reacts to earlyCV/lateCV (Alex 2026-09-14: eye
+// width is a PAIRED feature — two eyes — so it needs its OWN paired
+// early/late statistic, not the single "hit" value it briefly had; hit is
+// a single number applied identically to both eyes, which breaks "paired
+// feature needs a paired parameter"). Four distinct statistics now cover
+// all five paired features: magnitude (brow), frequency (eyeOpen), spread
+// (eyeWidth), worst case (ears), mode (pupil) — each row in CH_LEGEND maps
+// to exactly one feature, each feature to exactly one parameter.
+// ears (new, real Chernoff-methodology feature — the original 1973 face has
+// ~18 possible parameters, ears among them, we just hadn't drawn them):
+// left ear <- earlyTail (your single worst miss caused by rushing), right
+// <- lateTail (worst miss caused by over-relaxing). "bad_direct" like brow —
+// bigger tail magnitude = worse = bigger ear (unlike pupils, where bigger
+// is deliberately the GOOD direction — ears follow the same polarity as
+// brow/eyeWidth instead: bigger/more prominent = worse control).
+const CH_SYMMETRIC = {
+  brow:     {metricL:"early",      metricR:"late",     mode:"bad_direct",  base:0.0,  amp:14  * CH_AMP},
+  eyeOpen:  {metricL:"earlyShare", metricR:"lateShare", mode:"bad_inverse", base:13.0, amp:9   * CH_AMP},
+  eyeWidth: {metricL:"earlyCV",    metricR:"lateCV",    mode:"bad_inverse", base:11.5 + 3.5*CH_AMP, amp:7 * CH_AMP},
+  ears:     {metricL:"earlyTail",  metricR:"lateTail",  mode:"bad_direct",  base:5.0,  amp:6   * CH_AMP},
+  pupil:    {metricL:"earlyMode",  metricR:"lateMode",  mode:"div_inverse", base:2.6,  amp:3.2 * CH_AMP},
+};
+// Eye-openness floor (Alex 2026-09-15: "размер зрачка а стало быть и глаза
+// надо ограничить нижним порогом... зрачок вроде расширяется но слишком
+// мелок чтобы оценить"). Pupils are STRICTLY capped at openL/R-1.5 (never
+// bigger than the eye — see chFaceGeometry below), so if the eye is allowed
+// to squint all the way down to its old floor (2.5), the pupil's own
+// natural range (2.6-9.64, from CH_SYMMETRIC.pupil above) gets crushed into
+// a sliver too small to actually see moving. Raising the floor here leaves
+// enough headroom (floor-1.5 = 6.0) for the pupil demo to stay legible even
+// at the eye's own worst squint — a bit less dramatic for eyeOpen's OWN
+// extreme, but that's the accepted trade so pupils are always readable too.
+const CH_EYE_OPEN_FLOOR = 7.5;
+// Sharpness of the pupil's division curve — smaller = more dramatic spike
+// as the mode approaches zero. Not yet visually tuned against a real
+// player's data; revisit once Alex looks at it live.
+const CH_PUPIL_DIV_EPS = 0.18;
+// Canvas-boundary safety for the head ellipse + ears (Alex 2026-09-15:
+// "мордочки сделай чуть побольше, но так чтобы даже в самом раздутом
+// состоянии они не выходили за границы своей области"). Every chFaceSvg()/
+// chApplySvgParams() call in this file uses a fixed cx=110 on the 220x220
+// viewBox (chFaceParamsAt() itself never receives cx/cy, so this hardcodes
+// that same fixed center horizontally — if a future caller ever draws a
+// face off-center, this clamp would need cx threaded through instead). cy
+// is NO LONGER fixed — see CH_HEAD_BOTTOM_Y below — but CH_CANVAS_HALF is
+// kept as the horizontal half-canvas constant since cx still uses it.
+// CH_FACE_MARGIN leaves a hairline before the actual edge so the ellipse's
+// own stroke width doesn't touch it. Found while sizing this up: the OLD
+// formula's own worst case (scaleFactor and eccFactor pushed to their
+// independent extremes at once — real, since they come from different
+// metrics) already computed a head radius of ~101 with ears out to ~119,
+// well past the 110-unit half-canvas — silently clipped by the SVG's
+// default overflow:hidden, just never large enough for it to be obvious.
+const CH_CANVAS_HALF = 110;
+const CH_FACE_MARGIN = 4;
+// Bottom (chin) edge of the head is pinned to this SAME y on every render,
+// regardless of headH — RESTORED 2026-09-18 (a same-day round-trip: briefly
+// flipped to a top-pin, see the dead-end reasoning that used to live here,
+// then reverted hard — Alex: "морда должны быть выровнены по нижнему,
+// блядь, краю... я тебе пятисотый раз уже это говорю" — bottom-alignment
+// between the two side-by-side faces is the settled, repeatedly-stated
+// rule, not up for renegotiating). The "gap above/below the head must be
+// minimal AND constant" ask that motivated the brief top-pin detour is now
+// solved a different way instead — see the dynamic square/viewBox sizing
+// in chFaceSvg()/chApplySvgParams() below, which crops each face's own
+// canvas snugly around whatever its CURRENT head actually is, rather than
+// moving the anchor. Set to the canvas's own bottom margin
+// (2*CH_CANVAS_HALF - CH_FACE_MARGIN = 216): verified analytically, at
+// headH's own ceiling (106) this reproduces cy=110 exactly, the SAME
+// center the old symmetric system used at its own worst case (safe,
+// 2026-09-15) — every smaller headH only pushes cy further DOWN, away from
+// the top edge, never closer to it.
+const CH_HEAD_BOTTOM_Y = 2*CH_CANVAS_HALF - CH_FACE_MARGIN;
+function chHeadCy(headH){ return CH_HEAD_BOTTOM_Y - headH; }
+// headH's own floor, from chFaceParamsAt's `Math.max(CH_HEAD_H_FLOOR, ...)` —
+// named just so both the clamp and any future code that needs the same
+// worst-case value can't silently drift apart via two separate "45"s.
+const CH_HEAD_H_FLOOR = 45;
+
+// Dashed "never exceeds this" square (Alex 2026-09-18: "морды ни при
+// каких условиях не должны выходить за пределы... расстояние до сторон
+// квадрата должно быть минимальным в ситуации когда морды раздуты на
+// максимум"). [CH_FACE_MARGIN, CH_HEAD_BOTTOM_Y] on BOTH axes is not a
+// guess — it's the exact worst-case bound this file's own geometry
+// clamps already enforce: headW is clamped against
+// CH_CANVAS_HALF-CH_FACE_MARGIN minus the wider ear (so head+ear extent
+// is AT MOST 106 from center each way horizontally), and headH's bottom
+// is pinned at CH_HEAD_BOTTOM_Y with its own top clamped the same way
+// vertically (see the headW/headH clamp above and CH_HEAD_BOTTOM_Y's own
+// comment) — so [4,216] is simultaneously the tightest square that could
+// ever be drawn AND one nothing can ever cross. Checked the other
+// features too, not just head+ears: eyeDx's own max (~32) plus eyeWidth's
+// own max radius (~19) only reaches cx±51 — nowhere near this square's
+// edge — and mouth/nose are already clamped to stay inside the head
+// itself (chFaceGeometry's own mouth-safety block), so head+ears really
+// is the binding constraint, not an assumption.
+const CH_FACE_SAFE_SIZE = CH_HEAD_BOTTOM_Y - CH_FACE_MARGIN; // 212 — the fixed WIDTH bound (still the worst case; only height shrinks, see below)
+
+// Per-render vertical sizing for the dashed square + its SVG canvas — shrinks
+// snugly around whatever THIS render's actual head extent is (Alex
+// 2026-09-18: "квадрат уменьшить по высоте... расстояние до низа морды
+// должно быть таким же как до верха"), instead of always reserving the
+// full worst-case CH_FACE_SAFE_SIZE height regardless of the current head.
+// Width stays the fixed worst-case bound above — only height was asked to
+// shrink.
+//
+// The square's own top edge is set to coincide EXACTLY with the head's own
+// top edge (zero gap) — generalizing the pre-existing worst-case property
+// (square and head already touched with zero slack at headH's own ceiling)
+// to every headH, not just the extreme. The square's bottom stays pinned
+// to CH_HEAD_BOTTOM_Y always, matching the head's own bottom (chHeadCy()
+// already pins that regardless of headH) — so both faces' squares (and
+// heads) keep sharing one bottom baseline no matter how their own heights
+// differ from each other. The viewBox gets the same CH_FACE_MARGIN hairline
+// buffer above the square's own (now dynamic) top that the canvas always
+// had at the true worst case, for the same reason as before: without it
+// the square's own stroke-width would render clipped against the viewBox's
+// own boundary.
+function chFaceCanvasBox(headH){
+  const headTop = CH_HEAD_BOTTOM_Y - 2 * headH;
+  const rectY = headTop;
+  const rectHeight = CH_HEAD_BOTTOM_Y - rectY; // = 2*headH
+  const viewBoxY = rectY - CH_FACE_MARGIN;
+  const viewBoxH = (2 * CH_CANVAS_HALF) - viewBoxY; // canvas BOTTOM stays fixed at 220, same as always
+  return { rectY, rectHeight, viewBoxY, viewBoxH };
+}
+
+// Invisible fat hit-targets for the three stroke-only, fill:none features
+// (brow lines, nose lines, the mouth path) — real bug, found by testing
+// live: a `fill="none"` line/path only has a clickable area on the drawn
+// stroke itself (~2-3px wide); anywhere near it but not exactly ON it
+// falls through to whatever's painted underneath, which for the WHOLE
+// interior of the face is the head ellipse's own solid fill — so tapping
+// slightly off the mouth or nose (easy to do, they're thin) actually
+// tapped "headW headEcc" and fired the head-size demo instead (Alex
+// 2026-09-16: "клик по носу или рту приводит к анимации размера лица" —
+// reproduced by clicking the exact reported spot and reading the tooltip
+// that came up: "Error Stability... the head's oval"). Each of these
+// draws a second, invisible copy of the same line/path with a much wider
+// transparent stroke (stroke="transparent" is still a "painted" value
+// under the SVG default pointer-events, unlike stroke="none" — the
+// standard trick for a generous invisible hit area) directly after its
+// visible sibling, so it's on top for hit-testing at exactly the pixels
+// the thin visible stroke doesn't cover. data-hit-overlay marks these so
+// chApplySvgParams()'s existing brows[0]/[1] etc. index-based selectors
+// (":not([data-hit-overlay])") keep matching exactly the 2 real elements
+// they always expected, not 4.
+const CH_HIT_STROKE_WIDTH = 16;
+function chHitLine(x1, y1, x2, y2, feature){
+  return `<line data-feature="${feature}" data-hit-overlay="" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width="${CH_HIT_STROKE_WIDTH}" stroke-linecap="round"/>`;
+}
+function chHitPath(d, feature){
+  return `<path data-feature="${feature}" data-hit-overlay="" d="${d}" fill="none" stroke="transparent" stroke-width="${CH_HIT_STROKE_WIDTH}" stroke-linecap="round"/>`;
+}
+function chDivCurve(badness, eps){
+  const b = Math.max(0, Math.min(1, badness));
+  const inv = 1/(b+eps) - 1/(1+eps);
+  const invMax = 1/eps - 1/(1+eps);
+  return invMax > 0 ? Math.max(0, Math.min(1, inv/invMax)) : 0;
+}
+
+function chSimpleAtN(cfg, n){
+  if (cfg.mode === "centered") return cfg.base + (n-0.5)*cfg.amp;
+  if (cfg.mode === "direct") return cfg.base + n*cfg.amp;
+  if (cfg.mode === "inverted_direct") return cfg.base + (1-n)*cfg.amp;
+}
+function chSimple(cfg, set_, before, after){
+  const n = cfg.metric === "__overall__" ? chOverall(set_, before, after) : chNorm(cfg.metric, set_, before, after);
+  return chSimpleAtN(cfg, n);
+}
+
+// chFaceParamsAt(...,override) is the one true geometry function — plain
+// rendering calls it with override=null; the legend's "show me how it
+// moves" animation (chAnimateLegend() below) calls it every frame with the
+// SAME function, override={feature:key,n} or {symmetric:["brow"],n}
+// forcing just the one metric's normalized fraction (n, 0..1) to a chosen
+// value while every other feature keeps reacting to the real data — so the
+// demo can never drift from what real data would actually draw.
+// A trait is "in the optimal zone" when its real (never-demo-overridden)
+// goodness is within this much of the best possible reading (Alex
+// 2026-09-16: "подкрашивать зеленым, когда черта находится в оптимальной
+// зоне, скажем +-5% от максимального"). chNorm() already orients every
+// metric so n=1 IS "best" (CH_FAV's up/down flip, verified against every
+// metric currently in use), so this is just n >= threshold on that same
+// scale — no per-metric direction logic needed here. Tightened top-5% ->
+// top-3% (Alex 2026-09-18: "сделай так чтобы зеленела при 3%").
+const CH_OPTIMAL_THRESHOLD = 0.97;
+
+function chFaceParamsAt(set_, before, after, override){
+  const v = {};
+  const vReal = {}; // same as v, but NEVER honors override -- see below
+  const realNByFeature = {};
+  Object.keys(CH_FEATURES).forEach(name => {
+    const cfg = CH_FEATURES[name];
+    const realN = cfg.metric === "__overall__" ? chOverall(set_, before, after) : chNorm(cfg.metric, set_, before, after);
+    const n = (override && override.feature === name) ? override.n : realN;
+    v[name] = chSimpleAtN(cfg, n);
+    vReal[name] = chSimpleAtN(cfg, realN);
+    realNByFeature[name] = realN;
+  });
+
+  const forceSym = override && override.symmetric;
+  const symBadReal = (metricSide) => 1 - chNorm(metricSide, set_, before, after);
+  // side is "L"/"R" so a seesaw demo (see chAnimateLegend) can drive each
+  // half with its OWN n instead of forcing both to the same value.
+  const symBad = (key, metricSide, side) => (forceSym && forceSym.includes(key)) ? (1 - (side === "L" ? override.nL : override.nR)) : symBadReal(metricSide);
+  const badBrowL = symBad("brow", CH_SYMMETRIC.brow.metricL, "L");
+  const badBrowR = symBad("brow", CH_SYMMETRIC.brow.metricR, "R");
+  const badEyeL = symBad("eyeOpen", CH_SYMMETRIC.eyeOpen.metricL, "L");
+  const badEyeR = symBad("eyeOpen", CH_SYMMETRIC.eyeOpen.metricR, "R");
+  const badWidthL = symBad("eyeWidth", CH_SYMMETRIC.eyeWidth.metricL, "L");
+  const badWidthR = symBad("eyeWidth", CH_SYMMETRIC.eyeWidth.metricR, "R");
+  const badPupilL = symBad("pupil", CH_SYMMETRIC.pupil.metricL, "L");
+  const badPupilR = symBad("pupil", CH_SYMMETRIC.pupil.metricR, "R");
+  const badEarL = symBad("ears", CH_SYMMETRIC.ears.metricL, "L");
+  const badEarR = symBad("ears", CH_SYMMETRIC.ears.metricR, "R");
+  const dropL_raw = CH_SYMMETRIC.brow.base + badBrowL * CH_SYMMETRIC.brow.amp;
+  const dropR_raw = CH_SYMMETRIC.brow.base + badBrowR * CH_SYMMETRIC.brow.amp;
+  let openL = CH_SYMMETRIC.eyeOpen.base - badEyeL * CH_SYMMETRIC.eyeOpen.amp;
+  let openR = CH_SYMMETRIC.eyeOpen.base - badEyeR * CH_SYMMETRIC.eyeOpen.amp;
+  openL = Math.max(CH_EYE_OPEN_FLOOR, openL); openR = Math.max(CH_EYE_OPEN_FLOOR, openR);
+  const eyeRxL_raw = CH_SYMMETRIC.eyeWidth.base - badWidthL * CH_SYMMETRIC.eyeWidth.amp;
+  const eyeRxR_raw = CH_SYMMETRIC.eyeWidth.base - badWidthR * CH_SYMMETRIC.eyeWidth.amp;
+  const pupilRadL = CH_SYMMETRIC.pupil.base + chDivCurve(badPupilL, CH_PUPIL_DIV_EPS) * CH_SYMMETRIC.pupil.amp;
+  const pupilRadR = CH_SYMMETRIC.pupil.base + chDivCurve(badPupilR, CH_PUPIL_DIV_EPS) * CH_SYMMETRIC.pupil.amp;
+  const earRadL_raw = CH_SYMMETRIC.ears.base + badEarL * CH_SYMMETRIC.ears.amp;
+  const earRadR_raw = CH_SYMMETRIC.ears.base + badEarR * CH_SYMMETRIC.ears.amp;
+
+  // Real (never-overridden) anchors — used ONLY by another feature that
+  // anatomically attaches to this one (brow sits above the eyes at the same
+  // x-offset), so demoing "Eye spacing" can't visibly drag the brow along
+  // with it and look like it controls two features at once (Alex 2026-09-14:
+  // "какой-то другой параметр регулирует сразу две черты" — real bug, found
+  // by literally diffing every row's own DOM footprint against every
+  // other row's). The feature being demoed itself still uses the LIVE
+  // (possibly overridden) value below, same as always — only the
+  // BORROWING feature's math is pinned to reality. Ears are the ONE
+  // exception to this pattern (Alex 2026-09-14: "уши должны разъезжаться-
+  // съезжаться вместе с головой") — they stay attached to the LIVE headW
+  // on purpose, so a "Head width" demo genuinely drags them along, the way
+  // real ears would move with a real head.
+  const realEyeDx = Math.max(vReal.eyeDx, 14);
+  const realOpenL = Math.max(CH_EYE_OPEN_FLOOR, CH_SYMMETRIC.eyeOpen.base - symBadReal(CH_SYMMETRIC.eyeOpen.metricL) * CH_SYMMETRIC.eyeOpen.amp);
+  const realOpenR = Math.max(CH_EYE_OPEN_FLOOR, CH_SYMMETRIC.eyeOpen.base - symBadReal(CH_SYMMETRIC.eyeOpen.metricR) * CH_SYMMETRIC.eyeOpen.amp);
+
+  // Geometry-safety clamps (not part of the config -- these always apply,
+  // independent of how CH_FEATURES/CH_SYMMETRIC get tuned, and independent
+  // of whether the values above came from real data or a forced override):
+  const eyeDx = Math.max(v.eyeDx, 14);              // eyes can't touch/cross
+  const browHalf = Math.min(14, realEyeDx * 0.6);   // brow's OWN length -- real eyeDx, not live
+  const eyeRxL = Math.min(eyeRxL_raw, eyeDx - 3);   // eye can't reach past the midline
+  const eyeRxR = Math.min(eyeRxR_raw, eyeDx - 3);
+  const dropL = Math.min(dropL_raw, Math.max(4.0, 22 - realOpenL)); // brow can't overlap the eye -- real openL
+  const dropR = Math.min(dropR_raw, Math.max(4.0, 22 - realOpenR));
+  const eccSafe = Math.max(0.3, v.eccFactor);
+  const earRadL = Math.max(2.0, Math.min(earRadL_raw, 26)); // never vanishes, never dwarfs the head
+  const earRadR = Math.max(2.0, Math.min(earRadR_raw, 26));
+  // Base multipliers raised ~10% (62->68, 82->90) for the "chuть побольше"
+  // ask, then clamped against the canvas so the bigger typical case is
+  // real but the worst-case extreme stays inside the box instead of
+  // growing the overflow further. earRadL/R already computed above -- the
+  // clamp has to know the widest ear to keep the ear tip on-canvas too,
+  // not just the ellipse itself.
+  const headWRaw = Math.max(35, 68 * v.scaleFactor / Math.sqrt(eccSafe));
+  const headHRaw = Math.max(CH_HEAD_H_FLOOR, 90 * v.scaleFactor * Math.sqrt(eccSafe));
+  const headW = Math.min(headWRaw, CH_CANVAS_HALF - CH_FACE_MARGIN - Math.max(earRadL, earRadR));
+  const headH = Math.min(headHRaw, CH_CANVAS_HALF - CH_FACE_MARGIN);
+
+  // "In the optimal zone" flags — RANK-based, not a fixed absolute bar
+  // (Alex 2026-09-18, correcting the CH_OPTIMAL_THRESHOLD version above:
+  // "все что хуже чем три топ лучших параметров остаётся как есть, все что
+  // входит зеленеет" — exactly the 3 BEST-scoring colorable features on
+  // THIS face turn green, always exactly 3 of them (never more, never
+  // fewer, regardless of how good or mediocre those 3 actually are — no
+  // floor, a purely relative top-3). CH_OPTIMAL_THRESHOLD itself is now
+  // unused for this (kept, harmless, in case an absolute bar is wanted
+  // again later).
+  //
+  // Scored ALWAYS from the REAL, un-overridden goodness (realNByFeature /
+  // chNorm(...) directly), never from the possibly-demo-forced v/symBad
+  // values above, so a legend tap that sweeps a feature to its extreme
+  // can't shuffle the ranking just because the demo momentarily forced
+  // n=1 on the feature being tapped. A shape driven by more than one
+  // metric (head: scaleFactor+eccFactor; mouth: mouthLen+lucky; each eye:
+  // eyeOpen+eyeWidth) is scored by its WEAKER metric — same "whole shape,
+  // not half of it" rule the old threshold version used, just feeding a
+  // ranking instead of a yes/no. eyeDx has no shape of its own to color
+  // (see chFaceSvg — nothing reads ink('eyeDx')), so it's left out of the
+  // ranking pool entirely; its own flag stays around unused, in case a
+  // future caller ever needs it.
+  const slotScores = {
+    noseTilt: realNByFeature.noseTilt,
+    head:     Math.min(realNByFeature.scaleFactor, realNByFeature.eccFactor),
+    mouth:    Math.min(realNByFeature.mouthLen, realNByFeature.smile),
+    browL:    chNorm(CH_SYMMETRIC.brow.metricL, set_, before, after),
+    browR:    chNorm(CH_SYMMETRIC.brow.metricR, set_, before, after),
+    eyeL:     Math.min(chNorm(CH_SYMMETRIC.eyeOpen.metricL, set_, before, after), chNorm(CH_SYMMETRIC.eyeWidth.metricL, set_, before, after)),
+    eyeR:     Math.min(chNorm(CH_SYMMETRIC.eyeOpen.metricR, set_, before, after), chNorm(CH_SYMMETRIC.eyeWidth.metricR, set_, before, after)),
+    pupilL:   chNorm(CH_SYMMETRIC.pupil.metricL, set_, before, after),
+    pupilR:   chNorm(CH_SYMMETRIC.pupil.metricR, set_, before, after),
+    earL:     chNorm(CH_SYMMETRIC.ears.metricL, set_, before, after),
+    earR:     chNorm(CH_SYMMETRIC.ears.metricR, set_, before, after),
+  };
+  const CH_OPTIMAL_TOP_N = 3;
+  const topSlots = new Set(
+    Object.keys(slotScores)
+      .sort((a, b) => slotScores[b] - slotScores[a])
+      .slice(0, CH_OPTIMAL_TOP_N)
+  );
+  const optimal = { eyeDx: realNByFeature.eyeDx >= CH_OPTIMAL_THRESHOLD };
+  Object.keys(slotScores).forEach(k => { optimal[k] = topSlots.has(k); });
+
+  return {
+    dropL, dropR, openL, openR, eyeRxL, eyeRxR, eyeDx, browHalf,
+    browDx: realEyeDx,     // brow lines' own x-anchor -- see comment above
+    noseTilt: v.noseTilt,
+    headW, headH,
+    pupilRadL, pupilRadR,
+    earRadL, earRadR,
+    mouthLen: Math.max(6, v.mouthLen),
+    smile: v.smile,
+    optimal,
+  };
+}
+function chFaceParams(set_, before, after){ return chFaceParamsAt(set_, before, after, null); }
+
+// Shared geometry math between chFaceSvg() (builds the initial markup) and
+// chApplySvgParams() (updates an already-rendered face frame-by-frame during
+// the legend animation) -- one formula, so the two can't quietly drift apart.
+function chFaceGeometry(p, cx, cy){
+  const eyeY = cy - 14, base = cy - 40;
+  // No numeric ceiling any more (Alex 2026-09-17: "если зрачок больше
+  // глаза, то его очертания ограничиваются границами глаза, т.е. целиком
+  // зрачок не показывается" -- when the pupil's true value is bigger than
+  // the eye, don't shrink the VALUE down to fit (that used to flatten
+  // every "too big" case into the same fixed-looking circle); draw it at
+  // full size and let the eye's own shape clip it visually, so an extreme
+  // value still reads as pressing against the eyelid instead of
+  // collapsing to a same-size-every-time circle. The clip lives in
+  // chFaceSvg/chApplySvgParams (a <clipPath> copy of the eye shape, kept
+  // in sync with it every frame) -- this function just hands through the
+  // real, unclamped radius.
+  const pupilL = p.pupilRadL;
+  const pupilRv = p.pupilRadR;
+  const tilt = Math.max(-75, Math.min(75, p.noseTilt)) * Math.PI/180;
+  const noseLen = 20;
+  const ntx = cx, nty = cy + 6;
+  const nbx = ntx + noseLen*Math.sin(tilt), nby = nty + noseLen*Math.cos(tilt);
+  const fx = nbx + 7*Math.cos(tilt), fy = nby - 7*Math.sin(tilt);
+
+  // Mouth geometry-safety clamps (Alex 2026-09-15: "нос не должен
+  // пересекаться со ртом, рот не должен уезжать за границы лица и выше
+  // носа"). mouthLen and smile come from their own independent metrics
+  // (eff, lucky) with no built-in awareness of the head size (gcv/hit) or
+  // nose tilt (consist) computed elsewhere in this same function — an
+  // unlucky combination of otherwise-ordinary values (a small head + a
+  // wide mouth, or a tilted nose + a deep frown) can push the mouth
+  // outside the head ellipse or up into the nose. The mouth's corners sit
+  // at a FIXED y (mouthBaseY below); its curve's peak/trough swing up to
+  // ±smile/2 from there. Clamped here, once, using the REAL nose/head
+  // numbers already computed above (nby/fy/p.headW/p.headH) — so this
+  // reacts correctly even mid-demo, when the legend is animating a
+  // DIFFERENT feature (e.g. sweeping "Nose tilt" while the mouth sits at
+  // its real, non-demoed smile) — same "always live" reasoning the
+  // eyeDx/dropL/eyeRxL clamps above already use for anatomically-attached
+  // features, just applied to a genuine physical collision instead of a
+  // shared-config one. Same approach, same tradeoff already accepted for
+  // CH_EYE_OPEN_FLOOR: a bit less range at the extreme so nothing overlaps.
+  const mouthBaseY = 40;
+  const MOUTH_FACE_MARGIN = 3;   // clearance from the head's own outline
+  const MOUTH_NOSE_GAP = 6;      // clearance from the nose's lowest point
+  // (a) corners can't reach past the sides of the head at mouth height —
+  // fit inside the head ellipse at y=mouthBaseY (headH has its own floor
+  // of 45 elsewhere, always > mouthBaseY, so this never divides by ~0).
+  const headHSafe = Math.max(p.headH, mouthBaseY + 5);
+  const ellipseFrac = Math.max(0, 1 - (mouthBaseY*mouthBaseY)/(headHSafe*headHSafe));
+  const maxHalfWidth = Math.max(4, p.headW * Math.sqrt(ellipseFrac) - MOUTH_FACE_MARGIN);
+  const mouthLen = Math.min(p.mouthLen, maxHalfWidth * 2);
+  // (b) curve can't dip below the chin when smiling big (smile > 0 moves
+  // the midpoint DOWN, below the fixed corners — see chFaceParamsAt's own
+  // comment on the smile sign convention).
+  const maxSmileDown = Math.max(0, 2 * (p.headH - MOUTH_FACE_MARGIN - mouthBaseY));
+  // (c) curve can't rise up into the nose when frowning hard (smile < 0
+  // moves the midpoint UP, toward the fixed corners and past them) — use
+  // the nose's own deepest reach, whichever of its two segments sits
+  // lowest (that flips with tilt sign, see the nose-tilt geometry above).
+  const noseBottomOffset = Math.max(nby, fy) - cy;
+  const minSmileUp = 2 * (noseBottomOffset + MOUTH_NOSE_GAP - mouthBaseY);
+  const smile = Math.max(minSmileUp, Math.min(maxSmileDown, p.smile));
+
+  return {eyeY, base, pupilL, pupilRv, ntx, nty, nbx, nby, fx, fy, mouthBaseY, mouthLen, smile};
+}
+
+// "Laughing eye" shape for the optimal-zone highlight (Alex 2026-09-16,
+// picked option "E" from a 3-way mockup: crescent close to the original "D"
+// reference — level corners, mostly-flat bottom, but the outline itself
+// FLICKS upward right at each tip, rather than raising the whole corner
+// level (that was the rejected middle attempt) or a full symmetric lens
+// (the first, over-full attempt)).
+//
+// Built from two CUBIC segments for the top edge (meeting at the peak,
+// (cx, cy-ry) — each one starts at its own corner and curves up with an
+// early "hook" tangent) plus one QUADRATIC for the shallow bottom edge.
+// Corners sit at plain `cy` (not raised) — the "smiling" read comes purely
+// from the hook tangent near each tip, matching "не уровень поднимать, а
+// изгибать" (bend the stroke, don't raise the baseline).
+//
+// True vertical center, closed-form (verified against Python's own min/max-
+// of-sampled-points check before landing on this, not assumed): the top
+// edge's peak is exactly cy-ry (the two cubics' shared meeting point, and
+// neither cubic overshoots past it since its control point sits closer to
+// the corner than the endpoint does); the bottom edge never dips below the
+// corners' own `cy` (it only bulges partway UP from them, by construction —
+// same direction as the top, just shallower), so the shape's bottommost
+// point is `cy` itself, at the two corner tips. True center = (cy-ry + cy)/2
+// = cy - ry/2 — this is where the pupil has to sit, per Alex's correction
+// ("центр это от края до края по вертикали... зрачок должен быть там"),
+// not at the original `cy` the plain ellipse used.
+const CH_EYE_HOOK_FRAC = 14/45; // tip-flick magnitude, relative to ry (from the approved mockup)
+const CH_EYE_BOT_BULGE_FRAC = 0.25; // how far the shallow bottom edge bulges up from the corners, relative to ry
+function chEyePupilCenterY(cy, ry){ return cy - ry / 2; }
+function chEyeLensPath(cx, cy, rx, ry){
+  const hook = CH_EYE_HOOK_FRAC * ry;
+  const topPeakY = (cy - ry).toFixed(1);
+  const topMidCtrlY = (cy - hook - ry * 0.3).toFixed(1);
+  const left = (cx - rx).toFixed(1), right = (cx + rx).toFixed(1);
+  const cyf = cy.toFixed(1), cxf = cx.toFixed(1);
+  const leftMidX = (cx - rx * 0.6).toFixed(1), leftPeakX = (cx - rx * 0.3).toFixed(1);
+  const rightMidX = (cx + rx * 0.6).toFixed(1), rightPeakX = (cx + rx * 0.3).toFixed(1);
+  const botCtrlY = (cy - CH_EYE_BOT_BULGE_FRAC * ry).toFixed(1);
+  return `M ${left} ${cyf} C ${leftMidX} ${topMidCtrlY}, ${leftPeakX} ${topPeakY}, ${cxf} ${topPeakY} `
+       + `C ${rightPeakX} ${topPeakY}, ${rightMidX} ${topMidCtrlY}, ${right} ${cyf} `
+       + `Q ${cxf} ${botCtrlY} ${left} ${cyf} Z`;
+}
+
+function chFaceSvg(p, cx, faceId){
+  const cy = chHeadCy(p.headH);
+  const box = chFaceCanvasBox(p.headH);
+  const {eyeY, base, pupilL, pupilRv, ntx, nty, nbx, nby, fx, fy, mouthBaseY, mouthLen, smile} = chFaceGeometry(p, cx, cy);
+  const bh = p.browHalf;
+  const my = cy + mouthBaseY;
+  // Green outline/fill when a trait's real data sits in its optimal zone
+  // (p.optimal, see chFaceParamsAt — Alex 2026-09-16). p.optimal is ALWAYS
+  // built from the REAL, never-demo-overridden goodness (chFaceParamsAt
+  // computes it from realNByFeature/chNorm(...) directly, ignoring
+  // `override`) — so it's present here AND on the `p` chAnimateLegend()
+  // builds mid-sweep, but chApplySvgParams() (used during that sweep) never
+  // touches stroke/fill at all, only position/size — so a legend demo that
+  // forces a feature to n=1 moves/resizes the shape without recoloring it,
+  // and the color stays correctly anchored to the real data throughout.
+  const ink = key => (p.optimal && p.optimal[key]) ? "var(--good)" : "var(--text-primary)";
+  // Optimal eyes get the sharp-cornered "lens" shape (chEyeLensPath) instead
+  // of the plain ellipse — same rx/ry, so nothing downstream (the pupil
+  // clip, chApplySvgParams' size updates below) needs to change, just the outline.
+  const eyeShape = (side, cxEye, rxV, ryV) => (p.optimal && p.optimal[side])
+    ? `<path data-feature="eyeWidth eyeOpen eyeDx" data-eye-rx="${rxV.toFixed(1)}" data-eye-ry="${ryV.toFixed(1)}" d="${chEyeLensPath(cxEye, eyeY, rxV, ryV)}" fill="#fff" stroke="${ink(side)}" stroke-width="2.2" stroke-linejoin="miter"/>`
+    : `<ellipse data-feature="eyeWidth eyeOpen eyeDx" cx="${cxEye.toFixed(1)}" cy="${eyeY}" rx="${rxV.toFixed(1)}" ry="${ryV.toFixed(1)}" fill="#fff" stroke="${ink(side)}" stroke-width="2.2"/>`;
+  // data-feature tokens let the legend's tap-to-animate (chAnimateLegend()
+  // below) find the right element(s) — some elements carry more than one
+  // token because they're the SAME geometry two different config entries
+  // drive (e.g. one <ellipse> has both rx from "eyeWidth" and ry from "eyeOpen").
+  // Un-stroked, un-filled copy of the same outline, used only as a
+  // <clipPath> so an oversized pupil (see chFaceGeometry -- no more radius
+  // clamp) gets visually cut off at the eyelid instead of shrunk to fit
+  // (Alex 2026-09-17). data-clip-eye lets chApplySvgParams() resize these
+  // in place during the legend's demo sweep, same as the visible eye
+  // shape itself. IDs carry faceId because this page shows two faces
+  // (before/after) at once, in the same document -- unqualified ids would
+  // collide and one face's pupils would clip against the OTHER face's eyes.
+  const eyeClipShape = (tag, side, cxEye, rxV, ryV) => (p.optimal && p.optimal[side])
+    ? `<path data-clip-eye="${tag}" d="${chEyeLensPath(cxEye, eyeY, rxV, ryV)}"/>`
+    : `<ellipse data-clip-eye="${tag}" cx="${cxEye.toFixed(1)}" cy="${eyeY}" rx="${rxV.toFixed(1)}" ry="${ryV.toFixed(1)}"/>`;
+  const clipIdL = `chEyeClipL-${faceId}`, clipIdR = `chEyeClipR-${faceId}`;
+  const browLX1 = (cx-p.browDx-bh).toFixed(1), browLY1 = base.toFixed(1), browLX2 = (cx-p.browDx+bh).toFixed(1), browLY2 = (base+p.dropL).toFixed(1);
+  const browRX1 = (cx+p.browDx-bh).toFixed(1), browRY1 = (base+p.dropR).toFixed(1), browRX2 = (cx+p.browDx+bh).toFixed(1), browRY2 = base.toFixed(1);
+  const noseBX2 = nbx.toFixed(1), noseBY2 = nby.toFixed(1);
+  const mouthD = `M ${(cx-mouthLen/2).toFixed(1)} ${my} Q ${cx} ${(my+smile).toFixed(1)} ${(cx+mouthLen/2).toFixed(1)} ${my}`;
+  return `<svg viewBox="0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}" style="width:100%; height:auto; display:block;">
+    <defs>
+      <clipPath id="${clipIdL}">${eyeClipShape("L", "eyeL", cx-p.eyeDx, p.eyeRxL, p.openL)}</clipPath>
+      <clipPath id="${clipIdR}">${eyeClipShape("R", "eyeR", cx+p.eyeDx, p.eyeRxR, p.openR)}</clipPath>
+    </defs>
+    <rect x="${CH_FACE_MARGIN}" y="${box.rectY.toFixed(1)}" width="${CH_FACE_SAFE_SIZE}" height="${box.rectHeight.toFixed(1)}" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3" pointer-events="none"/>
+    <circle data-feature="ears" cx="${(cx-p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadL.toFixed(1)}" fill="var(--surface)" stroke="${ink('earL')}" stroke-width="2"/>
+    <circle data-feature="ears" cx="${(cx+p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadR.toFixed(1)}" fill="var(--surface)" stroke="${ink('earR')}" stroke-width="2"/>
+    <ellipse data-feature="headW headEcc" cx="${cx}" cy="${cy}" rx="${p.headW.toFixed(1)}" ry="${p.headH.toFixed(1)}" fill="var(--surface)" stroke="${ink('head')}" stroke-width="3"/>
+    <line data-feature="brow" x1="${browLX1}" y1="${browLY1}" x2="${browLX2}" y2="${browLY2}" stroke="${ink('browL')}" stroke-width="3.4" stroke-linecap="round"/>
+    ${chHitLine(browLX1, browLY1, browLX2, browLY2, "brow")}
+    <line data-feature="brow" x1="${browRX1}" y1="${browRY1}" x2="${browRX2}" y2="${browRY2}" stroke="${ink('browR')}" stroke-width="3.4" stroke-linecap="round"/>
+    ${chHitLine(browRX1, browRY1, browRX2, browRY2, "brow")}
+    ${eyeShape('eyeL', cx-p.eyeDx, p.eyeRxL, p.openL)}
+    ${eyeShape('eyeR', cx+p.eyeDx, p.eyeRxR, p.openR)}
+    <circle data-feature="pupilR" clip-path="url(#${clipIdL})" cx="${(cx-p.eyeDx).toFixed(1)}" cy="${(p.optimal && p.optimal.eyeL ? chEyePupilCenterY(eyeY, p.openL) : eyeY).toFixed(1)}" r="${pupilL.toFixed(1)}" fill="${ink('pupilL')}"/>
+    <circle data-feature="pupilR" clip-path="url(#${clipIdR})" cx="${(cx+p.eyeDx).toFixed(1)}" cy="${(p.optimal && p.optimal.eyeR ? chEyePupilCenterY(eyeY, p.openR) : eyeY).toFixed(1)}" r="${pupilRv.toFixed(1)}" fill="${ink('pupilR')}"/>
+    <line data-feature="noseTilt" x1="${ntx}" y1="${nty}" x2="${nbx.toFixed(1)}" y2="${nby.toFixed(1)}" stroke="${ink('noseTilt')}" stroke-width="2" stroke-linecap="round"/>
+    ${chHitLine(ntx, nty, noseBX2, noseBY2, "noseTilt")}
+    <line data-feature="noseTilt" x1="${nbx.toFixed(1)}" y1="${nby.toFixed(1)}" x2="${fx.toFixed(1)}" y2="${fy.toFixed(1)}" stroke="${ink('noseTilt')}" stroke-width="2" stroke-linecap="round"/>
+    ${chHitLine(noseBX2, noseBY2, fx.toFixed(1), fy.toFixed(1), "noseTilt")}
+    <path data-feature="mouthLen smile" data-cx="${cx}" data-y="${my}" data-mouth-len="${mouthLen.toFixed(1)}" data-smile="${smile.toFixed(1)}" d="${mouthD}" fill="none" stroke="${ink('mouth')}" stroke-width="3.2" stroke-linecap="round"/>
+    ${chHitPath(mouthD, "mouthLen smile")}
+  </svg>`;
+}
+
+// "How to read" legend text — plain, concrete, edited pass (Alex 2026-09-12:
+// "отредактируй все неполные формулировки, пройдись в роли редактора") —
+// row 5 (head width) and row 6 (head proportion) are deliberately worded to
+// NOT sound like the same thing despite both being spread-of-error metrics
+// (gcv/range_span), and row 1 doesn't overclaim "half the face" when only
+// the eye+brow actually move. "feature" is the data-feature token(s) tapping
+// this row highlights on the faces; "metricKeys" resolves to the SAME
+// labels METRICS/narrate()/the table already use (Alex 2026-09-13: "дополни
+// раздел с названием черты лица названием характеристики, которую эта черта
+// кодирует") — pulled live, not retyped, so it can't drift out of sync.
+// Every desc is now a two-sided "the more X, the more this feature does A;
+// the less X, the more it does B" statement (Alex 2026-09-14: "каждая
+// объяснялка... содержит фразу типа чем больше показатель X тем черта Y
+// более такая то, чем меньше X тем больше черта такая то"), and "anim"
+// (below) drives the matching demo: tapping the row sweeps the ACTUAL
+// feature across its real full range (high extreme -> low extreme -> back
+// to the real value) directly on both faces, replacing the older static
+// directional-arrow overlay (Alex: "показывать как это работает не
+// стрелочками а изменениями в самом лице") — see chAnimateLegend() below.
+// "anim.feature" names a CH_FEATURES key (the demo forces just that one
+// metric's fraction, every other feature stays on the real data); row 0 is
+// the one exception — early/late drive TWO features (brow + eye-openness)
+// together, so it uses "anim.symmetric" instead to sweep both at once.
+// Editorial pass (Alex 2026-09-13: "пройдись с редакторской правкой по всем
+// определениям черт лица") — three concrete fixes, not just a polish:
+// (1) pupil/"lucky" was ambiguous ("luckier attempts" doesn't say luckier
+//     WHAT) — now states plainly what the Luck Coefficient actually is: your
+//     result vs. what pure chance alone would produce;
+// (2) nose/"consist" and head-proportion/"range_span" were describing
+//     something close to but NOT what those two metrics actually measure —
+//     reworded to match the real definitions already used in narrate()'s
+//     own PHRASES text above (feedback use between attempts; spread of your
+//     biggest misses specifically, not "best vs worst attempt");
+// (3) "wider EYES OPEN" on the hit-rate row used the same word ("open") as
+//     the separate squint/openness row right above it — reworded to avoid
+//     implying they're the same dimension.
+const CH_LEGEND = {
+  ru: [
+    {feature:"brow",             anim:{symmetric:["brow"]},    name:"Наклон брови (Л/П)",              metricKeys:["early","late"], desc:"Чаще жмёшь СТОП раньше цели — тем сильнее нахмурена бровь слева; чаще позже цели — тем сильнее справа. Реже и то, и другое — обе брови ровнее, лицо симметричнее.",
+      paramTextByKey:{early:"Показывает, как часто ты жмёшь СТОП раньше цели.", late:"Показывает, как часто ты жмёшь СТОП позже цели."},
+      featureTextByKey:{early:"Чем чаще, тем сильнее нахмурена бровь слева; чем реже — обе брови ровнее.", late:"Чем чаще, тем сильнее нахмурена бровь справа; чем реже — обе брови ровнее."}},
+    {feature:"eyeOpen",          anim:{symmetric:["eyeOpen"]}, name:"Прищур глаза (Л/П)",              metricKeys:["earlyShare","lateShare"], desc:"Если ты чаще торопишься (раньше цели), чем опаздываешь, левый глаз чуть прищурен — привычка от повторения; если чаще опаздываешь, прищурен правый. Если и то, и другое случается примерно поровну, оба глаза одинаково открыты.",
+      paramTextByKey:{earlyShare:"Показывает, как часто (а не насколько сильно) ты торопишься и жмёшь СТОП раньше цели.", lateShare:"Показывает, как часто (а не насколько сильно) ты опаздываешь и жмёшь СТОП позже цели."},
+      featureTextByKey:{earlyShare:"Если чаще торопишься, левый глаз чуть прищурен; если примерно поровну — оба глаза одинаково открыты.", lateShare:"Если чаще опаздываешь, прищурен правый глаз; если примерно поровну — оба глаза одинаково открыты."}},
+    {feature:"eyeWidth eyeOpen", anim:{symmetric:["eyeWidth"]}, name:"Ширина глаз (Л/П)",             metricKeys:["earlyCV","lateCV"], desc:"Насколько РОВНО (не насколько сильно) ты промахиваешься в каждую сторону — отдельно для раннего старта и отдельно для позднего. Чем стабильнее по размеру твои ранние ошибки, тем шире левый глаз; чем стабильнее поздние — тем шире правый. Нестабильность именно с одной стороны — признак, что в этом режиме (спешка или расслабленность) тебе не хватает контроля, даже если сами ошибки не самые крупные.",
+      paramTextByKey:{earlyCV:"Показывает, насколько ровно (не насколько сильно) ты промахиваешься, когда торопишься.", lateCV:"Показывает, насколько ровно (не насколько сильно) ты промахиваешься, когда расслабляешься."},
+      featureTextByKey:{earlyCV:"Чем стабильнее по размеру твои ранние ошибки, тем шире левый глаз.", lateCV:"Чем стабильнее поздние ошибки, тем шире правый глаз."}},
+    {feature:"eyeDx eyeWidth eyeOpen", anim:{feature:"eyeDx"}, name:"Расстояние между глазами",        metricKeys:["focus"],         desc:"Чем реже колебания между перевозбуждением и заторможенностью, тем ближе посажены глаза; чем чаще, тем дальше друг от друга.",
+      paramText:"Показывает, как часто ты колеблешься между перевозбуждением и заторможенностью.",
+      featureText:"Чем реже колебания, тем ближе посажены глаза; чем чаще, тем дальше друг от друга."},
+    {feature:"noseTilt",         anim:{feature:"noseTilt"},   name:"Наклон носа",                     metricKeys:["consist"],       desc:"Чем чаще ты используешь результат прошлой попытки, чтобы точнее настроиться на следующую, тем прямее нос; чем реже, тем сильнее наклон.",
+      paramText:"Показывает, как часто ты используешь результат прошлой попытки, чтобы точнее настроиться на следующую.",
+      featureText:"Чем чаще, тем прямее нос; чем реже, тем сильнее наклон."},
+    {feature:"headW headEcc",    anim:{feature:"scaleFactor"}, name:"Ширина головы",                  metricKeys:["gcv"],           desc:"Чем предсказуемее размер твоих ошибок за период, тем шире овал головы; чем менее предсказуем, тем уже.",
+      paramText:"Показывает, насколько предсказуем размер твоих ошибок за период.",
+      featureText:"Чем предсказуемее, тем шире овал головы; чем менее предсказуем, тем уже."},
+    {feature:"headW headEcc",    anim:{feature:"eccFactor"},  name:"Пропорция головы (округлость)",   metricKeys:["hit"],           desc:"Чем чаще точные тройки, тем ближе форма головы к ровному кругу; чем реже, тем более вытянутый овал.",
+      paramText:"Показывает, как часто ты попадаешь точно в тройку.",
+      featureText:"Чем чаще, тем ближе форма головы к ровному кругу; чем реже, тем более вытянутый овал."},
+    {feature:"ears",             anim:{symmetric:["ears"]},   name:"Уши (Л/П)",                       metricKeys:["earlyTail","lateTail"], desc:"Величина твоего САМОГО КРУПНОГО промаха за период — отдельно того, что случился именно из-за спешки, и отдельно того, что случился именно из-за чрезмерного расслабления. Чем крупнее такой худший случай слева (от спешки), тем крупнее левое ухо; чем крупнее справа (от расслабления) — тем крупнее правое. Аккуратные уши — значит, ты держишь контроль даже в свой самый сорванный момент.",
+      paramTextByKey:{earlyTail:"Показывает величину твоего самого крупного промаха именно из-за спешки.", lateTail:"Показывает величину твоего самого крупного промаха именно из-за чрезмерного расслабления."},
+      featureTextByKey:{earlyTail:"Чем крупнее такой худший случай, тем крупнее левое ухо.", lateTail:"Чем крупнее такой худший случай, тем крупнее правое ухо."}},
+    {feature:"pupilR",           anim:{symmetric:["pupil"]},  name:"Размер зрачков (Л/П)",            metricKeys:["earlyMode","lateMode"], desc:"Левый зрачок реагирует на твою самую частую РАННЮЮ ошибку, правый — на самую частую ПОЗДНЮЮ. Чем ближе эта мода к нулю (к чистой тройке), тем крупнее соответствующий зрачок — это хороший знак, значит ты подстроился под свою особенность; чем дальше мода от нуля, тем зрачок мельче.",
+      paramTextByKey:{earlyMode:"Показывает твою самую частую раннюю ошибку — насколько близко она к чистой тройке.", lateMode:"Показывает твою самую частую позднюю ошибку — насколько близко она к чистой тройке."},
+      featureTextByKey:{earlyMode:"Чем ближе эта мода к нулю, тем крупнее левый зрачок.", lateMode:"Чем ближе эта мода к нулю, тем крупнее правый зрачок."}},
+    {feature:"mouthLen smile",   anim:{feature:"mouthLen"},   name:"Длина рта",                       metricKeys:["eff"],           desc:"Чем быстрее со временем растёт точность, тем шире рот; чем медленнее прогресс, тем рот короче.",
+      paramText:"Показывает, как быстро со временем растёт твоя точность.",
+      featureText:"Чем быстрее прогресс, тем шире рот; чем медленнее, тем рот короче."},
+    {feature:"mouthLen smile",   anim:{feature:"smile"},      name:"Изгиб рта",                       metricKeys:["lucky"],         desc:"Коэффициент удачи показывает, насколько твой результат лучше, чем дало бы случайное совпадение. Чем он выше, тем ближе рот к улыбке; чем ниже, тем сильнее уголки опускаются вниз.",
+      paramText:"Показывает, насколько твой результат лучше, чем дало бы случайное совпадение.",
+      featureText:"Чем он выше, тем ближе рот к улыбке; чем ниже, тем сильнее уголки опускаются вниз."},
+  ],
+  en: [
+    {feature:"brow",             anim:{symmetric:["brow"]},    name:"Brow tilt (L/R)",                 metricKeys:["early","late"], desc:"Press STOP too early more often and the left brow furrows more; too late more often and it's the right brow. Do both less often and both brows sit level — the face reads more symmetric.",
+      paramTextByKey:{early:"Shows how often you press STOP too early.", late:"Shows how often you press STOP too late."},
+      featureTextByKey:{early:"The more often, the more the left brow furrows; the less often, the more level both brows sit.", late:"The more often, the more the right brow furrows; the less often, the more level both brows sit."}},
+    {feature:"eyeOpen",          anim:{symmetric:["eyeOpen"]}, name:"Eye squint (L/R)",                metricKeys:["earlyShare","lateShare"], desc:"If you rush (early) more often than you lag (late), the left eye sits a bit more squinted — a habit from repetition; if you lag more often, it's the right eye. If both happen about equally, both eyes stay equally open.",
+      paramTextByKey:{earlyShare:"Shows how often (not how much) you rush and press STOP too early.", lateShare:"Shows how often (not how much) you lag and press STOP too late."},
+      featureTextByKey:{earlyShare:"If you rush more often, the left eye sits more squinted; if it's about equal, both eyes stay equally open.", lateShare:"If you lag more often, the right eye sits more squinted; if it's about equal, both eyes stay equally open."}},
+    {feature:"eyeWidth eyeOpen", anim:{symmetric:["eyeWidth"]}, name:"Eye width (L/R)",               metricKeys:["earlyCV","lateCV"], desc:"How EVENLY (not how much) you miss on each side — separately for early starts and late ones. The more stable your early errors are in size, the wider the left eye; the more stable your late ones, the wider the right. Instability on just one side is a sign that THAT mode (rushing or relaxing) is where you're short on control, even when the misses themselves aren't huge.",
+      paramTextByKey:{earlyCV:"Shows how evenly (not how much) you miss when you're rushing.", lateCV:"Shows how evenly (not how much) you miss when you're relaxing."},
+      featureTextByKey:{earlyCV:"The more stable your early errors are in size, the wider the left eye.", lateCV:"The more stable your late errors are in size, the wider the right eye."}},
+    {feature:"eyeDx eyeWidth eyeOpen", anim:{feature:"eyeDx"}, name:"Eye spacing",                    metricKeys:["focus"],         desc:"The less you swing between overexcitement and sluggishness, the closer the eyes sit; the more you swing, the farther apart they move.",
+      paramText:"Shows how often you swing between overexcitement and sluggishness.",
+      featureText:"The less you swing, the closer the eyes sit; the more you swing, the farther apart they move."},
+    {feature:"noseTilt",         anim:{feature:"noseTilt"},   name:"Nose tilt",                       metricKeys:["consist"],       desc:"The more often you use the previous attempt's result to adjust the next one, the straighter the nose; the less often, the more it tilts.",
+      paramText:"Shows how often you use the previous attempt's result to adjust the next one.",
+      featureText:"The more often, the straighter the nose; the less often, the more it tilts."},
+    {feature:"headW headEcc",    anim:{feature:"scaleFactor"}, name:"Head width",                     metricKeys:["gcv"],           desc:"The more predictable the size of your errors for the period, the wider the head's oval; the less predictable, the narrower it gets.",
+      paramText:"Shows how predictable the size of your errors is for the period.",
+      featureText:"The more predictable, the wider the head's oval; the less predictable, the narrower it gets."},
+    {feature:"headW headEcc",    anim:{feature:"eccFactor"},  name:"Head proportion (roundness)",     metricKeys:["hit"],           desc:"The more often you land a clean three, the closer the head shape is to a perfect circle; the less often, the more elongated the oval.",
+      paramText:"Shows how often you land a clean three.",
+      featureText:"The more often, the closer the head shape is to a perfect circle; the less often, the more elongated the oval."},
+    {feature:"ears",             anim:{symmetric:["ears"]},   name:"Ears (L/R)",                      metricKeys:["earlyTail","lateTail"], desc:"The size of your single WORST miss for the period — separately for the one caused by rushing and the one caused by over-relaxing. The bigger that worst case is on the left (from rushing), the bigger the left ear; the bigger it is on the right (from over-relaxing), the bigger the right ear. Neat, small ears mean you hold control even at your worst moment.",
+      paramTextByKey:{earlyTail:"Shows the size of your single worst miss caused specifically by rushing.", lateTail:"Shows the size of your single worst miss caused specifically by over-relaxing."},
+      featureTextByKey:{earlyTail:"The bigger that worst case, the bigger the left ear.", lateTail:"The bigger that worst case, the bigger the right ear."}},
+    {feature:"pupilR",           anim:{symmetric:["pupil"]},  name:"Pupil size (L/R)",                metricKeys:["earlyMode","lateMode"], desc:"The left pupil reacts to your most frequent EARLY mistake, the right to your most frequent LATE one. The closer that mode is to zero (a clean three), the bigger that pupil — bigger is a good sign, it means you've adapted to your own tendency; the farther from zero, the smaller it gets.",
+      paramTextByKey:{earlyMode:"Shows your most frequent early mistake — how close it sits to a clean three.", lateMode:"Shows your most frequent late mistake — how close it sits to a clean three."},
+      featureTextByKey:{earlyMode:"The closer that mode is to zero, the bigger the left pupil.", lateMode:"The closer that mode is to zero, the bigger the right pupil."}},
+    {feature:"mouthLen smile",   anim:{feature:"mouthLen"},   name:"Mouth length",                    metricKeys:["eff"],           desc:"The faster your accuracy improves over time, the wider the mouth; the slower the progress, the shorter it gets.",
+      paramText:"Shows how fast your accuracy improves over time.",
+      featureText:"The faster the progress, the wider the mouth; the slower it is, the shorter the mouth gets."},
+    {feature:"mouthLen smile",   anim:{feature:"smile"},      name:"Mouth curve",                     metricKeys:["lucky"],         desc:"The Luck Coefficient shows how much better your result is than pure chance would produce. The higher it is, the closer the mouth is to a smile; the lower, the more the corners turn down.",
+      paramText:"Shows how much better your result is than pure chance would produce.",
+      featureText:"The higher it is, the closer the mouth is to a smile; the lower, the more the corners turn down."},
+  ],
+};
+
+// earlyMode/lateMode aren't in METRICS (see CH_FAV comment above) — they
+// need their own display names here instead of falling through to the raw
+// key string.
+const CH_EXTRA_LABELS = {
+  earlyMode:  {ru:"Мода ранних ошибок", en:"Mode of early misses"},
+  lateMode:   {ru:"Мода поздних ошибок", en:"Mode of late misses"},
+  earlyShare: {ru:"Как часто рано", en:"How often early"},
+  lateShare:  {ru:"Как часто поздно", en:"How often late"},
+  earlyCV:    {ru:"Разброс ранних ошибок", en:"Spread of early misses"},
+  lateCV:     {ru:"Разброс поздних ошибок", en:"Spread of late misses"},
+  earlyTail:  {ru:"Худший ранний промах", en:"Worst early miss"},
+  lateTail:   {ru:"Худший поздний промах", en:"Worst late miss"},
+};
+// These 8 don't live in METRICS (that array is "the 9 measures" and drives
+// narrate()'s prose, which stays scoped to the original 9) — but they DO
+// need their own rows in the data table, or the legend explains facial
+// features the table has no record of at all (Alex 2026-09-14: "как без
+// таблицы пользователь поймет что значит эта черта?"). Built FROM
+// CH_EXTRA_LABELS + CH_FAV instead of retyped, so the two can't drift apart.
+const CH_EXTRA_METRICS = Object.keys(CH_EXTRA_LABELS).map(key => ({
+  key, label: CH_EXTRA_LABELS[key].ru, label_en: CH_EXTRA_LABELS[key].en, favorable: CH_FAV[key],
+}));
+// labelBefore/labelAfter are the SAME relative-period strings ("yesterday",
+// "about a week ago"...) already shown in the ptag sentence above — Alex
+// 2026-09-13: "убрать before и after, указать конкретные периоды типа вчера
+// и сегодня" — generic Before/After didn't say WHICH periods were being
+// compared. Now each face-label IS the period picker itself (Alex
+// 2026-09-13: "переключатели периодов спусти под лица. под левое то что
+// сравниваем, под правое то с чем сравниваем") — replaces the old single
+// sentence above the faces. Order: LEFT is always the period being examined
+// ("after"/current — data-which="A"), RIGHT is always the reference it's
+// compared against ("before" — data-which="B"), fixed regardless of which
+// one is chronologically earlier. wireFaces() (below) attaches the actual
+// click handlers after this HTML is inserted.
+// scaleMax is a FIXED per-metric ceiling (this player's own historical max,
+// see render()) — Alex 2026-09-14, real bug found: each face used to be
+// normalized against the OTHER currently-selected period (chFaceParams(set,
+// beforeSet, afterSet) for BOTH), so picking a different comparison period
+// visibly shifted the "current" face even though its own data never
+// changed — "выбор периода сравнения не может изменять текущего лица" was
+// exactly backwards from what it looked like: the CURRENT face WAS
+// changing, just because the scale it was drawn against moved under it.
+// Both faces now normalize against the SAME stable scaleMax instead, so
+// each one depends only on its own period's data — picking a different
+// period on one side can no longer move the other side at all.
+// Persistent ‹› pager flanking a face's own label (Alex 2026-09-15: "сделай
+// листалку недель и месяцов для второй морды" — the popover's own showWeekPicker()/
+// showMonthPicker() already had working ‹›arrows, but only after two taps
+// (label → "Week"/"Month" in the menu → then the arrows); this exposes the
+// same step logic directly on the label itself once a week/month is already
+// selected, so paging through history doesn't need reopening the popover
+// each time). Only rendered when that side's current selection actually IS
+// a week or month (state.aSel/bSel.type) — a "Today" or "Custom" selection
+// has no natural "next" to step to, so no arrows show for those.
+function periodNavArrow(which, dir){
+  const sel = which === "A" ? state.aSel : state.bSel;
+  if (!sel || (sel.type !== "week" && sel.type !== "month" && sel.type !== "day")) return "";
+  const b = playerBounds();
+  const to = which === "A" ? state.aTo : state.bTo;
+  let disabled, emptyCandidate = false;
+  if (sel.type === "week"){
+    disabled = dir < 0 ? daysAgoDate(to, 13) < b.min : to >= b.max;
+    if (!disabled){
+      let end = dir < 0 ? daysAgoDate(to, 7) : daysAgoDate(to, -7);
+      if (end > b.max) end = b.max;
+      const from = daysAgoDate(end, 6);
+      emptyCandidate = attemptsCountInRange(from, end) === 0;
+    }
+  } else if (sel.type === "day"){
+    // dir<0 ("‹") steps one day further BACK (higher dayOffset); dir>0 ("›")
+    // steps one day toward today (lower dayOffset) — can't go past today.
+    disabled = dir < 0 ? daysAgoDate(to, 1) < b.min : sel.dayOffset <= 0;
+    if (!disabled){
+      const candidate = dir < 0 ? daysAgoDate(to, 1) : daysAgoDate(to, -1);
+      emptyCandidate = attemptsCountInRange(candidate, candidate) === 0;
+    }
+  } else {
+    disabled = dir < 0 ? addMonthsToDate(sel.monthStart, -1) < startOfMonth(b.min) : sel.monthStart >= startOfMonth(b.max);
+    if (!disabled){
+      const shown = addMonthsToDate(sel.monthStart, dir);
+      const from = shown < b.min ? b.min : shown;
+      const monthTo = endOfMonth(shown) > b.max ? b.max : endOfMonth(shown);
+      emptyCandidate = attemptsCountInRange(from, monthTo) === 0;
+    }
+  }
+  disabled = disabled || emptyCandidate;
+  const glyph = dir < 0 ? "‹" : "›";
+  const hint = emptyCandidate ? ` title="${t().noAttemptsHint}"` : "";
+  return `<button type="button" class="month-nav period-nav" data-which="${which}" data-dir="${dir}"${hint} ${disabled ? "disabled" : ""}>${glyph}</button>`;
+}
+// Mirrors showWeekPicker()/showMonthPicker()'s own prevBtn/nextBtn step math
+// exactly, just applied immediately (and re-rendering) instead of updating a
+// local `shown`/`shownEnd` inside the still-open popover.
+function stepPeriod(which, dir){
+  const sel = which === "A" ? state.aSel : state.bSel;
+  if (!sel) return;
+  const b = playerBounds();
+  if (sel.type === "week"){
+    const curTo = which === "A" ? state.aTo : state.bTo;
+    let shownEnd = dir < 0 ? daysAgoDate(curTo, 7) : daysAgoDate(curTo, -7);
+    if (shownEnd > b.max) shownEnd = b.max;
+    if (shownEnd < b.min) return;
+    const from = daysAgoDate(shownEnd, 6);
+    // Mirrors periodNavArrow()'s own emptyCandidate check — the button is
+    // already disabled for this case, but stepPeriod() stays defensive on
+    // its own rather than trusting the DOM's disabled attribute alone.
+    if (attemptsCountInRange(from, shownEnd) === 0) return;
+    if (which === "A"){ state.aFrom = from; state.aTo = shownEnd; state.aSel = {type:"week"}; }
+    else { state.bFrom = from; state.bTo = shownEnd; state.bSel = {type:"week"}; }
+    render();
+  } else if (sel.type === "month"){
+    const shown = addMonthsToDate(sel.monthStart, dir);
+    if (dir < 0 && shown < startOfMonth(b.min)) return;
+    if (dir > 0 && shown > startOfMonth(b.max)) return;
+    const from = shown < b.min ? b.min : shown;
+    const to = endOfMonth(shown) > b.max ? b.max : endOfMonth(shown);
+    if (attemptsCountInRange(from, to) === 0) return;
+    if (which === "A"){ state.aFrom = from; state.aTo = to; state.aSel = {type:"month", monthStart: shown}; }
+    else { state.bFrom = from; state.bTo = to; state.bSel = {type:"month", monthStart: shown}; }
+    render();
+  } else if (sel.type === "day"){
+    const newOffset = sel.dayOffset - dir; // dir<0 ("‹") = further back = HIGHER offset
+    if (newOffset < 0) return; // can't step past today into the future
+    const day = daysAgoDate(REAL_TODAY, newOffset);
+    if (newOffset > sel.dayOffset && day < b.min) return; // stepping further back would cross the level boundary
+    if (attemptsCountInRange(day, day) === 0) return; // no attempts that day — don't land there
+    if (which === "A"){ state.aFrom = day; state.aTo = day; state.aSel = {type:"day", dayOffset:newOffset}; }
+    else { state.bFrom = day; state.bTo = day; state.bSel = {type:"day", dayOffset:newOffset}; }
+    render();
+  }
+}
+// Real bug, found by looking at the empty state through the user's own
+// eyes (Alex 2026-09-17: "как пользователю выбрать тут другой период?"):
+// the OLD version replaced the whole block -- BOTH face-label-rows, i.e.
+// the only clickable controls (the period button that opens the popover,
+// the ‹› pager) that could ever get a viewer OUT of the empty state --
+// with a plain sentence telling them to "try a different period" and no
+// way left to do it. Fixed by never dropping the label-row: each side
+// renders its own label+pager unconditionally, and only the FACE itself
+// (independently per side) falls back to a small placeholder when that
+// side's period has no data -- so "today's empty, everything else has
+// history" shows one real face and one placeholder, both still pickable.
+function buildFaces(beforeSet, afterSet, lang, labelBefore, labelAfter, scaleMax){
+  const S = t();
+  const pBefore = beforeSet ? chFaceParams(beforeSet, {}, scaleMax) : null;
+  const pAfter  = afterSet  ? chFaceParams(afterSet,  {}, scaleMax) : null;
+  const faceOrEmpty = (p, faceId) => p
+    ? chFaceSvg(p, 110, faceId)
+    : `<div class="face-empty">${S.faceNoData}</div>`;
+  // Label-row moved BELOW the face (Alex 2026-09-17: "перенеси подписи под
+  // морды" — reverses the above-placement from 2026-09-14).
+  // Split into two separate rows 2026-09-18 (see .faces-wrap's own comment
+  // above for why) — the SVGs render in their own row (bottom-aligned with
+  // each other via .faces-row's flex-end), the labels follow in a second,
+  // completely separate row directly underneath.
+  return `<div class="faces-row">
+      <div class="face-visual">${faceOrEmpty(pAfter, "a")}</div>
+      <div class="face-visual">${faceOrEmpty(pBefore, "b")}</div>
+    </div>
+    <div class="face-labels-row">
+      <div class="face-label-col">
+        <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label pword-inline" data-which="A">${labelAfter}</button>${periodNavArrow("A",1)}</div>
+      </div>
+      <div class="face-label-col">
+        <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label pword-inline" data-which="B">${labelBefore}</button>${periodNavArrow("B",1)}</div>
+      </div>
+    </div>`;
+}
+function wireFaces(){
+  document.querySelectorAll("#faces .face-label").forEach(btn => {
+    btn.addEventListener("click", e => { e.stopPropagation(); openPeriodPopover(btn, btn.dataset.which); });
+  });
+  document.querySelectorAll("#faces .period-nav").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      stepPeriod(btn.dataset.which, parseInt(btn.dataset.dir, 10));
+    });
+  });
+}
+
+// Real, existing Wikipedia articles (not guessed) — Alex 2026-09-14: "можно
+// в конце дать мелким шрифтом ссылку на чернова в вики, что по его
+// методике". The row-by-row legend panel this used to sit at the bottom of
+// is gone (Alex 2026-09-15: "совмещаем легенду и раздел «Что изменилось»"
+// meant MERGE, not duplicate — the separate "How to read these faces"
+// toggle + its own panel were removed once their content and interactivity
+// moved into "Here's how you're doing" itself) — this small credit line is
+// the one piece of that panel with no narrate() equivalent, so it now sits
+// on its own under the faces.
+const CH_CREDIT = {
+  ru: `Метод основан на «лицах Чернова» (Herman Chernoff, 1973) — подробнее в <a href="https://ru.wikipedia.org/wiki/Лица_Чернова" target="_blank" rel="noopener">Википедии</a>.`,
+  en: `Based on Chernoff faces (Herman Chernoff, 1973) — read more on <a href="https://en.wikipedia.org/wiki/Chernoff_face" target="_blank" rel="noopener">Wikipedia</a>.`,
+};
+
+// Applies an already-computed param set (chFaceParams()/chFaceParamsAt())
+// onto an EXISTING rendered <svg>'s elements, in place — used every frame of
+// chAnimateLegend()'s demo sweep so the face visibly moves instead of being
+// rebuilt from scratch 60 times a second. Mirrors chFaceSvg()'s own
+// attribute math exactly (same chFaceGeometry() call) so a mid-animation
+// frame and a fresh render() never disagree about where anything sits.
+function chApplySvgParams(svg, p, cx){
+  const cy = chHeadCy(p.headH);
+  const box = chFaceCanvasBox(p.headH);
+  const {eyeY, base, pupilL, pupilRv, ntx, nty, nbx, nby, fx, fy, mouthBaseY, mouthLen, smile} = chFaceGeometry(p, cx, cy);
+  const bh = p.browHalf;
+  const my = cy + mouthBaseY;
+
+  // Square + canvas resize along with the head every frame, same as the
+  // initial render (chFaceSvg) — otherwise the legend's live demo-sweep
+  // would show the square staying at whatever size the page loaded with
+  // while only the head itself visibly grows/shrinks, the same desync bug
+  // class as the 2026-09-17 cy-not-updating one (see chHeadCy's own history).
+  svg.setAttribute("viewBox", `0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}`);
+  const square = svg.querySelector("rect");
+  if (square){ square.setAttribute("y", box.rectY.toFixed(1)); square.setAttribute("height", box.rectHeight.toFixed(1)); }
+
+  const head = svg.querySelector('ellipse[data-feature~="headW"]');
+  if (head){ head.setAttribute("rx", p.headW.toFixed(1)); head.setAttribute("ry", p.headH.toFixed(1)); head.setAttribute("cy", cy.toFixed(1)); }
+
+  const ears = svg.querySelectorAll('circle[data-feature~="ears"]');
+  if (ears[0]){ ears[0].setAttribute("cx",(cx-p.headW).toFixed(1)); ears[0].setAttribute("cy",eyeY); ears[0].setAttribute("r",p.earRadL.toFixed(1)); }
+  if (ears[1]){ ears[1].setAttribute("cx",(cx+p.headW).toFixed(1)); ears[1].setAttribute("cy",eyeY); ears[1].setAttribute("r",p.earRadR.toFixed(1)); }
+
+  // :not([data-hit-overlay]) excludes the invisible fat hit-targets added
+  // 2026-09-16 (see their own comment near chHitLine/chHitPath) — without
+  // it these selectors would match 4 elements instead of 2 and brows[0]/[1]
+  // index access would grab the wrong one.
+  const browLX1 = (cx-p.browDx-bh).toFixed(1), browLY1 = base.toFixed(1), browLX2 = (cx-p.browDx+bh).toFixed(1), browLY2 = (base+p.dropL).toFixed(1);
+  const browRX1 = (cx+p.browDx-bh).toFixed(1), browRY1 = (base+p.dropR).toFixed(1), browRX2 = (cx+p.browDx+bh).toFixed(1), browRY2 = base.toFixed(1);
+  const brows = svg.querySelectorAll('line[data-feature~="brow"]:not([data-hit-overlay])');
+  if (brows[0]){ brows[0].setAttribute("x1",browLX1); brows[0].setAttribute("y1",browLY1); brows[0].setAttribute("x2",browLX2); brows[0].setAttribute("y2",browLY2); }
+  if (brows[1]){ brows[1].setAttribute("x1",browRX1); brows[1].setAttribute("y1",browRY1); brows[1].setAttribute("x2",browRX2); brows[1].setAttribute("y2",browRY2); }
+  const browHits = svg.querySelectorAll('line[data-feature~="brow"][data-hit-overlay]');
+  if (browHits[0]){ browHits[0].setAttribute("x1",browLX1); browHits[0].setAttribute("y1",browLY1); browHits[0].setAttribute("x2",browLX2); browHits[0].setAttribute("y2",browLY2); }
+  if (browHits[1]){ browHits[1].setAttribute("x1",browRX1); browHits[1].setAttribute("y1",browRY1); browHits[1].setAttribute("x2",browRX2); browHits[1].setAttribute("y2",browRY2); }
+
+  // Tag-agnostic (Alex 2026-09-16: optimal eyes render as a <path> "lens"
+  // instead of a plain <ellipse> — chFaceSvg() decides which tag based on
+  // p.optimal at initial render, and that flag is stable for the life of
+  // this <svg> since it's built from REAL data only, never the demo
+  // override — so whichever tag is actually in the DOM here just needs its
+  // own attributes kept in sync, not swapped).
+  const eyes = svg.querySelectorAll('[data-feature~="eyeWidth"]');
+  const updateEye = (el, cxEye, rxV, ryV) => {
+    if (!el) return;
+    if (el.tagName === "ellipse"){
+      el.setAttribute("cx", cxEye.toFixed(1)); el.setAttribute("cy", eyeY);
+      el.setAttribute("rx", rxV.toFixed(1)); el.setAttribute("ry", ryV.toFixed(1));
+    } else {
+      el.setAttribute("data-eye-rx", rxV.toFixed(1)); el.setAttribute("data-eye-ry", ryV.toFixed(1));
+      el.setAttribute("d", chEyeLensPath(cxEye, eyeY, rxV, ryV));
+    }
+  };
+  updateEye(eyes[0], cx-p.eyeDx, p.eyeRxL, p.openL);
+  updateEye(eyes[1], cx+p.eyeDx, p.eyeRxR, p.openR);
+
+  // Pupil clip shapes (Alex 2026-09-17) -- same outline as the eyes just
+  // updated above, kept in lockstep so a legend demo that resizes an eye
+  // (eyeWidth/eyeOpen/eyeDx) doesn't leave the pupil's clip mask pointing
+  // at the eye's OLD shape mid-sweep.
+  updateEye(svg.querySelector('[data-clip-eye="L"]'), cx-p.eyeDx, p.eyeRxL, p.openL);
+  updateEye(svg.querySelector('[data-clip-eye="R"]'), cx+p.eyeDx, p.eyeRxR, p.openR);
+
+  // Optimal eyes' pupil sits at the lens shape's own true vertical center
+  // (chEyePupilCenterY), not the plain ellipse's eyeY — see chEyeLensPath's
+  // own comment for the closed-form derivation (Alex 2026-09-16).
+  const pupils = svg.querySelectorAll('circle[data-feature~="pupilR"]');
+  const pupilL_cy = (p.optimal && p.optimal.eyeL) ? chEyePupilCenterY(eyeY, p.openL) : eyeY;
+  const pupilR_cy = (p.optimal && p.optimal.eyeR) ? chEyePupilCenterY(eyeY, p.openR) : eyeY;
+  if (pupils[0]){ pupils[0].setAttribute("cx",(cx-p.eyeDx).toFixed(1)); pupils[0].setAttribute("cy",pupilL_cy.toFixed(1)); pupils[0].setAttribute("r",pupilL.toFixed(1)); }
+  if (pupils[1]){ pupils[1].setAttribute("cx",(cx+p.eyeDx).toFixed(1)); pupils[1].setAttribute("cy",pupilR_cy.toFixed(1)); pupils[1].setAttribute("r",pupilRv.toFixed(1)); }
+
+  const noseBX2 = nbx.toFixed(1), noseBY2 = nby.toFixed(1), noseFX2 = fx.toFixed(1), noseFY2 = fy.toFixed(1);
+  const noseLines = svg.querySelectorAll('line[data-feature~="noseTilt"]:not([data-hit-overlay])');
+  if (noseLines[0]){ noseLines[0].setAttribute("x1",ntx); noseLines[0].setAttribute("y1",nty); noseLines[0].setAttribute("x2",noseBX2); noseLines[0].setAttribute("y2",noseBY2); }
+  if (noseLines[1]){ noseLines[1].setAttribute("x1",noseBX2); noseLines[1].setAttribute("y1",noseBY2); noseLines[1].setAttribute("x2",noseFX2); noseLines[1].setAttribute("y2",noseFY2); }
+  const noseHits = svg.querySelectorAll('line[data-feature~="noseTilt"][data-hit-overlay]');
+  if (noseHits[0]){ noseHits[0].setAttribute("x1",ntx); noseHits[0].setAttribute("y1",nty); noseHits[0].setAttribute("x2",noseBX2); noseHits[0].setAttribute("y2",noseBY2); }
+  if (noseHits[1]){ noseHits[1].setAttribute("x1",noseBX2); noseHits[1].setAttribute("y1",noseBY2); noseHits[1].setAttribute("x2",noseFX2); noseHits[1].setAttribute("y2",noseFY2); }
+
+  const mouthD = `M ${(cx-mouthLen/2).toFixed(1)} ${my} Q ${cx} ${(my+smile).toFixed(1)} ${(cx+mouthLen/2).toFixed(1)} ${my}`;
+  const mouth = svg.querySelector('path[data-feature~="mouthLen"]:not([data-hit-overlay])');
+  if (mouth){
+    mouth.setAttribute("data-mouth-len", mouthLen.toFixed(1));
+    mouth.setAttribute("data-smile", smile.toFixed(1));
+    mouth.setAttribute("d", mouthD);
+  }
+  const mouthHit = svg.querySelector('path[data-feature~="mouthLen"][data-hit-overlay]');
+  if (mouthHit) mouthHit.setAttribute("d", mouthD);
+}
+
+// "actual" n for a legend row's metric(s) — the real, un-overridden fraction
+// chFaceParamsAt() would otherwise compute — used as the sweep's start/end
+// point so the demo always returns to what the real data actually draws.
+// Returns {L, R} — for a symmetric (paired) row these are genuinely
+// different real values (each side's own metric); for a singular "feature"
+// row there's only one instance, so L and R are the same number and the
+// seesaw schedule below never actually gets used for those.
+function chActualN(anim, set_, before, after){
+  if (anim.feature){
+    const cfg = CH_FEATURES[anim.feature];
+    const n = cfg.metric === "__overall__" ? chOverall(set_, before, after) : chNorm(cfg.metric, set_, before, after);
+    return {L: n, R: n};
+  }
+  const cfg = CH_SYMMETRIC[anim.symmetric[0]];
+  return {L: chNorm(cfg.metricL, set_, before, after), R: chNorm(cfg.metricR, set_, before, after)};
+}
+function chBuildOverride(anim, nL, nR){
+  return anim.feature ? {feature: anim.feature, n: nL} : {symmetric: anim.symmetric, nL, nR};
+}
+function chSmoothstep(x){ return x*x*(3-2*x); }
+// Sweep schedule as fractions of the animation's own duration: start at the
+// real value, glide to the high extreme (n=1, "the more X"), on to the low
+// extreme (n=0, "the less X"), then settle back on the real value — one
+// continuous demo shows both halves of the legend row's sentence in order.
+// The RIGHT side of a paired feature uses the INVERTED schedule (Alex
+// 2026-09-14: "анимируй их асинхронно... пока одно ухо увеличивается,
+// второе уменьшается") — a seesaw, not two sides moving in lockstep, so the
+// L/R independence the whole "one parameter per side" redesign is about is
+// visible in the MOTION itself, not just inferred from the end state.
+const CH_ANIM_SCHEDULE     = [{t:0, n:null}, {t:0.32, n:1}, {t:0.68, n:0}, {t:1, n:null}];
+const CH_ANIM_SCHEDULE_INV = [{t:0, n:null}, {t:0.32, n:0}, {t:0.68, n:1}, {t:1, n:null}];
+function chInterpN(schedule, raw, actualN){
+  const vals = schedule.map(s => s.n === null ? actualN : s.n);
+  for (let i = 0; i < schedule.length - 1; i++){
+    if (raw <= schedule[i+1].t){
+      const span = schedule[i+1].t - schedule[i].t || 1;
+      const localT = (raw - schedule[i].t) / span;
+      return vals[i] + (vals[i+1] - vals[i]) * chSmoothstep(localT);
+    }
+  }
+  return vals[vals.length - 1];
+}
+
+// Tap/click (and keyboard) on a legend row plays a short demo DIRECTLY on
+// both faces: the one feature that row explains sweeps from the real value
+// up to its "the more X" extreme, down to its "the less X" extreme, and
+// back — while every other feature keeps showing the real data untouched
+// (Alex 2026-09-14: "показывать как это работает не стрелочками а
+// изменениями в самом лице... по соответствующим уточнениям приводит к
+// анимации соответствующих черт"). Replaces the older static
+// directional-arrow overlay — the movement itself is now the explanation.
+// No color highlight (Alex 2026-09-14, final word after trying it both
+// ways: "синие обводки убери нахуй") — now that every row moves exactly
+// ONE facial feature (see CH_LEGEND/CH_SYMMETRIC comments), the motion
+// itself unambiguously answers "which part" without needing a stroke color
+// on top of it.
+let chAnimHandle = null;
+function chCancelAnim(){
+  if (chAnimHandle) cancelAnimationFrame(chAnimHandle);
+  chAnimHandle = null;
+}
+function chAnimateLegend(row){
+  if (!state.lastFaces || !state.lastFaces.length) return;
+  chCancelAnim();
+  const faces = state.lastFaces;
+  const duration = 2600;
+  const startTime = performance.now();
+
+  function frame(now){
+    const raw = Math.min(1, (now - startTime) / duration);
+    faces.forEach(f => {
+      const actual = chActualN(row.anim, f.set_, f.before, f.after);
+      const nL = chInterpN(CH_ANIM_SCHEDULE, raw, actual.L);
+      const nR = row.anim.feature ? nL : chInterpN(CH_ANIM_SCHEDULE_INV, raw, actual.R);
+      const p = chFaceParamsAt(f.set_, f.before, f.after, chBuildOverride(row.anim, nL, nR));
+      chApplySvgParams(f.svg, p, f.cx);
+    });
+    if (raw < 1){
+      chAnimHandle = requestAnimationFrame(frame);
+    } else {
+      faces.forEach(f => chApplySvgParams(f.svg, chFaceParams(f.set_, f.before, f.after), f.cx));
+      chAnimHandle = null;
+    }
+  }
+  chAnimHandle = requestAnimationFrame(frame);
+}
+function render(){
+  const S = t();
+  document.getElementById("pageTitle").textContent = S.title;
+  document.getElementById("pageLede").textContent = S.lede;
+  document.getElementById("sampleNote").textContent = S.sampleNote;
+
+  const player = DATA[state.player];
+  const attsA = filterByDate(player.attempts, state.aFrom, state.aTo);
+  const attsB = filterByDate(player.attempts, state.bFrom, state.bTo);
+  const accOrd = ACC_ORD[player.acc];
+  const mA = attsA.length ? metricsFor(attsA, accOrd) : null;
+  const mB = attsB.length ? metricsFor(attsB, accOrd) : null;
+  const historicalDist = historicalDistribution(player.attempts, accOrd);
+
+  const buildRow = m => {
+    const before = mB ? mB[m.key] : null;
+    const after = mA ? mA[m.key] : null;
+    const delta = relDelta(before, after);
+    const dir = direction(m.favorable, delta);
+    return {...m, before, after, delta, dir};
+  };
+  const rows = METRICS.map(buildRow);
+  // The 8 face-only values get their OWN table rows too (Alex 2026-09-14) —
+  // narrate()'s prose below stays scoped to just the 9 official measures
+  // (unchanged), only the table gets the extra rows appended.
+  const extraRows = CH_EXTRA_METRICS.map(buildRow);
+
+  const b = playerBounds();
+  const scopeAfter = describeSelection("A", state.lang);
+  const scopeBefore = describeSelection("B", state.lang);
+
+  document.getElementById("narrativeText").innerHTML = narrate(rows, scopeAfter, scopeBefore, state.lang, historicalDist);
+
+  // Fixed per-metric ceiling for the faces — this player's own historical
+  // max (reusing historicalDist, already built above for the narrative's
+  // "holding steady" section) rather than whatever the two CURRENTLY
+  // selected periods happen to be. See buildFaces() for why.
+  const scaleMax = {};
+  Object.keys(CH_FAV).forEach(k => {
+    const hist = (historicalDist[k]||[]).filter(v => v != null);
+    if (hist.length >= 2){
+      scaleMax[k] = Math.max(...hist, 1e-9);
+    } else {
+      const vals = [mA ? mA[k] : null, mB ? mB[k] : null].filter(v => v != null);
+      scaleMax[k] = vals.length ? Math.max(...vals, 1e-9) : 1e-9;
+    }
+  });
+  chCancelAnim(); // about to replace the SVG nodes any running sweep is animating
+  document.getElementById("faces").innerHTML = buildFaces(mB, mA, state.lang, scopeBefore, scopeAfter, scaleMax);
+  wireFaces();
+  // Snapshot of exactly what buildFaces() just drew, keyed to the live <svg>
+  // nodes now in the DOM — chAnimateLegend() replays chFaceParamsAt() against
+  // these SAME (set_, before, after) triples every frame, so a mid-sweep
+  // frame is always geometrically consistent with a real render() of that
+  // same data (buildFaces() draws face-col A/after first, then B/before —
+  // see its own comment for why the left/right order is fixed).
+  const faceSvgs = document.querySelectorAll("#faces svg");
+  state.lastFaces = (mA && mB && faceSvgs.length === 2) ? [
+    {svg: faceSvgs[0], set_: mA, before: {}, after: scaleMax, cx: 110},
+    {svg: faceSvgs[1], set_: mB, before: {}, after: scaleMax, cx: 110},
+  ] : null;
+  // No JS-computed gap compensation needed here anymore (2026-09-18) — the
+  // head's own crown is now pinned at a fixed y by chHeadCy() itself (see
+  // its comment above), so the plain fixed CSS gap under #sampleNote is
+  // already both minimal and constant for any head size, by construction.
+  document.getElementById("faceCredit").innerHTML = CH_CREDIT[state.lang === "en" ? "en" : "ru"];
+
+  document.getElementById("footNote").textContent = S.footNote(player.acc);
+
+  renderTable(rows.concat(extraRows));
+}
+
+function fmtVal(key, v){
+  if (v===null || v===undefined) return t().na;
+  if (key==="hit" || key==="focus" || key==="consist" || key==="eff") return v.toFixed(1)+"%";
+  if (key==="lucky") return v.toFixed(2)+"×";
+  // gcv/earlyCV/lateCV are all the same geometric-CV formula (already a
+  // percentage, see metricsFor()) — earlyShare/lateShare are a plain 0..1
+  // fraction that needs ×100 first. Both were falling through to the "ms"
+  // branch below before, which is wrong for anything that isn't a raw
+  // millisecond magnitude (Alex 2026-09-14: the table needs a real row for
+  // every new value the face uses, and a wrong unit is worse than none).
+  if (key==="gcv" || key==="earlyCV" || key==="lateCV") return v.toFixed(1)+"%";
+  if (key==="earlyShare" || key==="lateShare") return (v*100).toFixed(1)+"%";
+  return v.toFixed(1)+(state.lang==="en"?" ms":" мс");
+}
+function plural(n){
+  const m10=n%10, m100=n%100;
+  if (m10===1 && m100!==11) return "ка";
+  if ([2,3,4].includes(m10) && ![12,13,14].includes(m100)) return "ки";
+  return "ок";
+}
+
+// Merges the legend into the table itself (Alex 2026-09-14: "совместим
+// объяснялку и саму таблицу... в конце каждой характеристики подпись если х
+// растет то черта х меняется так то, и кнопка показать") — every table row
+// finds the ONE CH_LEGEND row that explains it (guaranteed unique, since
+// each metric key drives exactly one facial feature — see CH_SYMMETRIC's
+// own "one parameter, one feature" comment) and reuses that row's own desc
+// text directly, so the wording can't drift between the two places.
+function chLegendRowForKey(key, lang){
+  return CH_LEGEND[lang === "en" ? "en" : "ru"].find(row => row.metricKeys.includes(key)) || null;
+}
+// Splits a legend row's desc into its two halves for a given metric key
+// (Alex 2026-09-15: "первая часть поясняет смысл параметра, вторая — как
+// меняется черта"). Most rows drive exactly one narrate() metric and carry
+// flat paramText/featureText fields; the one row that drives TWO metrics at
+// once (brow: early + late) carries paramTextByKey/featureTextByKey instead,
+// keyed by which of the two this call is for. Returns null for rows that
+// don't need the split (the 4 legend rows narrate() never shows a paragraph
+// for — eyeOpen/eyeWidth/ears/pupilR — have neither field).
+function legendHalvesForKey(key, lang){
+  const row = chLegendRowForKey(key, lang);
+  if (!row) return null;
+  const param = row.paramTextByKey ? row.paramTextByKey[key] : row.paramText;
+  const feature = row.featureTextByKey ? row.featureTextByKey[key] : row.featureText;
+  return (param && feature) ? {row, param, feature} : null;
+}
+// Reverse lookup for tapping the DRAWN feature directly on a face (Alex
+// 2026-09-15: "клик по самой черте лица должен приводить к её анимации и
+// всплывашке с текстом о том какую характеристику и как отображает" — the
+// mордочка/text triggers in the narrative were the forward direction, this
+// is tapping the SVG itself). A clicked element's own data-feature can list
+// MULTIPLE tokens (chFaceSvg's own comment: "some elements carry more than
+// one token because they're the SAME geometry two different config entries
+// drive", e.g. the eye ellipse's rx from eyeWidth and ry from eyeOpen) — a
+// legend row matches when its OWN feature tokens are fully contained in the
+// clicked element's tokens (order-independent). Returns {row,key} pairs,
+// one per metricKey of every matching row (not one per row) — a row like
+// brow genuinely carries two distinct characteristics (early, late) on the
+// SAME line elements, so it needs the same per-key granularity the multi-row
+// cases (eye/head/mouth) get.
+function chLegendEntriesForFeatureTokens(dataFeatureStr, lang){
+  const tokens = new Set(dataFeatureStr.split(" "));
+  const rows = CH_LEGEND[lang === "en" ? "en" : "ru"].filter(row =>
+    row.feature.split(" ").every(t => tokens.has(t))
+  );
+  const entries = [];
+  rows.forEach(row => row.metricKeys.forEach(key => entries.push({row, key})));
+  return entries;
+}
+// The metric's proper name (same label METRICS/the table/narrate() already
+// use — never retyped), its psychological meaning, AND how it shows up on
+// the feature — all three together (Alex 2026-09-15, two-part correction:
+// "по лицу когда тюкают объяснение давать в псих терминах" asked for the
+// psychological framing to lead; "куда делась вся психология? шире ж были
+// фразы" caught that leading with JUST the short meaning line, on its own,
+// had thrown away the fuller original text instead of building on it — this
+// keeps both halves, just puts the psychological term first).
+function metricLabelForKey(key, lang){
+  const m = METRICS.find(x => x.key === key) || CH_EXTRA_METRICS.find(x => x.key === key);
+  return m ? (lang === "en" ? m.label_en : m.label) : key;
+}
+function psychTextForEntry(entry, lang){
+  const halves = legendHalvesForKey(entry.key, lang);
+  if (!halves) return entry.row.desc; // shouldn't happen — every row now has param/feature fields
+  return `${metricLabelForKey(entry.key, lang)} — ${halves.param} ${halves.feature}`;
+}
+function renderTable(rows){
+  const S = t();
+  const lang = state.lang === "en" ? "en" : "ru";
+  const headRow = document.getElementById("tableHeadRow");
+  headRow.innerHTML = S.tableHead.map(h => `<th>${h}</th>`).join("");
+  const body = document.getElementById("dataTableBody");
+  body.innerHTML = "";
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    const dirClass = r.dir==="good"?"dir-good":r.dir==="critical"?"dir-critical":"dir-flat";
+    const dirText = S.dir[r.dir];
+    const rLabel = state.lang === "en" ? r.label_en : r.label;
+    tr.innerHTML = `<td>${rLabel}</td>
+      <td class="num">${fmtVal(r.key, r.before)}</td>
+      <td class="num">${fmtVal(r.key, r.after)}</td>
+      <td class="num">${r.delta===null?"—":pctLabel(r.delta)}</td>
+      <td class="${dirClass}">${dirText}</td>`;
+    body.appendChild(tr);
+
+    const capTr = document.createElement("tr");
+    capTr.className = "table-caption-row";
+    const capTd = document.createElement("td");
+    capTd.colSpan = 5;
+    const legendRow = chLegendRowForKey(r.key, lang);
+    if (!legendRow) return; // every current row has a match — nothing to render otherwise
+    const showLabel = lang === "en" ? "Show on the faces" : "Показать на лицах";
+    capTd.innerHTML = `<span class="table-caption-text">${legendRow.desc}</span><button class="table-show-btn" data-key="${r.key}">${showLabel} ▸</button>`;
+    capTr.appendChild(capTd);
+    body.appendChild(capTr);
+  });
+  const toggleBtn = document.getElementById("tableToggle");
+  const tableEl = document.getElementById("tableScroll");
+  toggleBtn.textContent = tableEl.classList.contains("show") ? S.hideTable : S.showTable;
+}
+
+document.getElementById("tableToggle").addEventListener("click", () => {
+  const tableEl = document.getElementById("tableScroll");
+  tableEl.classList.toggle("show");
+  const S = t();
+  document.getElementById("tableToggle").textContent = tableEl.classList.contains("show") ? S.hideTable : S.showTable;
+});
+
+// Delegated (dataTableBody's own rows are rebuilt on every render(), a
+// direct listener per-button would need re-wiring every time too — one
+// listener on the table itself, matched by the click target, never needs
+// re-wiring). Faces are position:sticky, so tapping "Show" way down in the
+// table doesn't need any scroll — the faces are already pinned in view.
+document.getElementById("dataTableBody").addEventListener("click", e => {
+  const btn = e.target.closest(".table-show-btn");
+  if (!btn) return;
+  const lang = state.lang === "en" ? "en" : "ru";
+  const row = chLegendRowForKey(btn.dataset.key, lang);
+  if (row) chAnimateLegend(row);
+});
+
+// Delegated, same reasoning as dataTableBody's own listener above —
+// narrativeText's paragraphs are rebuilt on every render() (Alex
+// 2026-09-15: merge the legend into "Here's how you're doing"). Three
+// tap targets, each independently: the metric name shows the parameter
+// half in the shared tooltip; the мордочка icon shows the FULL legend
+// sentence in the same tooltip AND animates; the feature-behavior text
+// next to it just animates (no tooltip).
+document.getElementById("narrativeText").addEventListener("click", e => {
+  const lang = state.lang === "en" ? "en" : "ru";
+  const nameEl = e.target.closest(".metric-name");
+  if (nameEl){ showMetricTooltip(nameEl, nameEl.dataset.tip); return; }
+  const iconEl = e.target.closest(".feature-icon");
+  if (iconEl){
+    showMetricTooltip(iconEl, iconEl.dataset.tip);
+    const row = chLegendRowForKey(iconEl.dataset.key, lang);
+    if (row) chAnimateLegend(row);
+    return;
+  }
+  const hintEl = e.target.closest(".feature-hint");
+  if (hintEl){
+    const row = chLegendRowForKey(hintEl.dataset.key, lang);
+    if (row) chAnimateLegend(row);
+  }
+});
+
+// Tapping the drawn feature itself, directly on either face (Alex
+// 2026-09-15). #faces persists across render()s (only its innerHTML is
+// replaced by buildFaces()), so one delegated listener here covers every
+// future re-render — no re-wiring needed the way wireFaces() re-attaches
+// the face-label buttons each time. chFaceElementCycle tracks, per
+// data-feature string, which of its possibly-several (row,key) entries
+// (see chLegendEntriesForFeatureTokens's own comment — one ellipse/path can
+// carry 2-3 independently-adjustable characteristics) to show NEXT —
+// repeated taps on the same element step through all of them instead of
+// always landing on just the first. Text shown is psychTextForEntry (the
+// metric's name + what it MEANS), not the row's own visual desc — that
+// visual "the more X the bigger the feature" text is what the mordochka/
+// text triggers in the narrative already show.
+const chFaceElementCycle = {};
+document.getElementById("faces").addEventListener("click", e => {
+  const el = e.target.closest("[data-feature]");
+  if (!el) return;
+  const df = el.getAttribute("data-feature");
+  const lang = state.lang === "en" ? "en" : "ru";
+  const entries = chLegendEntriesForFeatureTokens(df, lang);
+  if (!entries.length) return;
+  const i = (chFaceElementCycle[df] || 0) % entries.length;
+  chFaceElementCycle[df] = i + 1;
+  const entry = entries[i];
+  showMetricTooltip(el, psychTextForEntry(entry, lang), e);
+  chAnimateLegend(entry.row);
+});
+
+// Реальная загрузка вместо встроенного DATA: playerId+token из query string
+// (native кладёт их в URL при клике по своей строке в лидборде — см.
+// LeaderboardScreen.kt onSelectRow), report_data.php отдаёт попытки ТОЛЬКО
+// этого игрока в его текущем уровне точности (см. эндпоинт).
+// Режим "только мордочка" (Alex 2026-09-21): нативная карточка на Analytics
+// открывает эту же страницу маленьким WebView с ?mode=face. Период приходит
+// как fromMs/toMs (epoch, мс) — ровно тот набор попыток, что и в Analytics.
+// Мало попыток (< min) — мордочка рисуется размытой; сколько попыток нашлось,
+// страница сообщает нативу через PotFace.ready(count) (там же текст-подсказка).
+// Если страница не смогла отрисовать — ready() не вызывается, нативная
+// карточка остаётся со смайликом.
+function renderFaceOnly(params){
+  try {
+    const fromMs = Number(params.get("fromMs")), toMs = Number(params.get("toMs"));
+    const minAtt = Number(params.get("min")) || 30;
+    const player = DATA.me;
+    const accOrd = ACC_ORD[player.acc];
+    const all = player.attempts;
+    const inRange = all.filter(a => { const ms = Date.parse(a.t); return ms >= fromMs && ms <= toMs; });
+    const count = inRange.length;
+    const m = metricsFor(count ? inRange : all, accOrd);
+    const hist = historicalDistribution(all, accOrd);
+    const scaleMax = {};
+    Object.keys(CH_FAV).forEach(k => {
+      const h = (hist[k]||[]).filter(v => v != null);
+      if (h.length >= 2){ scaleMax[k] = Math.max(...h, 1e-9); }
+      else { scaleMax[k] = m[k] != null ? Math.max(m[k], 1e-9) : 1e-9; }
+    });
+    const p = chFaceParams(m, {}, scaleMax);
+    document.documentElement.classList.add("face-mode");
+    document.body.className = "face-mode";
+    document.body.innerHTML = `<div id="faceOnly" class="${count < minAtt ? "blurred" : ""}">${chFaceSvg(p, 110, "a")}</div>`;
+    if (window.PotFace && window.PotFace.ready) window.PotFace.ready(count);
+  } catch (e){ /* нативная карточка останется со смайликом */ }
+}
+
+async function loadReport(){
+  // Title/lede are normally set inside render(), which never runs if we
+  // bail out before DATA loads — apply them once up front so an error state
+  // doesn't show stale Russian placeholder text on an English-default page.
+  document.getElementById("pageTitle").textContent = STR[state.lang].title;
+  document.getElementById("pageLede").textContent = STR[state.lang].lede;
+  document.getElementById("sampleNote").textContent = STR[state.lang].sampleNote;
+
+  const params = new URLSearchParams(location.search);
+  const playerId = params.get("playerId");
+  const token = params.get("token");
+
+  function showError(msg){
+    document.getElementById("loadingMsg").hidden = true;
+    const errEl = document.getElementById("errorMsg");
+    errEl.textContent = msg;
+    errEl.hidden = false;
+  }
+
+  if (!playerId || !token){
+    showError(STR[state.lang].loadError);
+    return;
+  }
+
+  let json;
+  try {
+    const resp = await fetch(`/api/report_data.php?playerId=${encodeURIComponent(playerId)}&token=${encodeURIComponent(token)}`);
+    if (!resp.ok) throw new Error("bad status " + resp.status);
+    json = await resp.json();
+  } catch (e){
+    showError(STR[state.lang].loadError);
+    return;
+  }
+
+  if (!json || !json.ok || !Array.isArray(json.attempts) || json.attempts.length === 0){
+    showError(STR[state.lang].noData);
+    return;
+  }
+
+  DATA = { me: { label: json.displayName || "", acc: json.acc, attempts: json.attempts } };
+
+  if (params.get("mode") === "face"){ renderFaceOnly(params); return; }
+
+  document.getElementById("loadingMsg").hidden = true;
+  document.getElementById("reportBody").hidden = false;
+
+  buildLangSeg();
+  setDefaultRanges();
+  render();
+
+  // Belt-and-suspenders (точный корень найден): пока document.hidden === true
+  // (страница смонтирована в фоновой/ещё не показанной вкладке — воспроизведено
+  // в тестовом Browser-пейне), решения makeLine() о цвете/размещении подписи
+  // получаются неверными КАЖДЫЙ раз, не изредка — не разовый гонки момент,
+  // а стабильно неверный результат, пока страница технически скрыта, и
+  // стабильно верный, как только она видима. Значит настоящий, а не угаданный
+  // триггер — сама смена видимости: перерисовываем при каждом
+  // visibilitychange, когда страница становится видимой (без {once:true} —
+  // дёшево и идемпотентно, лишний вызов ничего не портит). Плюс несколько
+  // безусловных перерисовок в первую секунду на случай окружений, где
+  // document.hidden вовсе не отражает реальное состояние видимости.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  [60, 250, 600, 1200].forEach(delay => setTimeout(render, delay));
+}
+
+loadReport();
+</script>
+
+</body></html>

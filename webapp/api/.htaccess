@@ -1,0 +1,11 @@
+# Only sync.php / leaderboard.php / set_name.php are meant to be requested
+# directly by the browser. The rest are internal — deny direct access as a
+# defense-in-depth measure (they don't leak anything on their own, since none
+# of them echo output when run standalone, but there's no reason to allow it).
+<FilesMatch "^(config|db|_lib|migrate_002_rename_default_names)\.php$">
+  Require all denied
+</FilesMatch>
+
+<Files "schema.sql">
+  Require all denied
+</Files>

@@ -1,0 +1,42 @@
+# ───── СЕКРЕТЫ: никогда в git ─────
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+local.properties
+*.pem
+*.p12
+.env
+.env.*
+pot-secrets/
+.claude/settings.local.json
+
+# ───── Сборка и генерируемое ─────
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+captures/
+.cxx/
+.externalNativeBuild/
+node_modules/
+__pycache__/
+.venv/
+
+# ───── Собранные приложения → уйдут в GitHub Releases ─────
+*.apk
+*.aab
+
+# ───── Архивы-снапшоты (git их заменяет) ─────
+*.rar
+*.zip
+*.7z
+
+# ───── Временное и черновое ─────
+scratchpad/
+handoff_tmp/
+_scratch_debug/
+*.log
+.DS_Store
+Thumbs.db

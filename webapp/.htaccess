@@ -1,0 +1,17 @@
+# Cache policy (added 2026-08-15, alongside the client-side self-update
+# check in app.js): index.html is the one file whose NAME never changes
+# between deploys — everything it references (app.YYYYMMDDx.js,
+# styles.YYYYMMDDx.css, versioned icons) uses a cache-busted filename
+# instead. If a browser or an intermediate proxy/CDN caches index.html
+# itself, it can keep serving a stale copy pointing at old JS/CSS
+# indefinitely, long after new files are uploaded — this is the root-cause
+# fix for that; app.js's own periodic re-check is the belt-and-suspenders
+# layer for tabs that were already open before this header existed.
+<IfModule mod_headers.c>
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

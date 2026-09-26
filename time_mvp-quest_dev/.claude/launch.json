@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Build Debug APK",
+      "runtimeExecutable": "gradlew.bat",
+      "runtimeArgs": ["assembleDebug"],
+      "port": null
+    },
+    {
+      "name": "Install Debug on Device",
+      "runtimeExecutable": "gradlew.bat",
+      "runtimeArgs": ["installDebug"],
+      "port": null
+    },
+    {
+      "name": "Run Unit Tests",
+      "runtimeExecutable": "gradlew.bat",
+      "runtimeArgs": ["test"],
+      "port": null
+    },
+    {
+      "name": "Run Instrumented Tests",
+      "runtimeExecutable": "gradlew.bat",
+      "runtimeArgs": ["connectedAndroidTest"],
+      "port": null
+    },
+    {
+      "name": "webapp",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8811", "--directory", "C:\\PlayOfTime\\webapp"],
+      "port": 8811
+    },
+    {
+      "name": "scratchpad",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8822", "--directory", "C:\\PlayOfTime\\scratchpad"],
+      "port": 8822
+    }
+  ]
+}
