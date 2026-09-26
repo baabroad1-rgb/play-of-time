@@ -31,9 +31,9 @@ jobs:
       - name: Залить webapp/ на playoftime.online
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.PATH }}
+          username: ${{ secrets.LOGIN }}
+          password: ${{ secrets.PASSWORD }}
           protocol: ftps
           local-dir: ./webapp/
           server-dir: /
