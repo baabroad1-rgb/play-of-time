@@ -25,6 +25,10 @@ on:
         description: 'Класть APK на сайт (снять для служебных сборок)'
         type: boolean
         default: true
+      dest_dir:
+        description: 'Папка на сайте: /downloads/next для нового приложения, /downloads для мостового'
+        type: string
+        default: '/downloads/next'
 
 concurrency:
   group: build-apk
@@ -178,17 +182,25 @@ jobs:
           # поддерживает, соединение не должно падать целиком.
           COMMON='set ftp:ssl-allow true; set ftp:ssl-protect-data true; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 20;'
 
-          echo "=== что сейчас в downloads/ ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; ls" || {
-            echo "Не удалось подключиться или зайти в /downloads"; exit 1; }
+          # По умолчанию новое приложение кладётся в downloads/next, а по
+          # основному адресу остаётся мостовая версия старого: иначе игрок,
+          # нажавший обновление первым делом, поставит новое раньше, чем у
+          # него окажется старое с отдачей истории, и переедет без прогресса.
+          DEST="${{ inputs.dest_dir || '/downloads/next' }}"
+          echo "папка назначения: $DEST"
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; mkdir -p -f \"$DEST\"" || true
+
+          echo "=== что сейчас в $DEST ==="
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; ls" || {
+            echo "Не удалось подключиться или зайти в папку назначения"; exit 1; }
 
           # Удаление старых APK не должно валить сборку: если их там нет,
           # lftp возвращает ошибку, а это нормальная ситуация.
           echo "=== убираю прежние APK (если есть) ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; glob -a rm -f *.apk" || echo "прежних APK не было"
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; glob -a rm -f *.apk" || echo "прежних APK не было"
 
           echo "=== заливаю $APK ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; put \"$APK\"; ls"
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; put \"$APK\"; ls"
 
       - name: Завести релиз с этим APK
         uses: softprops/action-gh-release@v2

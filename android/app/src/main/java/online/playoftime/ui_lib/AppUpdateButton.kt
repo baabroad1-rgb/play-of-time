@@ -71,7 +71,12 @@ import java.net.URL
 fun AppUpdateButton(
     apkUrl: String,
     crashReporter: CrashReporter,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Подпись вынесена в параметр: той же кнопкой мостовая версия предлагает
+    // переехать на переименованное приложение, и слово "Update" там врало бы —
+    // это не обновление, а установка второго приложения рядом.
+    label: String = "Update",
+    labelWhileDownloading: String = "Updating…"
 ) {
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
@@ -109,7 +114,7 @@ fun AppUpdateButton(
             // ЦЕНТРИРОВАННОГО номера квеста ("Quest L.T"), и заезжал на него.
             // Номер квеста трогать НЕЛЬЗЯ (явный запрет Alex) — сужена только
             // эта плашка. "Update"/"Updating…" короткие, в тот же зазор влезают.
-            text = if (downloading) "Updating…" else "Update",
+            text = if (downloading) labelWhileDownloading else label,
             modifier = Modifier.padding(start = 6.dp, end = 2.dp),
             style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = accent)
         )
