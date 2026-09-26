@@ -20,7 +20,8 @@ class MainApplication : Application() {
         // инициализации, подтянуть их позже значит показать первый уровень
         // и новую личность, которой сервер лидерборда не знает. Операция
         // разовая и короткая — это несколько десятков значений, не таблицы.
-        runCatching { LegacyImporter.importPreferences(applicationContext) }
+        // В мостовой версии переноса нет: идентификатор тот же, что у источника —
+        // приложение импортировало бы данные само из себя.
 
         startKoin {
             androidContext(this@MainApplication)
@@ -28,7 +29,6 @@ class MainApplication : Application() {
         }
 
         installCrashReporting()
-        importLegacyData()
     }
 
     /**

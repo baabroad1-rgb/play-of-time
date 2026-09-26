@@ -15,7 +15,7 @@ package online.playoftime.core.export
 object PlayDataContract {
 
     /** Authority этого приложения. */
-    const val AUTHORITY = "online.playoftime.provider"
+    const val AUTHORITY = "ru.iflex.timemvp.quest.provider"
 
     /**
      * Разрешение на выгрузку сырых данных. Уровень signature: его получает
@@ -23,7 +23,7 @@ object PlayDataContract {
      * система, подделать подпись нельзя, и игрока ни о чём спрашивать не надо —
      * это разговор приложения с самим собой, просто под другим именем пакета.
      */
-    const val PERMISSION_EXPORT = "online.playoftime.permission.EXPORT_PLAY_DATA"
+    const val PERMISSION_EXPORT = "ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA"
 
     /**
      * Разрешение для стороннего приложения (дневник психологического
@@ -31,7 +31,7 @@ object PlayDataContract {
      * обращении. Отдельное от EXPORT_PLAY_DATA, потому что то — signature,
      * его получает только приложение с тем же ключом подписи.
      */
-    const val PERMISSION_READ = "online.playoftime.permission.READ_PLAY_DATA"
+    const val PERMISSION_READ = "ru.iflex.timemvp.quest.permission.READ_PLAY_DATA"
 
     const val VERSION = 1
 

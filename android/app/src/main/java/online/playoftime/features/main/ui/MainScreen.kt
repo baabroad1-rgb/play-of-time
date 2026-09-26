@@ -1011,6 +1011,26 @@ fun MainScreen(
         // в дереве (потому тост про детект версии был честный), но физически
         // погребена под фоном экрана, невидима. В Box поздние дети рисуются
         // поверх ранних — тот же приём уже применён к help-оверлею выше.
+        // МОСТОВАЯ ВЕРСИЯ: предложение переехать на переименованное приложение.
+        // Видно, только пока нового приложения на телефоне нет.
+        //
+        // Почему кнопка здесь, а не ссылкой на сайте: игрок жмёт обновление
+        // когда захочет, и рассчитывать на порядок нельзя. По основному адресу
+        // сайта лежит ЭТА версия, а новое приложение достаётся только отсюда —
+        // значит к моменту его установки у игрока гарантированно есть старое,
+        // умеющее отдать историю. Порядок зашит в софт, а не в расписание.
+        if (!isPackageInstalled(LocalContext.current, "online.playoftime")) {
+            online.playoftime.ui_lib.AppUpdateButton(
+                apkUrl                = "https://playoftime.online/api/next_apk.php",
+                label                 = "Новая версия",
+                labelWhileDownloading = "Качаю…",
+                crashReporter         = org.koin.compose.koinInject<online.playoftime.core.telemetry.CrashReporter>(),
+                modifier              = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 10.dp, top = 6.dp)
+            )
+        }
+
         state.updateApkUrl?.let { apkUrl ->
             online.playoftime.ui_lib.AppUpdateButton(
                 apkUrl        = apkUrl,
@@ -1165,3 +1185,8 @@ fun MainScreenPreview() {
         )
     }
 }
+
+/** Стоит ли на телефоне приложение с таким идентификатором. Нужно мостовой
+ *  версии, чтобы не предлагать переезд тому, кто уже переехал. */
+private fun isPackageInstalled(context: android.content.Context, packageName: String): Boolean =
+    runCatching { context.packageManager.getPackageInfo(packageName, 0); true }.getOrDefault(false)

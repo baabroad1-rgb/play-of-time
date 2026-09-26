@@ -33,7 +33,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "online.playoftime"
+        applicationId = "ru.iflex.timemvp.quest"
         minSdk = 27
         targetSdk = 36
         versionCode = readVersionCode
