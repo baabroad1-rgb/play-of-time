@@ -118,6 +118,20 @@ jobs:
           echo "tag=v$(basename "$APK" .apk | sed 's/^play-of-time-v//')" >> "$GITHUB_OUTPUT"
           ls -lh "$APK"
 
+      - name: Чем подписан получившийся APK
+        shell: bash
+        # Проверка, а не украшение: до этого сборка молча подписывалась чужим
+        # ключом, и выяснялось это только на телефоне ошибкой про конфликт
+        # пакетов. Теперь отпечаток видно прямо в логе сборки.
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          echo "apksigner: $APKSIGNER"
+          "$APKSIGNER" verify --print-certs "${{ steps.apk.outputs.path }}" | grep -i "SHA-256\|SHA256" || true
+          echo "--- ожидаемый отпечаток ключа из секрета: ---"
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+                  -storepass android -alias androiddebugkey 2>/dev/null \
+            | grep -i "SHA256:" || true
+
       - name: Сохранить APK как артефакт сборки
         uses: actions/upload-artifact@v4
         with:

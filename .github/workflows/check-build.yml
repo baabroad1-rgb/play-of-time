@@ -48,4 +48,9 @@ jobs:
 
       - name: Размер получившегося APK
         shell: bash
-        run: ls -lh android/app/build/outputs/apk/debug/*.apk
+        run: |
+          ls -lh android/app/build/outputs/apk/debug/*.apk
+          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          echo "--- чем подписан: ---"
+          "$APKSIGNER" verify --print-certs "$APK" | grep -i "SHA-256" || true

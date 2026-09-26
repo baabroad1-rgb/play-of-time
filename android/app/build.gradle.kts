@@ -46,6 +46,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Путь к отладочному ключу задан ЯВНО. Без этого Android-плагин
+            // ищет его сначала в $ANDROID_SDK_HOME/.android, и на машинах
+            // GitHub Actions, где эта переменная указывает в другое место,
+            // не находит и молча создаёт новый ключ. APK получается подписан
+            // чужой подписью и не встаёт поверх установленного:
+            // "App not installed as package conflicts with an existing package".
+            // Путь одинаково разрешается и на ноутбуке (C:\Users\<имя>), и на
+            // runner'е (/home/runner), так что локальные сборки не меняются.
+            storeFile = File(System.getProperty("user.home"), ".android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             // R8 на debug ОТКЛЮЧЁН (Alex 2026-08-25, отменяет решение от 14 июля —
