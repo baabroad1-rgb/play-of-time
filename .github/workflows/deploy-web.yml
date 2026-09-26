@@ -36,7 +36,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: ./webapp/
-          server-dir: /playoftime.online/public_html/
+          server-dir: /
           dangerous-clean-slate: false
           exclude: |
             **/.git*

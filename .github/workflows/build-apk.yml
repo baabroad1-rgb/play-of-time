@@ -95,7 +95,7 @@ jobs:
             set ftp:ssl-protect-data true;
             set ssl:verify-certificate no;
             open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\";
-            cd /playoftime.online/public_html/downloads;
+            cd /downloads;
             glob -a rm -f *.apk;
             put \"$APK\";
             ls
