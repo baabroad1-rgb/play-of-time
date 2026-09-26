@@ -36,6 +36,7 @@ Play of Time is a native Android stopwatch-based training app rooted in Gellerst
 - `основной экран.pdf` — main screen design prototype
 - `quests_oder.pdf` — quest flowchart with adaptation logic
 - Google Drive folder ID: `1aC9cv460P-xKaI97zOKANlyBLrJUmk8C`
+- **Полный индекс со статусами актуальности: [`../docs/DOCS_INDEX.md`](../docs/DOCS_INDEX.md)** (37 документов, сверено 26.09.2026). Список выше — подмножество.
 
 ## История разработки — в docs/CHANGELOG.md
 

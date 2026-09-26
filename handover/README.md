@@ -127,4 +127,4 @@ AGENTS.md в корне будет прочитан автоматически.
 
 ## Ключевые контакты и ресурсы
 - Владелец: Alexander Belyshkin (концепт и продакт-решения).
-- Сайт: playoftime.online · Google Drive папка: см. docs/DOCS_INDEX.md.
+- Сайт: playoftime.online · Google Drive папка: см. [`../docs/DOCS_INDEX.md`](../docs/DOCS_INDEX.md).

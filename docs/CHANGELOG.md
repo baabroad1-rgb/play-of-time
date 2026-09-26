@@ -472,7 +472,7 @@ geomMeanAbsOffset = geometricMean(durations) − aim
 Изначально была отдельная карточка `MODES OF DEVIATION` с двумя колонками (Early/Late top-3). По просьбе Alex — прибита, а её данные встроены в карточку `RANGE OF DEVIATIONS`.
 
 #### 1. Прибитие TopDeviationsCard
-В [StatScreen.kt](app/src/main/java/ru/iflex/timemvp/features/stats/ui/StatScreen.kt) убран вызов `item { TopDeviationsCard(data, selectedPeriod) }`. Само определение `TopDeviationsCard(...)` пока оставлено в файле как мёртвый код (не вызывается ниоткуда) — если понадобится вернуть, доступно.
+В [StatScreen.kt](../android/app/src/main/java/ru/iflex/timemvp/features/stats/ui/StatScreen.kt) убран вызов `item { TopDeviationsCard(data, selectedPeriod) }`. Само определение `TopDeviationsCard(...)` пока оставлено в файле как мёртвый код (не вызывается ниоткуда) — если понадобится вернуть, доступно.
 
 #### 2. Чёрный текст счётчика в зелёном сегменте attempts ratio
 До: счётчик `greenCount` (сколько побед из общего кол-ва) рисовался белым текстом на зелёном фоне — плохо читался. Поправил через новый `greenCountStyle = countStyle.copy(color = Color.Black)`, применён только к зелёному сегменту. Красный и синий счётчики остались белыми.
@@ -691,7 +691,7 @@ wasAtBaseline            → AFTER_SUBQUEST_ENTER
 - «Обводка бабла слабая, крестик виден плохо, ссылка на аналитику поехала — сделай нормально».
 - «Ссылка выглядит как говно, надо чтобы читалось CTA».
 
-Полная переработка [CheerUpBubble.kt](app/src/main/java/ru/iflex/timemvp/ui_lib/CheerUpBubble.kt):
+Полная переработка [CheerUpBubble.kt](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/CheerUpBubble.kt):
 - **Обводка** 2 dp насыщенно-янтарным `Color(0xFFFFD35E)` вокруг всего бабла, скругление 16 dp.
 - **Крестик**: 30 dp тап-таргет, `24 sp` символ (был 22).
 - **«See your progress →»** — вместо подчёркнутого текста стал pill-кнопкой:
@@ -774,7 +774,7 @@ Alex провёл **полный редизайн cheer-up таблицы** че
 - Строка 2 (12 sp, medium): `aim: <yellow aim time> · <green N/M> · left <green remaining>/<dim N>` или `... · no limit`.
 - `(mechanic)` метка в скобках — раньше была `(two in N)` / `(three in row)` и т.п. **Убрана** по просьбе Alex — механика читается по компоновке мишеней.
 
-**Компонент**: [QuestProgress.kt](app/src/main/java/ru/iflex/timemvp/features/main/ui/QuestProgress.kt). Всё через Compose Canvas, никаких XML drawable — 100% векторно.
+**Компонент**: [QuestProgress.kt](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/QuestProgress.kt). Всё через Compose Canvas, никаких XML drawable — 100% векторно.
 
 **Данные из State**: добавлены 4 новых поля в `MainContract.State`:
 - `questAimStr: String` — форматированный aim под точность уровня (`"3.0"` / `"3.00"` / `"3.000"`).
@@ -911,7 +911,7 @@ Root causes:
 
 **Три защитных фикса** (belt-and-suspenders, каждый закрывает свой угол):
 
-**1.** [`MainViewModel.kt` init — `questMatch` перед restore](app/src/main/java/ru/iflex/timemvp/features/main/ui/MainViewModel.kt):
+**1.** [`MainViewModel.kt` init — `questMatch` перед restore](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainViewModel.kt):
 ```kotlin
 val questMatch = latest != null &&
     latest.questLevelId == localStorage.getCurrentLevelId() &&
@@ -951,13 +951,13 @@ if (localStorage.getAccuracy() != questNow.accuracy) {
 
 **Жалоба** #1 (max streak): "выбивания тройки не защитались вообще". Alex сделал 2 попадания подряд на L2.5 subquest ± 0.01, потом промах, потом ещё промах. QuestProgress показывал `0/3` вместо `2/3`. Раньше `landed = state.attempts.takeWhile { it.isWin }.size` — только **текущий** streak от новейшей попытки. После промаха → 0. Игрок видел зелёные 3.00 в логе, но targets 0/3 — "не защитались".
 
-**Фикс** [`MainScreen.kt`](app/src/main/java/ru/iflex/timemvp/features/main/ui/MainScreen.kt): переключил ROW-подсчёт `landed` на **максимальный** streak в окне — та же логика что в `checkVictory.maxRow`. Теперь как только были 2 подряд, targets показывают `2/3` и не сбрасываются на промах.
+**Фикс** [`MainScreen.kt`](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainScreen.kt): переключил ROW-подсчёт `landed` на **максимальный** streak в окне — та же логика что в `checkVictory.maxRow`. Теперь как только были 2 подряд, targets показывают `2/3` и не сбрасываются на промах.
 
 **Жалоба** #2 (Rule 2 не срабатывал): "перевел на оригинальный квест но поскольку я выполнил условия оригинального квеста в сабквесте должен был перевести на следующий по отношению к оригинальному квесту квест". Alex сделал в субквесте L2.5 ± 0.01 много попыток, в конце три чистых 3.00 подряд. Ожидал Rule 2 → advance к L3.1. Получил Rule 3 → stepback (t=10 → t=0).
 
 **Root cause:** `worstWinErrorMs` в `checkVictory` копил max ошибки по **всем** победам окна за всё время. Ранние победы 3.01 (err=10мс) навсегда зафиксировали `worstWinErrorMs=10`. Потом 3 чистых 3.00 (err=0), но проверка `worstWinErrorMs (10) ≤ baseT (0) = false` → Rule 2 не срабатывал.
 
-**Фикс в двух местах** [`MainViewModel.kt`](app/src/main/java/ru/iflex/timemvp/features/main/ui/MainViewModel.kt):
+**Фикс в двух местах** [`MainViewModel.kt`](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainViewModel.kt):
 
 1. `checkVictory` — при **промахе** (`!isWin && adaptiveT`) сбрасываем `putQuestWindowMaxErrorMs(0)`. Теперь трекер отражает только текущий непрерывный streak, а не всё окно.
 2. Init restore — worst-win считается **только по trailing streak** (от новейшей назад до первого промаха), не по всем победам окна:
@@ -974,7 +974,7 @@ Alex: "видно что left на одной строчке, а количес�
 
 В info-строке `"aim: 3.000 · 0/2 · left 29/33"` label `left` уходил на одну строку, `29/33` — на следующую. Аналогично для `aim:` + значения, `no limit`, и `3.00 ± 0.01`.
 
-Замена всех breakable-пробелов на NBSP в [`QuestProgress.kt`](app/src/main/java/ru/iflex/timemvp/features/main/ui/QuestProgress.kt):
+Замена всех breakable-пробелов на NBSP в [`QuestProgress.kt`](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/QuestProgress.kt):
 - `"Level $levelId"` — Level и номер вместе.
 - `"$kindLabel $taskId of $totalTasks"` — `quest 2 of 5` целиком.
 - `"aim: "` + value — вместе.
@@ -1048,7 +1048,7 @@ Alex прислал изображение канатоходца между 2.9
 
 ### v11.77 — BottomNavBar (4 таба)
 
-Новый компонент [`ui_lib/BottomNavBar.kt`](app/src/main/java/ru/iflex/timemvp/ui_lib/BottomNavBar.kt) — 4 равношироких таба:
+Новый компонент [`ui_lib/BottomNavBar.kt`](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/BottomNavBar.kt) — 4 равношироких таба:
 - **Play** — `NavRoutes.MainScreen`, иконка `ic_run`
 - **Analytics** — `NavRoutes.StatScreen`, иконка `ic_stat`
 - **Settings** — `NavRoutes.SettingScreen`, иконка `ic_settings`
@@ -1073,7 +1073,7 @@ Alex прислал изображение канатоходца между 2.9
 Setup:
 - **AndroidManifest.xml** — `<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">` + meta-data `android.support.FILE_PROVIDER_PATHS`.
 - **res/xml/file_provider_paths.xml** — `<cache-path name="excel_export" path="excel/" />`.
-- **[ui_lib/ExcelShareUtil.kt](app/src/main/java/ru/iflex/timemvp/ui_lib/ExcelShareUtil.kt)** — `suspend fun shareExcelAsync(context, scope, exportUseCase)` + Compose-хелпер `rememberExcelShareAction(): () -> Unit` (koinInject'ит `ExportToExcelUseCase`).
+- **[ui_lib/ExcelShareUtil.kt](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/ExcelShareUtil.kt)** — `suspend fun shareExcelAsync(context, scope, exportUseCase)` + Compose-хелпер `rememberExcelShareAction(): () -> Unit` (koinInject'ит `ExportToExcelUseCase`).
 
 Каждый из 4 экранов передаёт `onExport = rememberExcelShareAction()` в BottomNavBar.
 
@@ -1133,7 +1133,7 @@ Peak за идеальную 3.000: L1 → 0.99 SC, L2 → 9.9 SC, L3 → 99 SC.
 
 Alex: «убрать приглашение на просмотр статистики с первого уровня. первый раз кнопка возникает после завершения первого квеста второго уровня» (т.е. arrival = L2.2).
 
-В [MainScreen.kt](app/src/main/java/ru/iflex/timemvp/features/main/ui/MainScreen.kt) при рендере бабла:
+В [MainScreen.kt](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainScreen.kt) при рендере бабла:
 ```kotlin
 val q = state.currentQuest   // уже arrival-квест после advance
 val levelUnlocksAnalytics =
@@ -1470,7 +1470,7 @@ Direct follow-up to the same day's bottom-nav/alignment work above, after Alex l
 
 ## What Was Done (23 August 2026, later — v13.32 → v13.33) — targets turn into the animated logo on hit
 
-Alex: "мишени (слева вверху главного экрана), по мере выбивания, превращались в анимированные логотипы." A hit target used to just get a static green wash + a small check badge drawn in the same `Canvas` as the rest of the archery-metaphor graphics (`QuestProgress.kt`'s `TargetsRow`/`drawTarget`). Now a hit target's whole body becomes a live copy of the spinning brand-mark ([`AnimatedLogo.kt`](app/src/main/java/ru/iflex/timemvp/ui_lib/AnimatedLogo.kt) — the same ring/triangle/"t" flip used on the About screen), with the green check badge kept as a small overlay in the corner so "hit" is still readable at a glance without waiting to notice the logo.
+Alex: "мишени (слева вверху главного экрана), по мере выбивания, превращались в анимированные логотипы." A hit target used to just get a static green wash + a small check badge drawn in the same `Canvas` as the rest of the archery-metaphor graphics (`QuestProgress.kt`'s `TargetsRow`/`drawTarget`). Now a hit target's whole body becomes a live copy of the spinning brand-mark ([`AnimatedLogo.kt`](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/AnimatedLogo.kt) — the same ring/triangle/"t" flip used on the About screen), with the green check badge kept as a small overlay in the corner so "hit" is still readable at a glance without waiting to notice the logo.
 
 **Why this needed a structural change, not just a new draw call**: `AnimatedLogo` is a real `@Composable` (drives its rotation via `rememberInfiniteTransition`/`Animatable`, renders `Image`s with `graphicsLayer{ rotationY = ... }`) — it can't be invoked from inside a `DrawScope.drawTarget()` lambda, which is plain imperative Canvas drawing with no composition of its own. `TargetsRow` was a single `Canvas` drawing every target (hit or not) in one pass; rebuilt it as a `Box` with each target as its own positioned child (`Modifier.offset(x = stepDp * i)` per slot, replacing the old absolute-coordinate math inside one `DrawScope`) — un-hit targets stay small per-target `Canvas`es (same `drawTarget`, minus the now-dead `hit` branch), hit targets become `Box { AnimatedLogo(...); Canvas { drawHitBadge(...) } }` clipped to a circle. Draw/composition order is unchanged from before (un-hit first as background, hit ones after so a hit target's badge isn't clipped by an overlapping neighbor on ROW quests) — same visual stacking, just per-target `Box` children in a parent `Box` instead of one shared `Canvas`.
 
