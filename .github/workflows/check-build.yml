@@ -38,6 +38,22 @@ jobs:
           printf '\n84831b9409646a918e30573bab4c9c91346d8abd\n' \
             > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
+      # Тот же ключ, что и в боевой сборке: иначе APK с ветки не поставить
+      # на телефон поверх установленного, и отпечаток в логе не с чем сравнить.
+      - name: Положить общий debug-ключ подписи
+        shell: bash
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
+            echo "Секрет DEBUG_KEYSTORE_B64 не задан — подпись будет случайной."
+            exit 1
+          fi
+          mkdir -p "$HOME/.android"
+          printf '%s' "$DEBUG_KEYSTORE_B64" | tr -d '\r\n \t' | base64 -d > "$HOME/.android/debug.keystore"
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+                  -storepass android -alias androiddebugkey 2>/dev/null | grep -i "SHA256:" || true
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Скомпилировать
