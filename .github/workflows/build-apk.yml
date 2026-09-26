@@ -43,7 +43,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      # Android SDK на машинах GitHub уже предустановлен ($ANDROID_HOME).
+      # android-actions/setup-android не используем: он лезет качать свою
+      # версию cmdline-tools и падает, потому что в образе нет unzip.
+      # Доставляем только то, чего может не хватать под compileSdk = 36.
+      - name: Доставить компоненты Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
 
       - uses: gradle/actions/setup-gradle@v4
 
