@@ -38,6 +38,8 @@ class PlayDataProvider : ContentProvider() {
         val MATCHER = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_EXPORT_ATTEMPTS, CODE_ATTEMPTS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_EXPORT_SESSIONS, CODE_SESSIONS)
+            addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_ATTEMPTS, CODE_ATTEMPTS)
+            addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_SESSIONS, CODE_SESSIONS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_META, CODE_META)
         }
     }
@@ -59,8 +61,10 @@ class PlayDataProvider : ContentProvider() {
     ): Cursor? = when (MATCHER.match(uri)) {
         // Сортировка по id, а не по времени: она задаёт порядок вставки в новую
         // базу, а sessionId в попытках ссылается на id сессии.
-        CODE_ATTEMPTS -> rawQuery("SELECT * FROM TryDatabaseModel ORDER BY id ASC", uri)
-        CODE_SESSIONS -> rawQuery("SELECT * FROM SessionDatabaseModel ORDER BY id ASC", uri)
+        // id AS _id — соглашение Android: курсорные адаптеры ищут колонку
+        // именно с таким именем. Исходный id тоже остаётся.
+        CODE_ATTEMPTS -> rawQuery("SELECT *, id AS _id FROM TryDatabaseModel ORDER BY id ASC", uri)
+        CODE_SESSIONS -> rawQuery("SELECT *, id AS _id FROM SessionDatabaseModel ORDER BY id ASC", uri)
         CODE_META -> metaCursor(uri)
         else -> throw IllegalArgumentException("Неизвестный адрес: $uri")
     }

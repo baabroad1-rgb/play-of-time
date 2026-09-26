@@ -4,6 +4,8 @@
          игрок их обычно не видит; Android показывает их в настройках
          приложения, в списке разрешений. -->
     <string name="permission_export_play_data_label">Чтение истории тренировок</string>
+    <string name="permission_read_play_data_label">Чтение истории тренировок</string>
+    <string name="permission_read_play_data_description">Позволяет другому приложению прочитать историю ваших попыток и сессий в Play of Time.</string>
     <string name="permission_export_play_data_description">Позволяет приложению, подписанному тем же ключом, прочитать историю попыток и сессий — например, чтобы перенести её в новую версию Play of Time.</string>
     <string name="task_and_goal" translatable="false">Run and Stop it exactly at</string>
     <string name="task_and_goal_for_quest" translatable="false">Level %1$s. Quest %2$s of %3$s.\nRun and Stop exactly at</string>

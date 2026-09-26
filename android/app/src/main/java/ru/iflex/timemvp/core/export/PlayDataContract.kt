@@ -26,6 +26,14 @@ object PlayDataContract {
      */
     const val PERMISSION_EXPORT = "ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA"
 
+    /**
+     * Разрешение для стороннего приложения (дневник психологического
+     * состояния). Уровень dangerous: Android спросит игрока при первом
+     * обращении. Отдельное от EXPORT_PLAY_DATA, потому что то — signature,
+     * его получает только приложение с тем же ключом подписи.
+     */
+    const val PERMISSION_READ = "ru.iflex.timemvp.quest.permission.READ_PLAY_DATA"
+
     const val VERSION = 1
 
     /** Попытки, как они лежат в базе: все колонки, без переименований. */
@@ -33,6 +41,13 @@ object PlayDataContract {
 
     /** Сессии, как они лежат в базе. */
     const val PATH_EXPORT_SESSIONS = "v1/export/sessions"
+
+    /** Попытки для стороннего приложения. Данные те же, что в export —
+     *  отличается только разрешение, по которому пускают. */
+    const val PATH_ATTEMPTS = "v1/attempts"
+
+    /** Сессии для стороннего приложения. */
+    const val PATH_SESSIONS = "v1/sessions"
 
     /** Одна строка: версия контракта, версия приложения, объём данных. */
     const val PATH_META = "v1/meta"
