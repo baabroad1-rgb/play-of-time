@@ -1,6 +1,7 @@
 package ru.iflex.timemvp.core
 
 
+import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -96,14 +97,29 @@ private val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
-val appModule = module {
-    single {
-        Room.databaseBuilder(
-            androidApplication(),
+@Volatile
+private var timeDatabaseInstance: TimeDatabase? = null
+
+/**
+ * Единственный на процесс экземпляр базы. Нужен не только Koin'у: к той же базе
+ * обращается PlayDataProvider, а ContentProvider создаётся РАНЬШЕ
+ * Application.onCreate, то есть до старта Koin — полагаться там на DI нельзя.
+ * Оба пути идут сюда, поэтому экземпляр остаётся один и миграции не расходятся.
+ */
+fun provideTimeDatabase(context: Context): TimeDatabase =
+    timeDatabaseInstance ?: synchronized(TimeDatabase::class.java) {
+        timeDatabaseInstance ?: Room.databaseBuilder(
+            context.applicationContext,
             TimeDatabase::class.java,
             "time_database.db"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build()
+        ).addMigrations(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+        ).build().also { timeDatabaseInstance = it }
     }
+
+val appModule = module {
+    single { provideTimeDatabase(androidApplication()) }
 
     singleOf(::LocalStorageService) {
         bind<LocalStorageServiceContract>()

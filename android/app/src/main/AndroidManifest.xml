@@ -15,6 +15,19 @@
          его до ручного разрешения "Install unknown apps" в настройках.
          Полный комментарий про заплатку — core/update/UpdateApi.kt. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Выгрузка истории игрока. Уровень signature: разрешение получает только
+         приложение, подписанное тем же ключом, — проверяет сама система.
+         Нужно для переезда на переименованный пакет (online.playoftime):
+         для Android это другое приложение со своей пустой базой, и историю
+         оно забирает отсюда при первом запуске.
+         Имя разрешения — литерал, а не ${applicationId}: его объявляет ЭТО
+         приложение, а запрашивает по этой же строке новое. -->
+    <permission
+        android:name="ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA"
+        android:label="@string/permission_export_play_data_label"
+        android:description="@string/permission_export_play_data_description"
+        android:protectionLevel="signature" />
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
@@ -46,6 +59,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_provider_paths" />
         </provider>
+        <!-- Отдача истории игрока, только на чтение. Подробности — в
+             core/export/PlayDataProvider.kt, внешнее описание — в
+             docs/CONTENT_PROVIDER_CONTRACT.md. -->
+        <provider
+            android:name=".core.export.PlayDataProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="true"
+            android:readPermission="ru.iflex.timemvp.quest.permission.EXPORT_PLAY_DATA" />
+
     </application>
 
 </manifest>
