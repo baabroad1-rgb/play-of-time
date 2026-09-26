@@ -1,0 +1,113 @@
+name: Собрать APK и выложить
+
+# Срабатывает, когда меняется код в android/ и это попадает в main.
+# Можно запустить руками: вкладка Actions -> этот workflow -> Run workflow
+# (работает с телефона).
+#
+# Что делает:
+#   1. собирает debug-APK (подпись не нужна, ключ в GitHub не хранится);
+#   2. возвращает в репозиторий увеличенный номер версии, чтобы нумерация
+#      не сбрасывалась от сборки к сборке;
+#   3. кладёт APK на хостинг в downloads/, удалив предыдущий — так решил
+#      Алекс 22.09.2026: в папке всегда ровно один APK;
+#   4. заводит релиз на GitHub с тем же файлом — архив версий, чтобы можно
+#      было вернуться к любой прошлой сборке.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # нужен токен с правом записи, чтобы вернуть номер версии в репозиторий
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Собрать debug-APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Найти APK и версию
+        id: apk
+        run: |
+          APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          if [ -z "$APK" ]; then echo "APK не найден"; exit 1; fi
+          echo "path=$APK"               >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$APK")" >> "$GITHUB_OUTPUT"
+          # версия в имени файла — та, что была ДО автобампа
+          echo "tag=v$(basename "$APK" .apk | sed 's/^play-of-time-v//')" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      - name: Сохранить APK как артефакт сборки
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      - name: Вернуть увеличенный номер версии в репозиторий
+        run: |
+          if git diff --quiet -- android/app/version.properties; then
+            echo "версия не изменилась, коммитить нечего"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/app/version.properties
+          # [skip ci] обязателен: иначе этот коммит запустит сборку заново, по кругу
+          git commit -m "Автобамп версии после сборки ${{ steps.apk.outputs.tag }} [skip ci]"
+          git push
+
+      - name: Положить APK на хостинг в downloads/
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -c "
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ssl:verify-certificate no;
+            open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\";
+            cd /playoftime.online/public_html/downloads;
+            glob -a rm -f *.apk;
+            put \"$APK\";
+            ls
+          "
+
+      - name: Завести релиз с этим APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.apk.outputs.tag }}
+          name: ${{ steps.apk.outputs.tag }}
+          body: |
+            Debug-сборка, собрана автоматически.
+            Что менялось — в истории коммитов и в `docs/CHANGELOG.md`.
+          files: ${{ steps.apk.outputs.path }}
+          fail_on_unmatched_files: true

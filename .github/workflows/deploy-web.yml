@@ -1,0 +1,50 @@
+name: Выложить сайт на хостинг
+
+# Срабатывает, когда меняется что-то в webapp/ и это попадает в main.
+# Можно запустить и руками: вкладка Actions -> этот workflow -> Run workflow
+# (работает с телефона).
+#
+# Заливает только то, что реально нужно сайту. Документация, заметки сессий
+# и отладочные файлы на сервер не уезжают.
+#
+# Ничего на сервере НЕ удаляет: папка downloads/ с APK и _old_builds/
+# остаются нетронутыми.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'webapp/**'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Залить webapp/ на playoftime.online
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./webapp/
+          server-dir: /playoftime.online/public_html/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.claude/**
+            **/*.md
+            handoff/**
+            Claude outputs/**
+            _scratch_debug/**
+            downloads/**
+            test_p2.js
