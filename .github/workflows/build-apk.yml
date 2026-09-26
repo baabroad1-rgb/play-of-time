@@ -43,25 +43,41 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # Android SDK на машинах GitHub уже предустановлен ($ANDROID_HOME).
-      # android-actions/setup-android не используем: он лезет качать свою
-      # версию cmdline-tools и падает, потому что в образе нет unzip.
-      # Доставляем только то, чего может не хватать под compileSdk = 36.
-      - name: Доставить компоненты Android SDK
+      # Образ runner'а урезанный: нет unzip, нет yes, нет даже /bin/sh —
+      # поэтому ни android-actions/setup-android, ни sdkmanager (это sh-скрипт)
+      # тут не работают. Пользуемся тем, что уже лежит в $ANDROID_HOME,
+      # а лицензии кладём файлами напрямую.
+      - name: Что есть в окружении
+        shell: bash
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
-          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+          for t in sh bash unzip yes sudo apt-get curl java; do
+            printf '%-10s %s\n' "$t" "$(command -v $t || echo НЕТ)"
+          done
+          echo "--- platforms:";    ls "$ANDROID_HOME/platforms"    2>/dev/null || echo нет
+          echo "--- build-tools:";  ls "$ANDROID_HOME/build-tools"  2>/dev/null || echo нет
+          echo "--- licenses:";     ls "$ANDROID_HOME/licenses"     2>/dev/null || echo нет
+
+      - name: Принять лицензии Android SDK
+        shell: bash
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf '\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\n' \
+            > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf '\n84831b9409646a918e30573bab4c9c91346d8abd\n' \
+            > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Собрать debug-APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        shell: bash
+        # именно `bash ./gradlew`: у скрипта шебанг #!/bin/sh, а sh в образе нет
+        run: bash ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Найти APK и версию
         id: apk
+        shell: bash
         run: |
           APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
           if [ -z "$APK" ]; then echo "APK не найден"; exit 1; fi
@@ -79,6 +95,7 @@ jobs:
           retention-days: 30
 
       - name: Вернуть увеличенный номер версии в репозиторий
+        shell: bash
         run: |
           if git diff --quiet -- android/app/version.properties; then
             echo "версия не изменилась, коммитить нечего"
