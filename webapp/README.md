@@ -13,27 +13,37 @@ webapp/
 ├── manifest.webmanifest    ← PWA manifest
 ├── icon.svg                ← app icon
 ├── CLAUDE.md               ← project brief: rules/invariants for continuing (read first)
-└── reference/
-    ├── docs/
-    │   ├── webapp_handoff.md   ← AUTHORITATIVE platform-independent spec (v12.87). The source of truth.
-    │   └── touch_sampling.md   ← dithering / honest tap-timing math (spec §3 backing)
-    └── native-src/             ← canonical Kotlin that defines exact behavior/formulas
-        ├── Quest.kt                 15 quests, victory conditions, indulgence caps/steps
-        ├── CalculateScmUseCase.kt   Serenity Coins formula (+ level factor)
-        ├── RecalculateScmUseCase.kt full-history recalc
-        ├── AnalyticsUseCase.kt      analytics metrics (lucky, range, modes, geom mean)
-        ├── MainMetricsUseCase.kt    main-screen metrics (histogram, geom means)
-        ├── GetLogAttemptsUseCase.kt log rows, twins/neighbor, win-by-tolerance
-        ├── CheerUpMessages.kt       all cheer-up texts + describePhase()
-        ├── CheerUpTrigger.kt        trigger enum (incl. AFTER_SUBQUEST_* family)
-        ├── ErrorPattern.kt          7 rhythm patterns
-        ├── LocalStorageService.kt   persisted quest/session keys
-        ├── MainContract.kt          UI state shape
-        └── Utils.kt                 constants (dither cell, aim, etc.)
+├── api/                    ← PHP-бэкенд (лидерборд, синк, отчёт)
+└── handoff/                ← заметки веб-сессий по конкретным правкам
 ```
 
-The provenance chain (native → spec → web) means: when web behavior must match
-native, the order of authority is **native-src → webapp_handoff.md → app.js**.
+## Где определено поведение (порядок авторитета)
+
+**живой Kotlin в `../android/` → `../docs/webapp_handoff.md` → `app.js`**
+
+Раньше здесь лежало зеркало `reference/native-src/*.kt` — ручная копия нативных
+исходников, потому что веб-сессия физически не видела папку с Android-проектом.
+С 2026-09-26 оба проекта в одном репозитории, и зеркало удалено: живой код
+не может отстать по определению. Зеркало отставало трижды (2026-08-13 — на 5 из
+11 файлов, и на момент удаления — на 7 из 12, `AnalyticsUseCase.kt` на 1061 строку).
+Старые копии при необходимости достаются из истории git.
+
+| Что определяет | Живой файл |
+|---|---|
+| 15 квестов, условия победы, шаги/потолки индульгенции | `../android/app/src/main/java/ru/iflex/timemvp/core/utils/Quest.kt` |
+| Формула Serenity Coins (+ множитель уровня) | `../android/app/src/main/java/ru/iflex/timemvp/use_case/CalculateScmUseCase.kt` |
+| Пересчёт SCM по всей истории | `../android/app/src/main/java/ru/iflex/timemvp/use_case/RecalculateScmUseCase.kt` |
+| Метрики аналитики (lucky, range, моды, геом. среднее) | `../android/app/src/main/java/ru/iflex/timemvp/features/stats/domain/usecase/AnalyticsUseCase.kt` |
+| Метрики главного экрана (гистограмма, геом. средние) | `../android/app/src/main/java/ru/iflex/timemvp/features/main/domain/usecase/MainMetricsUseCase.kt` |
+| Строки лога, близнецы/соседи, победа по допуску | `../android/app/src/main/java/ru/iflex/timemvp/features/main/domain/usecase/GetLogAttemptsUseCase.kt` |
+| Тексты подбадриваний + describePhase() | `../android/app/src/main/java/ru/iflex/timemvp/core/utils/CheerUpMessages.kt` |
+| Триггеры подбадриваний (вкл. AFTER_SUBQUEST_*) | `../android/app/src/main/java/ru/iflex/timemvp/core/utils/CheerUpTrigger.kt` |
+| 7 ритмических паттернов ошибки | `../android/app/src/main/java/ru/iflex/timemvp/core/utils/ErrorPattern.kt` |
+| Ключи сохранения квестов/сессии | `../android/app/src/main/java/ru/iflex/timemvp/core/data/LocalStorageService.kt` |
+| Форма UI-состояния | `../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainContract.kt` |
+| Константы (ячейка дизеринга, aim и пр.) | `../android/app/src/main/java/ru/iflex/timemvp/core/utils/Utils.kt` |
+
+Если поведение веба должно совпадать с нативом — читай Kotlin напрямую, а не пересказ.
 
 ## How to run
 

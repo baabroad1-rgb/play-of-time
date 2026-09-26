@@ -1,16 +1,25 @@
 # Webapp ↔ Native parity audit
 
-`app.js` (stamp `20260730f`) vs native **v12.90** (full source at
-`C:\PlayOfTime\time_mvp-quest_dev`; curated subset in `reference/native-src/`,
-docs `reference/docs/webapp_handoff.md` which lag at v12.87). Goal: webapp maximally
-matches the native app in **look and behavior**.
+`webapp/app.js` vs native, both in this repository. Native source: `android/app/src/`
+(live, cannot lag). Written spec: `docs/webapp_handoff.md` (lags at v12.87 — it is
+hand-written, so when it and the Kotlin disagree, **the Kotlin wins**). Goal: webapp
+maximally matches the native app in **look and behavior**.
 
-**2026-08-13**: `reference/native-src/*.kt` refreshed to match live native
-source (was stale on 5 of 11 files — see `TASKS.md` P0-3). Also fixed two
-real parity bugs found during that refresh: Lucky Index formula and the
-session-log "SubQuest" label (`app.js` now at stamp `20260813a`).
-`webapp_handoff.md` was NOT refreshed in this pass — still lags at v12.87;
-treat it as more stale than the `.kt` mirror until someone does that pass too.
+**This file is the single place where parity status lives.** Keep it current; it is
+what tells anyone how far the web is behind.
+
+**2026-09-26 — зеркало исходников удалено.** До этого дня нативный код копировался
+в `webapp/reference/native-src/*.kt` вручную, потому что веб-сессия не видела папку
+Android-проекта. Теперь оба проекта в одном git-репозитории, копия не нужна и удалена.
+Она отставала трижды: 2026-08-13 (Lucky Index и метка SubQuest расходились неделями,
+незамеченно — зеркало показывало старые версии как «актуальные»), тогда же на 5 из 11
+файлов, и к 2026-09-26 на 7 из 12, `AnalyticsUseCase.kt` — на 1061 строку. Карта
+«что где определено» — в `webapp/README.md`.
+
+**2026-08-13** (историческая запись): зеркало обновлено под живой код (отставало на
+5 из 11 файлов — см. `TASKS.md` P0-3). Тогда же исправлены два настоящих багa паритета,
+найденных при обновлении: формула Lucky Index и метка «SubQuest» в логе сессии
+(`app.js` стал `20260813a`).
 
 Legend: ✅ matches · ⚠️ partial/diverges · ❌ missing. Priority P0 (fairness/core) →
 P3 (polish). Items are worked top-down, one at a time.

@@ -1,6 +1,6 @@
 # Native → web sync: main-screen quest panel (pips, layout, cheer-up highlight)
 
-Context: native (`time_mvp-quest_dev`) went through a multi-round redesign of
+Context: native (`android`) went through a multi-round redesign of
 the main-screen quest-info panel (`QuestProgress.kt`) between 2026-08-26 and
 2026-09-03, driven by Alex's own reference sketches, plus a related change to
 how the cheer-up bubble behaves. Nothing here has been ported to the webapp

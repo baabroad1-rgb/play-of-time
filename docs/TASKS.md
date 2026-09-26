@@ -1,7 +1,7 @@
 # Play of Time — Bug & Task Backlog
 
 Maintained by Claude (Cowork). Generated from a direct read of both codebases
-(native `time_mvp-quest_dev` + web `webapp`, incl. `api/` backend), cross-checked
+(native `android` + web `webapp`, incl. `api/` backend), cross-checked
 against `CLAUDE.md`, `fixes_log.md`, and `PARITY_AUDIT.md` in both projects.
 
 ## ⚠️ DEPLOYMENT RULE — read before ever saying "upload X" (added 2026-08-14)
@@ -1036,7 +1036,7 @@ just `index.html` + `app.20260823a.js` + `styles.20260823a.css` together.
 
 Written by the **native** session (not this one) at Alex's request, right after
 shipping all five items on-device. Full detail (root causes, exact diffs, how
-each was pixel-verified) is in `time_mvp-quest_dev`'s own `CLAUDE.md`, dated
+each was pixel-verified) is in `android`'s own `CLAUDE.md`, dated
 entries "22 August 2026" through "23 August 2026, later still" — this is the
 condensed port-facing summary. None of this has been touched on the web side
 yet; nothing below is a claim about `app.js`/`styles.css`, only about what
@@ -2224,7 +2224,7 @@ app store or send?"), pointing its "Full detail" phrase at the real
 
 1. **Section order swapped.** Alex wants the Play shortcut (the tap-to-launch icon) seen before FAQ, not after — the CTA shouldn't sit below 15 collapsed questions. Moved `<section id="play">` back before `<section id="faq">` in both the document and the nav (`Research → Play → FAQ`, `Play` no longer last — Alex's call, overrides the placement reasoning written in the first FAQ entry above).
 2. **Pricing answer trimmed.** "Free, no ads, no in-app purchases — currently and for the foreseeable future." → "Currently free, with no ads and no in-app purchases." Dropped the future-looking claim; Alex only wants the current-state fact stated.
-3. **Sibiryakov added to "Who made this?"** Checked `app.20260823i.js`'s `renderAbout()` Credits section for the exact existing wording rather than guessing a role — it already reads `Concept & Development: Alexander Belyshkin / Design: Semyon Kulikov / Financial support: Alexey Sibiryakov` (confirmed same text is also synced into the native app's `AboutScreen.kt`, per `time_mvp-quest_dev/CLAUDE.md`). Matched that exactly: FAQ answer is now "Concept & Development: Alexander Belyshkin. Design: Semyon Kulikov. Financial support: Alexey Sibiryakov."
+3. **Sibiryakov added to "Who made this?"** Checked `app.20260823i.js`'s `renderAbout()` Credits section for the exact existing wording rather than guessing a role — it already reads `Concept & Development: Alexander Belyshkin / Design: Semyon Kulikov / Financial support: Alexey Sibiryakov` (confirmed same text is also synced into the native app's `AboutScreen.kt`, per `android/CLAUDE.md`). Matched that exactly: FAQ answer is now "Concept & Development: Alexander Belyshkin. Design: Semyon Kulikov. Financial support: Alexey Sibiryakov."
 4. **Fixed a real CSS bug, not a display glitch.** Alex reported: open a question, close it again, the heading stays orange instead of returning to black. Root cause: `.faq-item summary:hover { color: var(--accent) }` was a bare, unconditional hover rule — on a touchscreen, a tap sets `:hover` and there's no mouseout event to ever clear it, so the "hover" color sticks after every tap-close on mobile. Fixed in `styles.20260823g.css` by gating the rule behind `@media (hover: hover) and (pointer: fine)`, which only matches real mouse/trackpad input. Verified with two separate Playwright checks: a desktop mouse context (hover applies, clears on mouse-away) and a `hasTouch:true` mobile context replicating Alex's exact steps — open-tap then close-tap, color confirmed back to `--site-text` black, not stuck orange.
 5. **Em dashes removed from all 15 FAQ answers and the one question title that had one** ("How does the Lucky Index actually work — is it just luck?" → "How does the Lucky Index actually work? Is it just luck?"). Each "—" was rewritten into a period, colon, comma, or semicolon depending on what actually reads best in that sentence, not blanket-replaced — reworded, not just character-swapped. Scoped to the FAQ text only (the one this session wrote); the rest of the site's existing copy (Control/Patterns/Research sections, written earlier) still has its own em dashes untouched — flagging in case Alex wants those cleaned up too, not assuming so.
 

@@ -9,7 +9,7 @@ local.properties
 .env
 .env.*
 pot-secrets/
-.claude/settings.local.json
+**/.claude/settings.local.json
 
 # ───── Сборка и генерируемое ─────
 build/

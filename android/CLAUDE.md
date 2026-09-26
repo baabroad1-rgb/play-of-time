@@ -11,7 +11,7 @@ Play of Time is a native Android stopwatch-based training app rooted in Gellerst
 - Room (database)
 - Koin (dependency injection)
 - MVI architecture (BaseViewModel, Contract pattern)
-- Project path: `C:\PlayOfTime\time_mvp-quest_dev`
+- Project path: `C:\PlayOfTime\android`
 - Build: `.\gradlew clean assembleDebug`
 - Emulator: API 34 (Pixel 6)
 
@@ -2215,11 +2215,12 @@ Design says sparklines should vary by period:
 - Update app description from `about4googleplay_rus_and_eng.docx`
 
 ## Touch sampling / honest tap timing
-**See [`time_mvp-quest_dev/docs/touch_sampling.md`](time_mvp-quest_dev/docs/touch_sampling.md)** — почему на L3 «ровно 3.000» почти не выбивалось (8-мс сетка = дефолтная частота ДОСТАВКИ касаний, НЕ предел панели; 120 Гц — это refresh экрана), и как включить честную высокую частоту опроса тача:
-- **Game Mode** — `android:appCategory="game"` + `android:isGame="true"` в `AndroidManifest.xml` (главный рычаг).
-- **requestUnbufferedDispatch(SOURCE_TOUCHSCREEN)** — `StopWatchButton.kt`, `requestHiRateTouch()` (API 33+, пере-арм на каждый down).
-- **Дизеринг-fallback** — `DITHER_HALF_MS` в `Utils.kt` (0.0 = выкл; 4.0 = вкл, если устройство не поднимает частоту).
-- **Проверка только по Excel-экспорту с реального устройства** (тест mod-8, скрипт в доке).
+**See [`../docs/touch_sampling.md`](../docs/touch_sampling.md)** — полный разбор: почему на L3 «ровно 3.000» почти не выбивалось (8-мс сетка = дефолтная частота ДОСТАВКИ касаний, НЕ предел панели; 120 Гц — это refresh экрана), и как включить честную высокую частоту опроса тача:
+- **Game Mode** — `android:appCategory="game"` + `android:isGame="true"` в `AndroidManifest.xml` (главный рычаг, поднимает частоту опроса панели на поддерживающих устройствах).
+- **requestUnbufferedDispatch(SOURCE_TOUCHSCREEN)** — в `StopWatchButton.kt`, функция `requestHiRateTouch()` (API 33+, пере-арм на каждый down).
+- **Дизеринг АДАПТИВНЫЙ (v12.82)** — ширина = половина ИЗМЕРЕННОЙ ячейки (`TouchRateEstimator`, замер по тапам), авто-0 при ячейке ≤1.2 мс (~1000 Гц). Только L3 (на L1/L2 окно победы шире ячейки — дизеринга нет). `DEFAULT_TOUCH_CELL_MS=4.0` в `Utils.kt`, ячейка хранится в `LocalStorage.getTouchCellMs()`.
+- **Компенсация echo/re-roll (v12.84)** — чтобы дизеринг не рассеивал физические повторы (близнецов, серии троек): повтор в ту же СЫРУЮ ячейку → то же значение (echo); узкое исключение — переброс 2999/3001 если промах (`1>tol`, под индульгенцией off). Без памяти (только предыдущая попытка). Детали: `docs/touch_sampling.md`.
+- **Проверка только по Excel-экспорту с реального устройства** (тест равномерности mod-8, скрипт в доке). Эмулятор частоту панели не отражает.
 
 ## Important Notes
 - Hand toggle is a LEGITIMATE feature (tracks which hand user plays with) — do NOT remove it

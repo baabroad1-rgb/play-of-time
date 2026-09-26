@@ -2,7 +2,7 @@
 
 Web port of the native Android "Play of Time" 3-second timing trainer. Goal:
 **behave the same way as the native app.** This file is the brief for anyone
-(human or agent) continuing the web build. Read `reference/docs/webapp_handoff.md`
+(human or agent) continuing the web build. Read `../docs/webapp_handoff.md`
 first — it is the authoritative, platform-independent spec.
 
 ## Stack
@@ -12,19 +12,24 @@ first — it is the authoritative, platform-independent spec.
 - Serve with any static server (`python -m http.server`). No compile step.
 
 ## Source of authority (when web vs native disagree)
-`reference/native-src/*.kt`  →  `reference/docs/webapp_handoff.md`  →  `app.js`.
+`../android/app/src/**/*.kt`  →  `../docs/webapp_handoff.md`  →  `app.js`.
 Never invent behavior; port it from native. Verify formulas against the `.kt`.
 
-**The mirror can lag — don't treat it as guaranteed-current.** It's a cached
-snapshot of `C:\PlayOfTime\time_mvp-quest_dev`, refreshed by hand, not
-automatically. It already went stale twice silently (2026-08-13: Lucky Index
-+ SubQuest-label formulas drifted for weeks before anyone noticed, because
-the mirror still showed the old versions as "current"). Refreshed again on
-2026-08-13 — all 11 files match live source as of that date. For anything
-correctness-critical (a formula, a state machine, an enum's exact values),
-treat the mirror as a fast first read, then diff the specific file(s) against
-live native source before shipping a fix based on it. `webapp_handoff.md`
-itself lags further still (see `PARITY_AUDIT.md` header) — same caveat, more so.
+**No more mirror — read the live Kotlin.** Until 2026-09-26 this section pointed at
+`reference/native-src/*.kt`, a hand-refreshed copy that existed only because the two
+projects lived in separate folders. Both are now in one git repository, so the real
+source is one path away and cannot lag. The mirror is deleted; its history is in git.
+
+That mirror went stale three times: 2026-08-13 (Lucky Index + SubQuest-label formulas
+drifted for weeks unnoticed — the mirror kept showing old versions as "current"),
+again later that day on 5 of 11 files, and by 2026-09-26 on 7 of 12 files, with
+`AnalyticsUseCase.kt` 1061 lines behind. That is the cost of a manual copy, and it is
+why the copy is gone rather than refreshed a fourth time.
+
+A file-by-file map of what defines what lives in `README.md` («Где определено
+поведение»). `../docs/webapp_handoff.md` still lags the Kotlin (see
+`../docs/PARITY_AUDIT.md` header) — it is a written spec, not generated, so when it
+and the `.kt` disagree, the `.kt` wins.
 
 ## The mechanic (one loop)
 RUN → wait ~3 s → STOP → error vs **3.000 s** → Serenity Coins → quest progress.
