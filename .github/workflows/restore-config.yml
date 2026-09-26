@@ -1,0 +1,84 @@
+name: Найти и вернуть рабочий config.php
+
+# Выкладка сайта 26 сентября затёрла api/config.php версией из репозитория,
+# где вместо пароля к базе стоит заглушка. Лидерборд отдаёт 500.
+#
+# Этот запуск ищет на сервере уцелевшую копию с настоящими реквизитами
+# (в папках резервных копий и рядом) и, если находит, возвращает её на место.
+#
+# Содержимое файлов в журнал не попадает — только размеры, даты и признак
+# «есть заглушка / нет заглушки». Журнал сборки хранится и виден.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Поиск и восстановление
+        shell: bash
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.LOGIN }}
+          FTP_PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          C='set ftp:ssl-allow true; set ssl:verify-certificate no; set net:timeout 25;'
+          run_ftp() { lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; $1"; }
+
+          echo "=== что в api/_backup_name_generator_2026-09-10 ==="
+          run_ftp "cd '/api/_backup_name_generator_2026-09-10'; ls" || echo "папка недоступна"
+
+          echo
+          echo "=== что в _old_builds ==="
+          run_ftp "cd /_old_builds; ls" 2>/dev/null | head -30 || echo "папка недоступна"
+
+          mkdir -p cand && cd cand
+
+          # Скачиваем всё, что похоже на настройки, из мест где могла остаться копия.
+          for path in \
+            "/api/_backup_name_generator_2026-09-10/config.php" \
+            "/api/config.php.bak" \
+            "/api/config.local.php" \
+            "/_old_builds/api/config.php" \
+            "/api/config.example.php"
+          do
+            name=$(echo "$path" | tr '/' '_')
+            run_ftp "get \"$path\" -o \"$name\"" 2>/dev/null && echo "скачан: $path" || true
+          done
+
+          echo
+          echo "=== что нашлось ==="
+          ls -la || true
+
+          echo
+          echo "=== разбор кандидатов ==="
+          GOOD=""
+          for f in *; do
+            [ -f "$f" ] || continue
+            if grep -q "REPLACE_ME__NO_REAL_SECRET" "$f"; then
+              echo "$f — заглушка, не подходит"
+            elif grep -qE '"pass"[[:space:]]*=>' "$f"; then
+              # Пароль внутри есть и это не заглушка.
+              echo "$f — ПОХОЖ НА РАБОЧИЙ ($(wc -c < "$f") байт)"
+              GOOD="$f"
+            else
+              echo "$f — пароля внутри нет, не подходит"
+            fi
+          done
+
+          if [ -z "$GOOD" ]; then
+            echo
+            echo "РАБОЧЕЙ КОПИИ НА СЕРВЕРЕ НЕ НАШЛОСЬ."
+            echo "Реквизиты придётся задать заново — способ опишу отдельно."
+            exit 1
+          fi
+
+          echo
+          echo "=== возвращаю $GOOD на место как api/config.php ==="
+          # Сначала отложим текущий сломанный файл, чтобы был откат.
+          run_ftp "cd /api; mv config.php config.php.broken_by_deploy_2026-09-26" || true
+          run_ftp "cd /api; put \"$PWD/$GOOD\" -o config.php"
+          run_ftp "cd /api; ls -la config.php*"
+          echo "готово — проверяйте playoftime.online/api/leaderboard.php"
