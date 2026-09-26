@@ -1,0 +1,57 @@
+name: Обновить автоматический журнал
+
+# Алекс 26.09.2026: «доки нужны!!!! даже если я один нужен НЕОБХОДИМ
+# подробный лог решений и их исполнений. надеюсь это тоже получится
+# автоматизировать гхабом».
+#
+# Это оно. При каждом попадании в main файл docs/COMMIT_LOG.md
+# перегенерируется из git log: дата, версия приложения на тот момент и
+# полное описание каждого изменения. Руками его править не надо — любая
+# правка будет затёрта следующей сборкой.
+#
+# Рукописный docs/CHANGELOG.md остаётся: он отвечает на вопрос «почему так
+# решили», этот — на вопрос «что именно менялось и когда».
+#
+# Петли нет: коммит бота помечен [skip ci], GitHub такие пуши не
+# обрабатывает вообще.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: commit-log
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # вся история: журнал строится с самого первого коммита
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Собрать журнал из истории
+        shell: bash
+        run: |
+          python3 .github/scripts/make_commit_log.py > docs/COMMIT_LOG.md
+          echo "строк в журнале: $(wc -l < docs/COMMIT_LOG.md)"
+
+      - name: Вернуть журнал в репозиторий
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/COMMIT_LOG.md; then
+            echo "журнал не изменился, коммитить нечего"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/COMMIT_LOG.md
+          git commit -m "Обновить автоматический журнал изменений [skip ci]"
+          git push
