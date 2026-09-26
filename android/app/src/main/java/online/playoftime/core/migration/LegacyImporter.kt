@@ -35,6 +35,12 @@ object LegacyImporter {
     private const val TAG = "LegacyImporter"
     private const val PREFS = "legacy_import"
     private const val KEY_DONE = "done"
+    // Отдельный признак для настроек. Первая версия переноса их не копировала:
+    // переехали попытки, а прогресс по квестам и личность игрока для
+    // лидерборда остались в старом приложении, и игрок оказался на первом
+    // уровне. У кого перенос уже прошёл, признак ниже не выставлен — значит
+    // настройки подтянутся при ближайшем запуске.
+    private const val KEY_PREFS_DONE = "prefs_done"
 
     sealed interface Result {
         /** Перенесено столько-то. */
@@ -45,6 +51,63 @@ object LegacyImporter {
         data object LegacyTooOld : Result
         /** Не получилось. База не тронута. */
         data class Failed(val reason: String) : Result
+    }
+
+    /**
+     * Переносит настройки: прогресс по квестам, личность игрока для лидерборда,
+     * выбранную руку и прочее. Вынесено отдельно от таблиц и вызывается
+     * синхронно до старта приложения — их читают при инициализации, и
+     * подтянуть их позже значит показать игроку первый уровень.
+     *
+     * Свои настройки не затираются: пишутся только ключи, которых у нас нет.
+     */
+    fun importPreferences(context: Context): Result {
+        val marker = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (marker.getBoolean(KEY_PREFS_DONE, false)) return Result.Skipped
+        if (!isLegacyInstalled(context)) {
+            marker.edit().putBoolean(KEY_PREFS_DONE, true).apply()
+            return Result.Skipped
+        }
+
+        val cursor = try {
+            context.contentResolver.query(
+                Uri.parse(PlayDataContract.Legacy.URI_PREFS), null, null, null, null
+            ) ?: return Result.LegacyTooOld
+        } catch (e: SecurityException) {
+            return Result.Failed("нет доступа: разные подписи")
+        } catch (e: Exception) {
+            return Result.Failed(e.message ?: e::class.java.simpleName)
+        }
+
+        val target = context.getSharedPreferences(PlayDataContract.PREFS_FILE, Context.MODE_PRIVATE)
+        var copied = 0
+        cursor.use { c ->
+            val iKey = c.getColumnIndexOrThrow(PlayDataContract.Prefs.KEY)
+            val iType = c.getColumnIndexOrThrow(PlayDataContract.Prefs.TYPE)
+            val iValue = c.getColumnIndexOrThrow(PlayDataContract.Prefs.VALUE)
+            val editor = target.edit()
+            while (c.moveToNext()) {
+                val key = c.getString(iKey) ?: continue
+                if (target.contains(key)) continue
+                val raw = c.getString(iValue) ?: continue
+                when (c.getString(iType)) {
+                    "string" -> editor.putString(key, raw)
+                    "int" -> raw.toIntOrNull()?.let { editor.putInt(key, it) }
+                    "long" -> raw.toLongOrNull()?.let { editor.putLong(key, it) }
+                    "float" -> raw.toFloatOrNull()?.let { editor.putFloat(key, it) }
+                    "boolean" -> editor.putBoolean(key, raw.toBoolean())
+                    "stringset" -> editor.putStringSet(key, raw.split("\n").toSet())
+                    else -> continue
+                }
+                copied++
+            }
+            // commit, а не apply: дальше сразу стартует приложение и читает
+            // эти же настройки, отложенная запись не успела бы.
+            editor.commit()
+        }
+        marker.edit().putBoolean(KEY_PREFS_DONE, true).commit()
+        Log.i(TAG, "Перенесено настроек: $copied")
+        return Result.Imported(attempts = 0, sessions = copied)
     }
 
     fun run(context: Context): Result {

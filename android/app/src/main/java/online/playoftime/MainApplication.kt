@@ -16,6 +16,12 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // ДО startKoin: прогресс по квестам и личность игрока читаются при
+        // инициализации, подтянуть их позже значит показать первый уровень
+        // и новую личность, которой сервер лидерборда не знает. Операция
+        // разовая и короткая — это несколько десятков значений, не таблицы.
+        runCatching { LegacyImporter.importPreferences(applicationContext) }
+
         startKoin {
             androidContext(this@MainApplication)
             modules(appModule, services)

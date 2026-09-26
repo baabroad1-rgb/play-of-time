@@ -41,6 +41,25 @@ object PlayDataContract {
     /** Сессии, как они лежат в базе. */
     const val PATH_EXPORT_SESSIONS = "v1/export/sessions"
 
+    /**
+     * Настройки приложения: прогресс по квестам, личность игрока для
+     * лидерборда, выбранная рука, звук и прочее. Лежат не в базе, а в
+     * SharedPreferences, и при переносе про них легко забыть — тогда
+     * история попыток переедет, а игрок окажется на первом уровне
+     * и с новой личностью, которой сервер лидерборда не знает.
+     */
+    const val PATH_EXPORT_PREFS = "v1/export/prefs"
+
+    /** Имя файла настроек. Должно совпадать у обоих приложений. */
+    const val PREFS_FILE = "Application Preferences"
+
+    object Prefs {
+        const val KEY = "key"
+        /** string / int / long / float / boolean / stringset */
+        const val TYPE = "type"
+        const val VALUE = "value"
+    }
+
     /** Попытки для стороннего приложения. Данные те же, что в export —
      *  отличается только разрешение, по которому пускают. */
     const val PATH_ATTEMPTS = "v1/attempts"
@@ -77,6 +96,7 @@ object PlayDataContract {
 
         const val URI_ATTEMPTS = "content://$AUTHORITY/v1/export/attempts"
         const val URI_SESSIONS = "content://$AUTHORITY/v1/export/sessions"
+        const val URI_PREFS = "content://$AUTHORITY/v1/export/prefs"
         const val URI_META = "content://$AUTHORITY/v1/meta"
     }
 }

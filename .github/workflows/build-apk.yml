@@ -20,6 +20,11 @@ on:
       - 'android/**'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
+    inputs:
+      publish_to_site:
+        description: 'Класть APK на сайт (снять для служебных сборок)'
+        type: boolean
+        default: true
 
 concurrency:
   group: build-apk
@@ -154,6 +159,9 @@ jobs:
           git push
 
       - name: Положить APK на хостинг в downloads/
+        # Служебные сборки (например мостовая версия под старым
+        # идентификатором) не должны подменять приложение на сайте.
+        if: github.event_name != 'workflow_dispatch' || inputs.publish_to_site
         shell: bash
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}

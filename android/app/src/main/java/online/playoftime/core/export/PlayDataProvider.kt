@@ -34,12 +34,14 @@ class PlayDataProvider : ContentProvider() {
         const val CODE_ATTEMPTS = 1
         const val CODE_SESSIONS = 2
         const val CODE_META = 3
+        const val CODE_PREFS = 4
 
         val MATCHER = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_EXPORT_ATTEMPTS, CODE_ATTEMPTS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_EXPORT_SESSIONS, CODE_SESSIONS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_ATTEMPTS, CODE_ATTEMPTS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_SESSIONS, CODE_SESSIONS)
+            addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_EXPORT_PREFS, CODE_PREFS)
             addURI(PlayDataContract.AUTHORITY, PlayDataContract.PATH_META, CODE_META)
         }
     }
@@ -65,6 +67,7 @@ class PlayDataProvider : ContentProvider() {
         // именно с таким именем. Исходный id тоже остаётся.
         CODE_ATTEMPTS -> rawQuery("SELECT *, id AS _id FROM TryDatabaseModel ORDER BY id ASC", uri)
         CODE_SESSIONS -> rawQuery("SELECT *, id AS _id FROM SessionDatabaseModel ORDER BY id ASC", uri)
+        CODE_PREFS -> prefsCursor(uri)
         CODE_META -> metaCursor(uri)
         else -> throw IllegalArgumentException("Неизвестный адрес: $uri")
     }
@@ -73,6 +76,39 @@ class PlayDataProvider : ContentProvider() {
         database.query(SimpleSQLiteQuery(sql)).apply {
             setNotificationUri(requireNotNull(context).contentResolver, uri)
         }
+
+    /**
+     * Настройки как три колонки: имя, тип, значение. Тип нужен, чтобы на
+     * той стороне положить значение обратно тем же типом — SharedPreferences
+     * различает int и long, и записанное не тем типом потом падает при чтении.
+     */
+    private fun prefsCursor(uri: Uri): Cursor {
+        val prefs = requireNotNull(context)
+            .getSharedPreferences(PlayDataContract.PREFS_FILE, android.content.Context.MODE_PRIVATE)
+        val columns = arrayOf(
+            PlayDataContract.Prefs.KEY,
+            PlayDataContract.Prefs.TYPE,
+            PlayDataContract.Prefs.VALUE
+        )
+        val cursor = MatrixCursor(columns, prefs.all.size)
+        prefs.all.forEach { (key, value) ->
+            val type = when (value) {
+                is String -> "string"
+                is Int -> "int"
+                is Long -> "long"
+                is Float -> "float"
+                is Boolean -> "boolean"
+                is Set<*> -> "stringset"
+                else -> return@forEach
+            }
+            // Набор строк склеивается через перевод строки: в ключах и
+            // значениях этого приложения переводов строк не бывает.
+            val asText = if (value is Set<*>) value.joinToString("\n") else value.toString()
+            cursor.addRow(arrayOf(key, type, asText))
+        }
+        cursor.setNotificationUri(requireNotNull(context).contentResolver, uri)
+        return cursor
+    }
 
     private fun metaCursor(uri: Uri): Cursor {
         val db = database
@@ -114,6 +150,7 @@ class PlayDataProvider : ContentProvider() {
     override fun getType(uri: Uri): String = when (MATCHER.match(uri)) {
         CODE_ATTEMPTS -> "vnd.android.cursor.dir/vnd.${PlayDataContract.AUTHORITY}.attempt"
         CODE_SESSIONS -> "vnd.android.cursor.dir/vnd.${PlayDataContract.AUTHORITY}.session"
+        CODE_PREFS -> "vnd.android.cursor.dir/vnd.${PlayDataContract.AUTHORITY}.pref"
         CODE_META -> "vnd.android.cursor.item/vnd.${PlayDataContract.AUTHORITY}.meta"
         else -> throw IllegalArgumentException("Неизвестный адрес: $uri")
     }
