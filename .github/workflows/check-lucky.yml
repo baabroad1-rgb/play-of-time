@@ -1,0 +1,74 @@
+name: Разобраться с Lucky Index
+
+# Разовая диагностика. Тянет лидерборд и смотрит, у кого Lucky Index нулевой
+# и на каких уровнях эти игроки играли.
+#
+# Зачем. Алекс 26.09.2026: «на третьем уровне он не может быть нулевым».
+# Проверяемая догадка: общий Lucky делит точные попадания на ВСЕ попытки
+# игрока, включая первый и второй уровень, где ровно 3.000 почти не выбить
+# (там окно победы ±50 и ±5 мс, дизеринга нет, сетка тача 4–8 мс). Игрок,
+# дошедший до третьего уровня, но сыгравший там пару десятков попыток из
+# тысячи, получает общий Lucky около нуля при ненулевом Lucky третьего
+# уровня. Этот запуск должен подтвердить или опровергнуть.
+#
+# Только чтение, ничего не меняет.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/check-lucky.yml'
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Забрать лидерборд и разобрать
+        shell: bash
+        run: |
+          curl -sS "https://playoftime.online/api/leaderboard.php" -o lb.json
+          echo "размер ответа: $(wc -c < lb.json) байт"
+          python3 - <<'PY'
+          import json
+          d = json.load(open("lb.json"))
+          players = d.get("players") or d.get("rows") or []
+          if not players and isinstance(d, list):
+              players = d
+          print("ключи ответа:", list(d)[:10] if isinstance(d, dict) else "список")
+          print("игроков:", len(players))
+
+          print()
+          print("Сколько игроков с нулевым общим Lucky, по уровням:")
+          print(f"{'уровень':>8} {'всего':>7} {'lucky=0':>9}")
+          agg = {}
+          for p in players:
+              lvl = p.get("levelId", 0)
+              t, z = agg.get(lvl, (0, 0))
+              agg[lvl] = (t + 1, z + (0 if p.get("luckyIndex") else 1))
+          for lvl in sorted(agg):
+              t, z = agg[lvl]
+              print(f"{lvl:>8} {t:>7} {z:>9}")
+
+          print()
+          print("Игроки третьего уровня: общий Lucky против Lucky по уровням")
+          print("(если общий 0.00, а на уровне 3 не ноль — виновато деление на все попытки)")
+          hdr = f"{'игрок':<16} {'попыток':>8} {'общий':>7} " \
+                f"{'ур1 попыт/lucky':>17} {'ур2 попыт/lucky':>17} {'ур3 попыт/lucky':>17}"
+          print(hdr)
+          def cell(tiers, k):
+              t = (tiers or {}).get(k)
+              return "—" if not t else f"{t.get('attempts')}/{t.get('luckyIndex')}"
+          shown = 0
+          for p in sorted(players, key=lambda x: -(x.get("attemptsTotal") or 0)):
+              if p.get("levelId") != 3:
+                  continue
+              shown += 1
+              if shown > 25:
+                  break
+              tiers = p.get("tiers") or {}
+              name = (p.get("displayName") or "?")[:15]
+              print(f"{name:<16} {p.get('attemptsTotal'):>8} {p.get('luckyIndex'):>7} "
+                    f"{cell(tiers,'1'):>17} {cell(tiers,'2'):>17} {cell(tiers,'3'):>17}")
+          if shown == 0:
+              print("  игроков третьего уровня в лидерборде нет")
+          PY
