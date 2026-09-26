@@ -1,0 +1,78 @@
+name: Починить настройки базы на сервере
+
+# Выкладка 26 сентября затёрла api/config.php. Уцелевшей копии с настоящими
+# реквизитами на сервере не нашлось — проверено, в папке резервных копий
+# лежали только .htaccess, _lib.php, set_name.php и sync.php.
+#
+# Что делает этот запуск:
+#   1. Всегда — возвращает на место файл, отложенный при неудачной попытке
+#      автовосстановления (config.php.broken_by_deploy_2026-09-26). Он тоже
+#      не рабочий, но это хотя бы правильная структура, а не файл-образец.
+#   2. Если заданы секреты DB_HOST / DB_NAME / DB_USER / DB_PASS — собирает
+#      из них нормальный config.php и кладёт на сервер. После этого база
+#      снова доступна.
+#
+# Реквизиты в журнал не печатаются.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Починка
+        shell: bash
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.LOGIN }}
+          FTP_PASSWORD: ${{ secrets.PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          C='set ftp:ssl-allow true; set ssl:verify-certificate no; set net:timeout 25;'
+          run_ftp() { lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; $1"; }
+
+          echo "=== шаг 1: убрать файл-образец, вернуть прежний ==="
+          run_ftp "cd /api; mv config.php config.example_put_by_mistake.php" || true
+          run_ftp "cd /api; mv config.php.broken_by_deploy_2026-09-26 config.php" || true
+          run_ftp "cd /api; ls -la config*" || true
+
+          if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+            echo
+            echo "Секреты базы не заданы — дальше идти некуда."
+            echo "Нужны DB_HOST, DB_NAME, DB_USER, DB_PASS в настройках репозитория."
+            exit 0
+          fi
+
+          echo
+          echo "=== шаг 2: собрать config.php из секретов ==="
+          # Значения подставляются через окружение и var_export, чтобы кавычки
+          # и спецсимволы в пароле не поломали файл.
+          php -r '
+            $cfg = [
+              "host" => getenv("DB_HOST") ?: "localhost",
+              "port" => 3306,
+              "name" => getenv("DB_NAME"),
+              "user" => getenv("DB_USER"),
+              "pass" => getenv("DB_PASS"),
+              "charset" => "utf8mb4",
+            ];
+            $out = "<?php\n"
+              . "// Настройки подключения к базе.\n"
+              . "// Восстановлены 2026-09-26 после того, как выкладка сайта затёрла\n"
+              . "// прежний файл. Значения приходят из секретов репозитория\n"
+              . "// (DB_HOST/DB_NAME/DB_USER/DB_PASS) через .github/workflows/fix-db-config.yml.\n"
+              . "// Этот файл ИСКЛЮЧЁН из выкладки сайта, затереть его снова нельзя.\n"
+              . "return " . var_export($cfg, true) . ";\n";
+            file_put_contents("config.php", $out);
+          '
+          echo "собран, размер: $(wc -c < config.php) байт"
+          php -l config.php
+
+          run_ftp "cd /api; put \"$PWD/config.php\" -o config.php"
+          run_ftp "cd /api; ls -la config.php"
+          echo "готово — проверяйте playoftime.online/api/leaderboard.php"
