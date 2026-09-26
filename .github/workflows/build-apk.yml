@@ -109,23 +109,33 @@ jobs:
           git push
 
       - name: Положить APK на хостинг в downloads/
+        shell: bash
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
           FTP_USER: ${{ secrets.LOGIN }}
           FTP_PASSWORD: ${{ secrets.PASSWORD }}
           APK: ${{ steps.apk.outputs.path }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -c "
-            set ftp:ssl-force true;
-            set ftp:ssl-protect-data true;
-            set ssl:verify-certificate no;
-            open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\";
-            cd /downloads;
-            glob -a rm -f *.apk;
-            put \"$APK\";
-            ls
-          "
+          set -o pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+          lftp --version | head -1
+
+          # Общие настройки: FTPS разрешаем, но не требуем — если сервер его не
+          # поддерживает, соединение не должно падать целиком.
+          COMMON='set ftp:ssl-allow true; set ftp:ssl-protect-data true; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 20;'
+
+          echo "=== что сейчас в downloads/ ==="
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; ls" || {
+            echo "Не удалось подключиться или зайти в /downloads"; exit 1; }
+
+          # Удаление старых APK не должно валить сборку: если их там нет,
+          # lftp возвращает ошибку, а это нормальная ситуация.
+          echo "=== убираю прежние APK (если есть) ==="
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; glob -a rm -f *.apk" || echo "прежних APK не было"
+
+          echo "=== заливаю $APK ==="
+          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /downloads; put \"$APK\"; ls"
 
       - name: Завести релиз с этим APK
         uses: softprops/action-gh-release@v2
