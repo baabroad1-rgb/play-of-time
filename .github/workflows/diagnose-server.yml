@@ -1,0 +1,66 @@
+name: Посмотреть, что на сервере
+
+# Разовая диагностика, запускается только руками. Ничего не меняет, только
+# читает. Нужна после того, как выкладка сайта затёрла api/config.php и
+# лидерборд перестал работать: надо понять, что именно сломалось, прежде
+# чем чинить.
+#
+# Содержимое config.php в лог не печатается — только признаки. Если на
+# сервере вдруг остались настоящие реквизиты, они не должны утечь в журнал
+# сборки, который хранится и виден.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Осмотр
+        shell: bash
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.LOGIN }}
+          FTP_PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          C='set ftp:ssl-allow true; set ssl:verify-certificate no; set net:timeout 20;'
+
+          echo "=== корень сайта ==="
+          lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; ls" || true
+
+          echo
+          echo "=== api/ с датами ==="
+          lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /api; ls -la" || true
+
+          echo
+          echo "=== видно ли что-то выше корня (там ожидается pot-secrets) ==="
+          lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd ..; ls" 2>&1 | head -20 || true
+
+          mkdir -p srv && cd srv
+          for f in config.php db.php .htaccess; do
+            lftp -c "$C open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd /api; get $f -o $f" 2>/dev/null || true
+          done
+
+          echo
+          echo "=== что за файлы скачались ==="
+          ls -la
+
+          echo
+          echo "=== признаки в config.php (само содержимое не печатаем) ==="
+          if [ -f config.php ]; then
+            echo "размер: $(wc -c < config.php) байт, строк: $(wc -l < config.php)"
+            grep -q "REPLACE_ME__NO_REAL_SECRET" config.php \
+              && echo "НАЙДЕНА ЗАГЛУШКА — это версия из репозитория, я её и залил" \
+              || echo "заглушки нет — файл не наш, реквизиты могут быть на месте"
+            echo "ссылается на внешний файл секретов: $(grep -c 'externalSecretsPath' config.php)"
+            echo "читает переменные окружения: $(grep -c 'getenv' config.php)"
+          else
+            echo "config.php не скачался"
+          fi
+
+          echo
+          echo "=== db.php: как подключается ==="
+          if [ -f db.php ]; then
+            grep -nE "require|include|new (PDO|mysqli)|config" db.php | head -10
+          fi
