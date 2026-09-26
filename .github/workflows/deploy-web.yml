@@ -48,3 +48,6 @@ jobs:
             _scratch_debug/**
             downloads/**
             test_p2.js
+            api/config.php
+            api/.htaccess
+            .htaccess
