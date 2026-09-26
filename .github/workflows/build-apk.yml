@@ -84,7 +84,16 @@ jobs:
             exit 1
           fi
           mkdir -p "$HOME/.android"
-          echo "$DEBUG_KEYSTORE_B64" | base64 -d > "$HOME/.android/debug.keystore"
+          # clip.exe в Git Bash добавляет к содержимому переводы строк, а иногда
+          # и невидимые символы — чистим перед декодированием, иначе base64 -d
+          # падает с "invalid input".
+          printf '%s' "$DEBUG_KEYSTORE_B64" | tr -d '\r\n \t' | base64 -d > "$HOME/.android/debug.keystore" || {
+            echo "Не удалось раскодировать DEBUG_KEYSTORE_B64."
+            echo "Длина значения: ${#DEBUG_KEYSTORE_B64} символов."
+            echo "Первые 16 символов: ${DEBUG_KEYSTORE_B64:0:16}"
+            echo "Ожидается одна строка base64 длиной около 3000 символов."
+            exit 1
+          }
           ls -l "$HOME/.android/debug.keystore"
           keytool -list -keystore "$HOME/.android/debug.keystore" \
                   -storepass android -alias androiddebugkey | head -3
