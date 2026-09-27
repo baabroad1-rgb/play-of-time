@@ -249,7 +249,12 @@
      shrink to whatever a narrow phone actually has room for — never
      overflows — while the raised max-width lets it grow noticeably bigger
      on anything wider than a phone. */
-  /* 2026-09-18: restructured into TWO separate flex rows — .faces-row (just
+  /* ИСТОРИЯ, БОЛЬШЕ НЕ ДЕЙСТВУЕТ (снято 27.09.2026 при переходе на шторку —
+     столбцов .faces-row/.face-visual/.face-labels-row больше нет, морды лежат
+     друг на друге в одном кадре с общим viewBox). Оставлено, чтобы было
+     видно, какую задачу решала прежняя раскладка и почему её не надо
+     возвращать по частям.
+     2026-09-18: restructured into TWO separate flex rows — .faces-row (just
      the two SVGs) and .face-labels-row (just the two labels), instead of
      one row of [svg+label] columns. Needed because aligning the OLD
      combined columns by flex-end (tried first) aligned the columns'
@@ -272,8 +277,49 @@
      worst-case-sized gap (tens of px, not ~137px), and only shows up when
      the two periods being compared actually differ in head size. */
   .faces-wrap{ margin: 0; }
-  .faces-row{ display:flex; justify-content:center; align-items:flex-end; gap:16px; }
-  .face-labels-row{ display:flex; justify-content:center; gap:16px; margin-top:0; }
+  /* ШТОРКА (Alex 2026-09-27: «сделать слайдер, который позволяет при помощи
+     ручного свайпа как бы сдвигать занавеску»). Было: два столбца, в каждом
+     своя морда, рядом. Стало: один кадр, обе морды друг на друге, между ними
+     подвижная граница.
+     Слой актуального периода лежит В ПОТОКЕ — он и задаёт высоту кадра;
+     слой периода сравнения накрыт поверх него абсолютно. Порядок в DOM
+     сохранён прежний (сначала A/актуальный, потом B/сравнение): по нему
+     render() ключует state.lastFaces для анимации легенды, z-index решает
+     видимость, а не порядок узлов.
+     Обе морды рисуются в ОДНОМ viewBox (см. buildFaces) — иначе при разных
+     размерах головы слои разъезжались бы по вертикали и масштабу, и на шве
+     была бы ступенька вместо перехода. */
+  .faces-stage{
+    position: relative;
+    width: min(300px, 100%);
+    margin: 0 auto;
+    touch-action: pan-y;          /* вертикальный скролл страницы живёт, горизонталь забираем себе */
+    cursor: ew-resize;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Данных на одной из сторон нет — тянуть нечего. */
+  .faces-stage.single{ cursor: default; }
+  .face-layer{ display:block; width:100%; height:auto; }
+  .face-layer.now{
+    position: relative; z-index: 2;
+    clip-path: inset(0 calc(100% - var(--curtain, 100%)) 0 0);
+  }
+  .face-layer.past{ position:absolute; inset:0; width:100%; height:100%; z-index:1; }
+  .faces-stage.single .face-layer.now{ clip-path: none; }
+  .face-seam{
+    position:absolute; top:0; bottom:0; left: var(--curtain, 100%);
+    width:2px; margin-left:-1px; background: var(--text-primary);
+    z-index:3; pointer-events:none;
+  }
+  .face-grip{
+    position:absolute; top:50%; left: var(--curtain, 100%);
+    width:32px; height:32px; margin:-16px 0 0 -16px;
+    border-radius:50%; background: var(--text-primary); color: var(--surface);
+    display:grid; place-items:center; font-size:12px; line-height:1;
+    box-shadow: var(--shadow-sm); z-index:4; pointer-events:none;
+  }
+  .faces-stage:focus-visible{ outline:2px solid var(--good); outline-offset:4px; border-radius:6px; }
   /* Fixed, deterministic width -- NOT flex:1 1 0's content-driven share
      (Alex 2026-09-17: "определи квадрат за пределы которого морды не
      выйдут... оставь место ровно для таких квадратов"). flex:1 1 0 already
@@ -284,8 +330,9 @@
      relying on flex distribution happening to land equal. min() caps at
      the old 240px on wide screens, halves the available width (minus the
      gap) on narrow ones -- same responsive behavior as before. */
-  .face-visual{ flex: 0 0 auto; width: min(240px, calc((100% - 16px)/2)); min-width: 0; }
-  .face-label-col{ flex: 0 0 auto; width: min(240px, calc((100% - 16px)/2)); min-width: 0; text-align:center; }
+  /* Подписи разъехались по краям кадра: слева период, который сейчас, справа
+     тот, с которым сравниваем — концы, между которыми ходит шторка. */
+  .face-ends{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; }
   /* Real button — opens that side's period popover. Sits BELOW its face
      (Alex 2026-09-17: "перенеси подписи под морды" — reverses the
      above-placement from 2026-09-14). Since the face is now the FIRST
@@ -295,12 +342,24 @@
      it'd just be dead weight/empty space now). Dotted underline + hover
      color matches every other clickable-period control on the page
      (.pword-inline). */
+  /* Одинаковые кнопки вместо разнородных контролов (Alex 2026-09-27:
+     «возможно их стоит реализовать одинаково как кнопку today»). Раньше это
+     был подчёркнутый пунктиром текст, при том что рядом на экране такой же
+     по смыслу выбор периода выглядел плашкой. Два одинаковых по назначению
+     контрола должны выглядеть одинаково. Открывают они всё тот же
+     openPeriodPopover(), поведение выбора не менялось.
+     Приглушена та сторона, чьего лица сейчас в кадре меньше: у края иначе
+     непонятно, на кого смотришь. */
   .face-label{
     font: inherit; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--text-muted); background: none; border: none; cursor: pointer;
-    text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+    color: var(--surface); background: var(--text-primary);
+    border: 1px solid var(--text-primary); border-radius: 999px;
+    padding: 8px 13px; cursor: pointer;
+    opacity: .42; transition: opacity .25s ease;
   }
-  .face-label:hover{ color: var(--good); }
+  .face-label[data-lead="1"]{ opacity: 1; }
+  .face-label:hover{ opacity: 1; }
+  @media (prefers-reduced-motion: reduce){ .face-label{ transition: none; } }
   /* Wraps the label + its optional ‹› pager (periodNavArrow(), only present
      when that side's selection is a week or month) so all three center as
      one unit below the face. margin-top (not the old margin-bottom) is
@@ -310,7 +369,7 @@
      stretched column's bottom — that mechanism is gone along with
      .faces-wrap's align-items:stretch, see its own comment; minimal
      total height wins over a shared bottom line now). */
-  .face-label-row{ display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px; }
+  .face-label-row{ display:flex; align-items:center; gap:4px; }
   .face-label-row .period-nav{ width:20px; height:20px; font-size:12px; }
   /* Stands in for chFaceSvg() on a side with no attempts (Alex 2026-09-17
      bug fix — see buildFaces()'s own comment: the label row, with the
@@ -1133,6 +1192,7 @@ const STR = {
     faceBefore: "Было",
     faceAfter: "Стало",
     faceNoData: "Нет попыток за этот период — выберите другой выше.",
+    curtainLabel: "Граница сравнения: тяните вбок",
     na: "н/д",
     footNote: acc => `Уровень точности: ${acc.toUpperCase()} (ваш текущий уровень). Проценты — относительное изменение периода к периоду сравнения; направление цвета зависит от того, какая сторона благоприятна для каждого конкретного показателя.`,
     showTable: "Показать таблицей",
@@ -1154,6 +1214,7 @@ const STR = {
     faceBefore: "Before",
     faceAfter: "After",
     faceNoData: "No attempts in this period — pick another one above.",
+    curtainLabel: "Comparison divider: drag sideways",
     na: "n/a",
     footNote: acc => `Precision level: ${acc.toUpperCase()} (your current level). Percentages are the relative change of the period vs. the comparison period; the color direction depends on which side is favorable for that particular metric.`,
     showTable: "Show as table",
@@ -2131,9 +2192,17 @@ function chEyeLensPath(cx, cy, rx, ry){
        + `Q ${cxf} ${botCtrlY} ${left} ${cyf} Z`;
 }
 
-function chFaceSvg(p, cx, faceId){
+// opts.box — ОБЩИЙ кадр на обе морды (Alex 2026-09-27, шторка). Обычно кадр
+// считается от высоты головы этой морды, и у двух периодов он разный: разная
+// высота viewBox при одинаковой ширине на экране = разный масштаб и разное
+// положение по вертикали. Пока морды стояли рядом, это было незаметно;
+// наложенные друг на друга они бы разъехались, и шов показывал бы ступеньку
+// вместо перехода. Поэтому buildFaces() считает кадр по БОЛЬШЕЙ из двух голов
+// и передаёт его обеим. Кадр запоминается в data-vb-y, чтобы демо-прогон
+// легенды (chApplySvgParams) его не пересчитал обратно.
+function chFaceSvg(p, cx, faceId, opts){
   const cy = chHeadCy(p.headH);
-  const box = chFaceCanvasBox(p.headH);
+  const box = (opts && opts.box) || chFaceCanvasBox(p.headH);
   const {eyeY, base, pupilL, pupilRv, ntx, nty, nbx, nby, fx, fy, mouthBaseY, mouthLen, smile} = chFaceGeometry(p, cx, cy);
   const bh = p.browHalf;
   const my = cy + mouthBaseY;
@@ -2173,7 +2242,8 @@ function chFaceSvg(p, cx, faceId){
   const browRX1 = (cx+p.browDx-bh).toFixed(1), browRY1 = (base+p.dropR).toFixed(1), browRX2 = (cx+p.browDx+bh).toFixed(1), browRY2 = base.toFixed(1);
   const noseBX2 = nbx.toFixed(1), noseBY2 = nby.toFixed(1);
   const mouthD = `M ${(cx-mouthLen/2).toFixed(1)} ${my} Q ${cx} ${(my+smile).toFixed(1)} ${(cx+mouthLen/2).toFixed(1)} ${my}`;
-  return `<svg viewBox="0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}" style="width:100%; height:auto; display:block;">
+  const pinned = (opts && opts.box) ? ` data-vb-y="${box.viewBoxY.toFixed(1)}"` : "";
+  return `<svg viewBox="0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}"${pinned} class="${(opts && opts.cls) || ""}" style="width:100%; height:auto; display:block;">
     <defs>
       <clipPath id="${clipIdL}">${eyeClipShape("L", "eyeL", cx-p.eyeDx, p.eyeRxL, p.openL)}</clipPath>
       <clipPath id="${clipIdR}">${eyeClipShape("R", "eyeR", cx+p.eyeDx, p.eyeRxR, p.openR)}</clipPath>
@@ -2457,23 +2527,37 @@ function buildFaces(beforeSet, afterSet, lang, labelBefore, labelAfter, scaleMax
   const faceOrEmpty = (p, faceId) => p
     ? chFaceSvg(p, 110, faceId)
     : `<div class="face-empty">${S.faceNoData}</div>`;
-  // Label-row moved BELOW the face (Alex 2026-09-17: "перенеси подписи под
-  // морды" — reverses the above-placement from 2026-09-14).
-  // Split into two separate rows 2026-09-18 (see .faces-wrap's own comment
-  // above for why) — the SVGs render in their own row (bottom-aligned with
-  // each other via .faces-row's flex-end), the labels follow in a second,
-  // completely separate row directly underneath.
-  return `<div class="faces-row">
-      <div class="face-visual">${faceOrEmpty(pAfter, "a")}</div>
-      <div class="face-visual">${faceOrEmpty(pBefore, "b")}</div>
+  // Подписи под мордами (Alex 2026-09-17: "перенеси подписи под морды").
+  // Разделение на два ряда от 2026-09-18 (.faces-row + .face-labels-row,
+  // выравнивание квадратов по нижнему краю через flex-end) СНЯТО 27.09.2026
+  // вместе с самими столбцами: морды больше не стоят рядом, они лежат друг
+  // на друге в одном кадре, и выравнивать нечего — кадр у них общий.
+  // Общий кадр на обе морды — по большей из двух голов (см. chFaceSvg).
+  const heads = [pAfter, pBefore].filter(Boolean).map(x => x.headH);
+  const box = heads.length ? chFaceCanvasBox(Math.max(...heads)) : null;
+  const bothReal = !!(pAfter && pBefore);
+  // Порядок в DOM прежний: сначала A (актуальный период), потом B (сравнение).
+  // render() ключует по нему state.lastFaces, а кто поверх кого — решает CSS.
+  //
+  // Когда данных нет только на ОДНОЙ стороне, тянуть нечего: показываем ту
+  // морду, которая есть, целиком и без шва, а сообщение про пустой период —
+  // под кадром. Подписи с выбором периода остаются в любом случае: это
+  // единственное, чем игрок может выбраться из пустого состояния (баг от
+  // 2026-09-17, см. комментарий выше — не потерять при переходе на шторку).
+  const solo = pAfter || pBefore;
+  const stageInner = bothReal
+    ? chFaceSvg(pAfter,  110, "a", {box, cls: "face-layer now"})
+      + chFaceSvg(pBefore, 110, "b", {box, cls: "face-layer past"})
+      + `<div class="face-seam"></div><div class="face-grip" aria-hidden="true">⟷</div>`
+    : (solo ? chFaceSvg(solo, 110, pAfter ? "a" : "b", {box, cls: "face-layer now"}) : "");
+  const emptyNote = bothReal ? "" : `<div class="face-empty">${S.faceNoData}</div>`;
+  return `<div class="faces-stage${bothReal ? "" : " single"}" id="facesStage"${bothReal ? ' tabindex="0" role="slider" aria-label="' + S.curtainLabel + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"' : ""}>
+      ${stageInner}
     </div>
-    <div class="face-labels-row">
-      <div class="face-label-col">
-        <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label pword-inline" data-which="A">${labelAfter}</button>${periodNavArrow("A",1)}</div>
-      </div>
-      <div class="face-label-col">
-        <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label pword-inline" data-which="B">${labelBefore}</button>${periodNavArrow("B",1)}</div>
-      </div>
+    ${emptyNote}
+    <div class="face-ends">
+      <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label" data-which="A" data-lead="1">${labelAfter}</button>${periodNavArrow("A",1)}</div>
+      <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label" data-which="B" data-lead="0">${labelBefore}</button>${periodNavArrow("B",1)}</div>
     </div>`;
 }
 function wireFaces(){
@@ -2486,6 +2570,101 @@ function wireFaces(){
       stepPeriod(btn.dataset.which, parseInt(btn.dataset.dir, 10));
     });
   });
+  wireCurtain();
+}
+
+// ── Шторка между двумя мордами (Alex 2026-09-27) ──────────────────────
+//
+// Поведение, как он его описал: «если тапнуть по ней один раз она медленно
+// начинает двигаться в другую сторону. и если оставить ее на середине то тоже
+// как бы сползает в ту сторону к которой ближе находится. но можно схватить
+// ее пальцем и произвольно двигать или удерживать в любой точке».
+//
+// Отсюда три правила:
+//   • палец всегда сильнее доводчика — касание сразу останавливает движение;
+//   • отпустил после перетаскивания — сползает к ближнему краю;
+//   • короткий тап без движения — уезжает на противоположный край.
+// Долгое удержание без движения тапом НЕ считается: человек держит нарочно,
+// иначе обещание «удерживать в любой точке» не работало бы — отпустил, и её
+// унесло бы на другую сторону.
+//
+// --curtain — сколько процентов кадра занимает слой АКТУАЛЬНОГО периода:
+// 100 — целиком он, 0 — целиком период сравнения. Покой всегда на краю,
+// поэтому в статике видно одно целое лицо, а половинки — только переход.
+const CURTAIN_FULL_MS = 1300;   // время полного прохода; меньше — торопливо
+let curtainPct = 100, curtainRaf = 0;
+
+function wireCurtain(){
+  const stage = document.getElementById("facesStage");
+  if (!stage || stage.classList.contains("single")) return;
+
+  const labelA = document.querySelector('#faces .face-label[data-which="A"]');
+  const labelB = document.querySelector('#faces .face-label[data-which="B"]');
+
+  const paint = () => {
+    stage.style.setProperty("--curtain", curtainPct + "%");
+    stage.setAttribute("aria-valuenow", Math.round(curtainPct));
+    const nowLeads = curtainPct >= 50;
+    if (labelA) labelA.dataset.lead = nowLeads ? "1" : "0";
+    if (labelB) labelB.dataset.lead = nowLeads ? "0" : "1";
+  };
+  const set = v => { curtainPct = Math.max(0, Math.min(100, v)); paint(); };
+  const stop = () => { if (curtainRaf){ cancelAnimationFrame(curtainRaf); curtainRaf = 0; } };
+
+  // Доводчик. Длительность пропорциональна остатку пути, чтобы скорость была
+  // одинаковой, откуда бы шторка ни шла.
+  const glideTo = target => {
+    stop();
+    const from = curtainPct, dist = Math.abs(target - from);
+    if (dist < 0.5){ set(target); return; }
+    const dur = CURTAIN_FULL_MS * (dist / 100), t0 = performance.now();
+    const ease = t => (t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2);
+    const step = now => {
+      const t = Math.min(1, (now - t0) / dur);
+      set(from + (target - from) * ease(t));
+      curtainRaf = t < 1 ? requestAnimationFrame(step) : 0;
+    };
+    curtainRaf = requestAnimationFrame(step);
+  };
+  const nearEdge  = () => (curtainPct >= 50 ? 100 : 0);
+  const otherEdge = () => (curtainPct >= 50 ? 0 : 100);
+
+  let dragging = false, moved = false, startX = 0, startT = 0;
+  const pctFrom = e => {
+    const r = stage.getBoundingClientRect();
+    return ((e.clientX - r.left) / r.width) * 100;
+  };
+
+  stage.addEventListener("pointerdown", e => {
+    stop();
+    dragging = true; moved = false;
+    startX = e.clientX; startT = performance.now();
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    if (!moved && Math.abs(e.clientX - startX) < 6) return;   // ещё тап, а не жест
+    moved = true;
+    set(pctFrom(e));
+  });
+  const release = () => {
+    if (!dragging) return;
+    dragging = false;
+    const quick = performance.now() - startT < 300;
+    glideTo(!moved && quick ? otherEdge() : nearEdge());
+  };
+  ["pointerup", "pointercancel"].forEach(t => stage.addEventListener(t, release));
+
+  stage.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 12 : 4;
+    if (e.key === "ArrowLeft"){ stop(); set(curtainPct - step); e.preventDefault(); }
+    if (e.key === "ArrowRight"){ stop(); set(curtainPct + step); e.preventDefault(); }
+    if (e.key === " " || e.key === "Enter"){ glideTo(otherEdge()); e.preventDefault(); }
+  });
+
+  // Перерисовка списка морд обнуляет узлы — начинаем от актуального периода.
+  curtainPct = 100;
+  paint();
 }
 
 // Real, existing Wikipedia articles (not guessed) — Alex 2026-09-14: "можно
@@ -2520,9 +2699,15 @@ function chApplySvgParams(svg, p, cx){
   // would show the square staying at whatever size the page loaded with
   // while only the head itself visibly grows/shrinks, the same desync bug
   // class as the 2026-09-17 cy-not-updating one (see chHeadCy's own history).
-  svg.setAttribute("viewBox", `0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}`);
-  const square = svg.querySelector("rect");
-  if (square){ square.setAttribute("y", box.rectY.toFixed(1)); square.setAttribute("height", box.rectHeight.toFixed(1)); }
+  // Кадр закреплён (шторка, см. chFaceSvg) — пересчитывать его нельзя: две
+  // наложенные морды обязаны жить в одном viewBox, иначе во время прогона
+  // одна поедет относительно другой. Рамка безопасной области при этом тоже
+  // остаётся на месте: она часть того же кадра.
+  if (svg.dataset.vbY === undefined){
+    svg.setAttribute("viewBox", `0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}`);
+    const square = svg.querySelector("rect");
+    if (square){ square.setAttribute("y", box.rectY.toFixed(1)); square.setAttribute("height", box.rectHeight.toFixed(1)); }
+  }
 
   const head = svg.querySelector('ellipse[data-feature~="headW"]');
   if (head){ head.setAttribute("rx", p.headW.toFixed(1)); head.setAttribute("ry", p.headH.toFixed(1)); head.setAttribute("cy", cy.toFixed(1)); }
