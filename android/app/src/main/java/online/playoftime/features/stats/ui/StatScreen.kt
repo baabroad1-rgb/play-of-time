@@ -756,91 +756,96 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Сколько сыграно и сколько попыток — одной строкой над остальным
-            // (Alex 2026-09-27: «поставим количество попыток рядом со временем»).
-            // Оба значения отвечают на один вопрос — сколько было игры — и
-            // читаются вместе. Раньше ATTEMPTS стоял третьей строкой в левой
-            // колонке, между SESSIONS и WINS/PRECISE.
+            // СЕТКА, А НЕ ДВЕ КОЛОНКИ (Alex 2026-09-27: «ни один заголовок не
+            // идёт вровень с соседом справа»).
             //
-            // Строка занимает всю ширину карточки, поэтому каждому значению
-            // достаётся вдвое больше места, чем внутри колонки, и «2h 05m 13s»
-            // умещается целиком, без уменьшения шрифта.
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SummaryStat("PLAY TIME", textColor, Modifier.weight(1f)) {
-                    SummaryValue(formatDuration(data.periodPlayTimeMs), textColor)
-                }
-                SummaryStat("ATTEMPTS", textColor, Modifier.weight(1f)) {
-                    SummaryValue(formatNumber(data.periodAttempts.toString()), textColor)
+            // Раньше это были два независимых Column. Высота строки в каждом
+            // своя: у SERENITY COINS значение с иконкой монеты выше обычной
+            // строки текста, длинная подпись могла перенестись на вторую
+            // строку — и всё, что ниже, съезжало относительно соседней
+            // колонки. Чем дальше вниз, тем сильнее расхождение.
+            //
+            // Теперь каждая ПАРА — это один Row из двух ячеек равной ширины.
+            // Высота строки общая для обеих ячеек, обе начинаются от её
+            // верха, поэтому заголовки стоят вровень по построению, а не
+            // потому, что содержимое случайно совпало по высоте.
+            val pair: @Composable (
+                String, @Composable () -> Unit,
+                String, @Composable () -> Unit
+            ) -> Unit = { labelL, valueL, labelR, valueR ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    SummaryStat(labelL, textColor, Modifier.weight(1f), valueL)
+                    SummaryStat(labelR, textColor, Modifier.weight(1f), valueR)
                 }
             }
 
-            // Колонки равной ширины (Alex 2026-09-27). Было 0.64/0.36, и правой
-            // не хватало места: «SERENITY COINS» с иконкой монеты переносило
-            // дробную часть значения на вторую строку.
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    SummaryStat("SESSIONS", textColor) {
-                        SummaryValue(formatNumber(data.periodSessionsCount.toString()), textColor)
-                    }
-                    SummaryStat("WINS/PRECISE", textColor) {
+            // Сколько сыграно и сколько попыток — наверху, вместе (Alex
+            // 2026-09-27: «поставим количество попыток рядом со временем»):
+            // оба отвечают на один вопрос — сколько было игры.
+            pair(
+                "PLAY TIME", { SummaryValue(formatDuration(data.periodPlayTimeMs), textColor) },
+                "ATTEMPTS",  { SummaryValue(formatNumber(data.periodAttempts.toString()), textColor) }
+            )
+            pair(
+                "SESSIONS", { SummaryValue(formatNumber(data.periodSessionsCount.toString()), textColor) },
+                "SERENITY COINS", {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        // weight(1f) — значению достаётся ровно остаток строки
+                        // после иконки, по нему оно и подгоняет шрифт.
                         SummaryValue(
-                            "${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}",
-                            resultGreenColor
-                        )
-                    }
-                    SummaryStat("PRACTICE", textColor) {
-                        SummaryValue(
-                            if (data.practiceDensityMinPerDay > 0)
-                                groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay))
-                            else "—",
-                            textColor
+                            groupDigits("%.2f".format(data.periodScm)),
+                            textColor,
+                            Modifier.weight(1f)
                         )
                     }
                 }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    SummaryStat("SERENITY COINS", textColor) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            // weight(1f) — значению достаётся ровно остаток
-                            // строки после иконки, по нему оно и подгоняет шрифт.
-                            SummaryValue(
-                                groupDigits("%.2f".format(data.periodScm)),
-                                textColor,
-                                Modifier.weight(1f)
-                            )
-                        }
-                    }
-                    SummaryStat("PACE OF PLAY", textColor) {
-                        SummaryValue(
-                            if (data.paceOfPlayPerMin > 0)
-                                groupDigits("%.1f att/min".format(data.paceOfPlayPerMin))
-                            else "—",
-                            textColor
-                        )
-                    }
-                    // Дата первой попытки (Alex 2026-09-27: «дополнить карточку
-                    // датой начала игры»). Единственное значение в карточке,
-                    // которое НЕ подчиняется фильтру периода: «играю с такого-то»
-                    // по смыслу всегда за всю историю, иначе при выборе «сегодня»
-                    // оно показывало бы сегодняшнее число и теряло смысл.
-                    SummaryStat("PLAYING SINCE", textColor) {
-                        SummaryValue(
-                            if (data.firstPlayedMs > 0)
-                                SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
-                                    .format(Date(data.firstPlayedMs))
-                            else "—",
-                            textColor
-                        )
-                    }
+            )
+            pair(
+                "WINS/PRECISE", {
+                    SummaryValue(
+                        "${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}",
+                        resultGreenColor
+                    )
+                },
+                "PACE OF PLAY", {
+                    SummaryValue(
+                        if (data.paceOfPlayPerMin > 0)
+                            groupDigits("%.1f att/min".format(data.paceOfPlayPerMin))
+                        else "—",
+                        textColor
+                    )
                 }
-            }
+            )
+            pair(
+                "PRACTICE", {
+                    SummaryValue(
+                        if (data.practiceDensityMinPerDay > 0)
+                            groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay))
+                        else "—",
+                        textColor
+                    )
+                },
+                // Дата первой попытки (Alex 2026-09-27: «дополнить карточку
+                // датой начала игры»). Единственное значение в карточке,
+                // которое НЕ подчиняется фильтру периода: «играю с такого-то»
+                // по смыслу всегда за всю историю, иначе при выборе «сегодня»
+                // оно показывало бы сегодняшнее число и теряло смысл.
+                "PLAYING SINCE", {
+                    SummaryValue(
+                        if (data.firstPlayedMs > 0)
+                            SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
+                                .format(Date(data.firstPlayedMs))
+                        else "—",
+                        textColor
+                    )
+                }
+            )
         }
 
         ReportFaceCard(
@@ -859,9 +864,14 @@ private fun SummaryStat(
     value: @Composable () -> Unit
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        BasicText(
-            text  = label,
-            style = labelStyle(9.sp, color = textColor.copy(alpha = subtleText))
+        // Подпись строго в одну строку. Если бы она переносилась, ячейка
+        // стала бы выше соседней и значение под ней уехало бы вниз
+        // относительно значения справа — та самая кривизна, из-за которой
+        // карточку и переделали в сетку. Не влезает — уменьшается шрифт.
+        FitValueText(
+            text    = label,
+            style   = labelStyle(9.sp, color = textColor.copy(alpha = subtleText)),
+            minSize = 7.sp
         )
         value()
     }
