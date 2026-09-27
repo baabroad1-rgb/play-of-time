@@ -54,4 +54,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/COMMIT_LOG.md
           git commit -m "Обновить автоматический журнал изменений [skip ci]"
-          git push
+          # Пуш с повтором (27.09.2026). В main пишут два workflow: этот
+          # обновляет журнал, build-apk.yml возвращает номер версии. Они
+          # запускаются от одного и того же пуша одновременно, и тот, кто
+          # успел вторым, получал отказ: ветка уже ушла вперёд.
+          # Подбираем ушедшие коммиты и пробуем снова.
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "готово с попытки $attempt"
+              exit 0
+            fi
+            echo "пуш отклонён — ветка ушла вперёд, подбираю и пробую снова"
+            git pull --rebase --autostash origin main || exit 1
+            sleep $((attempt * 3))
+          done
+          echo "не удалось отправить после трёх попыток"
+          exit 1
