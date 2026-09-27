@@ -2707,11 +2707,14 @@ function wireCurtain(){
 // Меняется РУКАМИ при каждой правке этого файла. Автоматики нет намеренно:
 // выкладка просто копирует файлы по FTP и ничего в них не подставляет, а
 // городить сборку ради одной строки дороже, чем её обновить.
-const PAGE_BUILD = "2026-09-27 19:35";
+const PAGE_BUILD = "2026-09-27 19:55";
 
 const CH_CREDIT = {
-  ru: `Метод основан на «лицах Чернова» (Herman Chernoff, 1973) — подробнее в <a href="https://ru.wikipedia.org/wiki/Лица_Чернова" target="_blank" rel="noopener">Википедии</a>.`,
-  en: `Based on Chernoff faces (Herman Chernoff, 1973) — read more on <a href="https://en.wikipedia.org/wiki/Chernoff_face" target="_blank" rel="noopener">Wikipedia</a>.`,
+  // Ссылкой служит само название метода, без хвоста «подробнее в Википедии»
+  // (Alex 2026-09-27). Название и есть то, о чём человек пойдёт читать —
+  // отдельное приглашение только занимает строку.
+  ru: `Метод основан на <a href="https://ru.wikipedia.org/wiki/Лица_Чернова" target="_blank" rel="noopener">лицах Чернова</a> (Herman Chernoff, 1973).`,
+  en: `Based on <a href="https://en.wikipedia.org/wiki/Chernoff_face" target="_blank" rel="noopener">Chernoff faces</a> (Herman Chernoff, 1973).`,
 };
 
 // Applies an already-computed param set (chFaceParams()/chFaceParamsAt())
