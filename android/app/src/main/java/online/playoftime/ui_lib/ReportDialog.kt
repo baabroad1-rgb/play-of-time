@@ -107,6 +107,15 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         android.webkit.WebView(ctx).apply {
+                            // Страница отчёта живёт на сервере и меняется чаще,
+                            // чем приложение: выложил — и должно быть видно
+                            // сразу, без пересборки APK. По умолчанию WebView
+                            // берёт её из кэша, и Алекс 27.09.2026 увидел
+                            // старые морды через час после выкладки новых.
+                            // Управления кэшем тут не было вообще — это
+                            // недоделка, а не настройка. Страница лёгкая и
+                            // открывается редко, так что берём всегда свежую.
+                            settings.cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
                             setBackgroundColor(android.graphics.Color.TRANSPARENT)
