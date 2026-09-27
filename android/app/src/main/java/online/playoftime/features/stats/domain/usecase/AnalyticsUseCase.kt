@@ -462,6 +462,8 @@ class AnalyticsUseCase(
             periodPlayTimeMs         = periodPlayMs,
             periodWins               = trueThreeWins.toLong(),
             periodPrecise            = countPrecise(periodAttempts, aimTime).toLong(),
+            // За всю историю, не за период — см. AnalyticsData.firstPlayedMs.
+            firstPlayedMs            = tryDao.getFirstAttemptTime() ?: 0L,
             periodFromMs             = periodAttempts.minOfOrNull { it.startTime } ?: 0L,
             periodToMs               = periodAttempts.maxOfOrNull { it.startTime } ?: 0L,
             periodSessionsCount      = periodSessions.size.toLong(),

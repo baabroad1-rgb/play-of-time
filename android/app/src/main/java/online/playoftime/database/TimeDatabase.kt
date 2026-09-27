@@ -79,6 +79,17 @@ interface TryDao {
     @Insert
     suspend fun insert(value: TryDatabaseModel)
 
+    /**
+     * Когда игрок сделал самую первую попытку за всю историю (Alex 2026-09-27:
+     * «дополнить карточку датой начала игры»).
+     *
+     * Nullable намеренно: на пустой базе MIN() возвращает NULL, и не-nullable
+     * Long тут упал бы. Считается по попыткам, а не по сессиям: сессия без
+     * единой попытки — это не «начал играть».
+     */
+    @Query("SELECT MIN(startTime) FROM TryDatabaseModel")
+    suspend fun getFirstAttemptTime(): Long?
+
     @Query("SELECT * FROM TryDatabaseModel")
     suspend fun getAllAttempts(): List<TryDatabaseModel>
 

@@ -73,6 +73,7 @@ import online.playoftime.ui_lib.AppSpinner
 import online.playoftime.ui_lib.InfoDialog
 import online.playoftime.ui_lib.Screen
 import online.playoftime.ui_theme.accentColor
+import online.playoftime.ui_theme.helpAccentColor
 import online.playoftime.ui_theme.baseBackgroundColor
 import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.resultBlueColor
@@ -824,6 +825,20 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                             textColor
                         )
                     }
+                    // Дата первой попытки (Alex 2026-09-27: «дополнить карточку
+                    // датой начала игры»). Единственное значение в карточке,
+                    // которое НЕ подчиняется фильтру периода: «играю с такого-то»
+                    // по смыслу всегда за всю историю, иначе при выборе «сегодня»
+                    // оно показывало бы сегодняшнее число и теряло смысл.
+                    SummaryStat("PLAYING SINCE", textColor) {
+                        SummaryValue(
+                            if (data.firstPlayedMs > 0)
+                                SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
+                                    .format(Date(data.firstPlayedMs))
+                            else "—",
+                            textColor
+                        )
+                    }
                 }
             }
         }
@@ -1001,13 +1016,17 @@ private fun PeriodPill(
                 .size(26.dp)
                 .border(
                     width = 1.5.dp,
-                    color = accent.copy(alpha = if (helpActive) 1f else 0.75f),
+                    color = (if (helpActive) MaterialTheme.colorScheme.helpAccentColor else accent)
+                        .copy(alpha = if (helpActive) 1f else 0.75f),
                     shape = androidx.compose.foundation.shape.CircleShape
                 )
                 .onGloballyPositioned { onQuestionRect(it.boundsInRoot()) }
                 .clickable { onHelpClick() },
             contentAlignment = Alignment.Center
         ) {
+            // В режиме подсказок круг и крестик жёлтые — тем же цветом, что бабл
+            // подсказки (Alex 2026-09-27). Оранжевым крестик читался как обычная
+            // кнопка приложения, а не как выход из справки.
             // "?" → "×" при входе в режим подсказок (тот же паттерн, что на главном
             // экране, Alex 2026-08-22) — тот же круг служит и выходом из режима.
             // На экране аналитики этого переключения не было (Alex 2026-09-09).
@@ -1016,7 +1035,8 @@ private fun PeriodPill(
                 style = TextStyle(
                     fontSize   = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = accent.copy(alpha = 0.95f)
+                    color      = (if (helpActive) MaterialTheme.colorScheme.helpAccentColor else accent)
+                        .copy(alpha = 0.95f)
                 )
             )
         }

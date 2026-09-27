@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import online.playoftime.ui_theme.helpAccentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,7 +96,10 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
                         .clickable(onClick = onDismiss),
                     contentAlignment = Alignment.Center
                 ) {
-                    BasicText(text = "×", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = textColor))
+                    // Жёлтый, как крестик выхода из справки и как бабл подсказки
+                    // (Alex 2026-09-27) — чтобы «закрыть» везде выглядело одинаково.
+                    BasicText(text = "×", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.helpAccentColor))
                 }
             }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {

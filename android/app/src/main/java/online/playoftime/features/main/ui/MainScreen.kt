@@ -76,6 +76,7 @@ import online.playoftime.ui_lib.stop_watch.StopWatchButton
 import online.playoftime.ui_theme.Dimens
 import online.playoftime.core.utils.ErrorPattern
 import online.playoftime.ui_theme.accentColor
+import online.playoftime.ui_theme.helpAccentColor
 import online.playoftime.ui_theme.baseBackgroundColor
 import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.baseTextStyle
@@ -466,12 +467,16 @@ fun MainScreen(
                                     ) {
                                         // "?" → "×" при входе в режим подсказок (Alex 2026-08-22) —
                                         // тот же круг служит и выходом из режима.
+                                        // В режиме подсказок крестик жёлтый, тем же цветом, что
+                                        // бабл подсказки (Alex 2026-09-27): оранжевым он читался
+                                        // как обычная кнопка, а не как выход из справки.
                                         BasicText(
                                             text  = if (helpMode) "×" else "?",
                                             style = TextStyle(
                                                 fontSize   = 14.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.accentColor.copy(alpha = 0.95f)
+                                                color = (if (helpMode) MaterialTheme.colorScheme.helpAccentColor
+                                                         else MaterialTheme.colorScheme.accentColor).copy(alpha = 0.95f)
                                             )
                                         )
                                     }

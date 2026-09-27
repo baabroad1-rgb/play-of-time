@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import online.playoftime.ui_theme.helpYellowColor
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
@@ -216,7 +217,10 @@ fun Modifier.helpZonePartDisposable(
     }
 }
 
-private val HelpBubbleBg     = Color(0xF2F5C02E)
+// Заливка бабла — общий helpYellowColor с прежней прозрачностью 0xF2.
+// Раньше цвет был записан здесь числом, и крестик выхода из режима красился
+// оранжевым акцентом, то есть справка состояла из двух разных цветов.
+private val HelpBubbleBg     = helpYellowColor.copy(alpha = 0xF2 / 255f)
 private val HelpBubbleBorder = Color(0xFFFFD35E)
 private val HelpTextColor    = Color(0xFF2A1E00)
 

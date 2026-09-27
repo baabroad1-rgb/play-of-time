@@ -51,6 +51,7 @@ import online.playoftime.features.main.ui.helpZoneDisposable
 import online.playoftime.ui_lib.CoinIcon
 import online.playoftime.ui_theme.Dimens
 import online.playoftime.ui_theme.accentColor
+import online.playoftime.ui_theme.helpAccentColor
 import online.playoftime.ui_theme.baseBackgroundColor
 import online.playoftime.ui_theme.baseTextColor
 
@@ -328,9 +329,11 @@ private fun RowsPanel(
             Box(
                 modifier = Modifier
                     .size(22.dp)
+                    // Жёлтый в режиме подсказок — см. MainScreen (Alex 2026-09-27).
                     .border(
                         width = 1.5.dp,
-                        color = accent.copy(alpha = if (helpActive) 1f else 0.75f),
+                        color = (if (helpActive) MaterialTheme.colorScheme.helpAccentColor else accent)
+                            .copy(alpha = if (helpActive) 1f else 0.75f),
                         shape = CircleShape
                     )
                     .onGloballyPositioned { onQuestionRect(it.boundsInRoot()) }
@@ -339,7 +342,8 @@ private fun RowsPanel(
             ) {
                 BasicText(
                     text = if (helpActive) "×" else "?",
-                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent.copy(alpha = 0.95f))
+                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = (if (helpActive) MaterialTheme.colorScheme.helpAccentColor else accent).copy(alpha = 0.95f))
                 )
             }
         }

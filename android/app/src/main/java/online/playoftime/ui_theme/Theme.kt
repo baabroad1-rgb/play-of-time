@@ -56,6 +56,19 @@ val ColorScheme.disabledAccentColor: Color
     @Composable
     get() = orangeShadeColor
 
+/**
+ * Жёлтый режима подсказок (Alex 2026-09-27: «сделать жёлтый крестик на
+ * закрытии справки — такого же цвета, как подсказки, не оранжевый»).
+ *
+ * Тот же цвет, которым залит бабл подсказки (HelpBubbleBg в HelpTapOverlay):
+ * крестик выхода из режима — часть справки, а не обычный акцент приложения,
+ * и оранжевым он читался как посторонняя кнопка. Один токен на оба места,
+ * чтобы цвета не разъехались при будущей правке.
+ */
+val ColorScheme.helpAccentColor: Color
+    @Composable
+    get() = helpYellowColor
+
 val ColorScheme.baseBackgroundColor: Color
     @Composable
     get() = if (themeMode == ThemeMode.LIGHT) whiteBaseColor else blackColor

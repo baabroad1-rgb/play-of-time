@@ -15,6 +15,9 @@ val lightGreyColor = Color(0xFFEEEEEE)
 val whiteBaseColor = Color(0xFFFFFFFF)
 val blackColor = Color(0xFF000000)
 val orangeColor = Color(0xFFFF551C)
+// Жёлтый режима подсказок. Тот же, которым залит бабл подсказки
+// (HelpBubbleBg в HelpTapOverlay) — источник один, чтобы не разъехались.
+val helpYellowColor = Color(0xFFF5C02E)
 val orangeShadeColor = Color(0xFFFFB79F)
 val transparentColor = Color(0x00000000)
 val extraLightGreyColor = Color(0xFFEBEBEB)
