@@ -2698,17 +2698,6 @@ function wireCurtain(){
 // moved into "Here's how you're doing" itself) — this small credit line is
 // the one piece of that panel with no narrate() equivalent, so it now sits
 // on its own under the faces.
-// Отметка версии страницы (27.09.2026). Заведена после часа спора «выложено
-// или нет»: сервер отдавал новую страницу, приложение показывало старую из
-// кэша, и отличить одно от другого было НЕЧЕМ — обе выглядят одинаково, пока
-// не начнёшь искать конкретную правку. Теперь версия видна внизу: назвал
-// цифру — сразу ясно, свежая страница или из кэша.
-//
-// Меняется РУКАМИ при каждой правке этого файла. Автоматики нет намеренно:
-// выкладка просто копирует файлы по FTP и ничего в них не подставляет, а
-// городить сборку ради одной строки дороже, чем её обновить.
-const PAGE_BUILD = "2026-09-27 19:55";
-
 const CH_CREDIT = {
   // Ссылкой служит само название метода, без хвоста «подробнее в Википедии»
   // (Alex 2026-09-27). Название и есть то, о чём человек пойдёт читать —
@@ -2971,9 +2960,7 @@ function render(){
   // head's own crown is now pinned at a fixed y by chHeadCy() itself (see
   // its comment above), so the plain fixed CSS gap under #sampleNote is
   // already both minimal and constant for any head size, by construction.
-  document.getElementById("faceCredit").innerHTML =
-    CH_CREDIT[state.lang === "en" ? "en" : "ru"] +
-    ` <span style="opacity:.55; white-space:nowrap">· v${PAGE_BUILD}</span>`;
+  document.getElementById("faceCredit").innerHTML = CH_CREDIT[state.lang === "en" ? "en" : "ru"];
 
   document.getElementById("footNote").textContent = S.footNote(player.acc);
 
