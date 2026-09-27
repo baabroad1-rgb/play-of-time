@@ -1,0 +1,59 @@
+name: Кто попал в окно переезда
+
+# Разовая проверка (27.09.2026). 26 сентября несколько часов по основному
+# адресу сайта лежало уже ПЕРЕИМЕНОВАННОЕ приложение (сборки 14.17–14.21).
+# Кто нажал обновление в тот момент, получил его как отдельное приложение с
+# пустой историей и новым идентификатором игрока — и застрял: оно проверяет
+# обновления в папке старого приложения и до 15.01 само не доберётся.
+#
+# Признак такого игрока в лидерборде: история начинается 26 сентября или
+# позже. У переехавшего правильно идентификатор сохраняется вместе с
+# настройками, поэтому его история остаётся старой.
+#
+# Только чтение, ничего не меняет.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/check-migration.yml'
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Забрать лидерборд и найти новые личности
+        shell: bash
+        run: |
+          curl -sS "https://playoftime.online/api/leaderboard.php" -o lb.json
+          python3 - <<'PY'
+          import json
+          from datetime import datetime
+
+          players = json.load(open("lb.json")).get("players", [])
+          print(f"игроков всего: {len(players)}")
+
+          CUTOFF = "2026-09-26"
+
+          def first(p):
+              return (p.get("firstAttemptAt") or "")[:10]
+
+          fresh = [p for p in players if first(p) >= CUTOFF and first(p)]
+          print(f"с историей от {CUTOFF} и новее: {len(fresh)}")
+          print()
+          if fresh:
+              print(f"{'игрок':<18} {'начал':<12} {'попыток':>8} {'уровень':>8} {'SC':>9}")
+              for p in sorted(fresh, key=lambda x: first(x)):
+                  print(f"{(p.get('displayName') or '?')[:17]:<18} {first(p):<12} "
+                        f"{p.get('attemptsTotal'):>8} {p.get('levelId'):>8} "
+                        f"{round(p.get('scTotal') or 0, 1):>9}")
+          else:
+              print("таких нет — в окно никто не попал")
+
+          print()
+          print("Для сравнения: когда начинали остальные, от новых к старым")
+          print(f"{'игрок':<18} {'начал':<12} {'попыток':>8}")
+          for p in sorted(players, key=lambda x: first(x), reverse=True)[:12]:
+              print(f"{(p.get('displayName') or '?')[:17]:<18} {first(p) or '—':<12} "
+                    f"{p.get('attemptsTotal'):>8}")
+          PY
