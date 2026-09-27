@@ -503,14 +503,12 @@ class MainViewModel(
             // сервере ещё нет ⇒ просто null, кнопка не появляется.
             // Полный комментарий про заплатку и что удалять — UpdateApi.kt.
             val updateInfo = updateApi.fetchIfNewer()
-            // ⚠️ ДИАГНОСТИЧЕСКИЙ ТОСТ (Alex 2026-09-22) — временный, показывает
-            // РЕАЛЬНЫЙ результат проверки на каждом старте, без adb/logcat.
-            // Убрать вместе с остальной заплаткой самообновления.
-            android.widget.Toast.makeText(
-                context(),
-                "Update check (installed v${online.playoftime.BuildConfig.VERSION_NAME}): ${updateApi.lastResultDebug}",
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            // Диагностический тост про результат проверки обновления УБРАН
+            // (Alex 2026-09-27). Он показывался при КАЖДОМ старте и был
+            // отладочным: игроку сообщалось «Update check (installed
+            // v15.06): server 15.06 not newer than installed 15.06» —
+            // строка, написанная для меня, а не для него.
+            // Результат проверки по-прежнему в updateApi.lastResultDebug.
             updateInfo?.let { info ->
                 setState { copy(updateApkUrl = info.apkUrl) }
             }
