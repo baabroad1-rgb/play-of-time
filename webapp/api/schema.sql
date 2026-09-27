@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS players (
   sc_total DOUBLE NOT NULL DEFAULT 0,
   attempts_total INT UNSIGNED NOT NULL DEFAULT 0,
   wins_total INT UNSIGNED NOT NULL DEFAULT 0,
+  app_version VARCHAR(16) NULL,       -- build the player last synced from; NULL = older than 15.02 / 14.93
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   PRIMARY KEY (id),

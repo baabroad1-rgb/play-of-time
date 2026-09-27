@@ -57,3 +57,30 @@ jobs:
               print(f"{(p.get('displayName') or '?')[:17]:<18} {first(p) or '—':<12} "
                     f"{p.get('attemptsTotal'):>8}")
           PY
+
+          echo
+          echo "══════════════════════════════════════════"
+          echo "Раскладка по версиям приложения (api/app_versions.php):"
+          curl -sS "https://playoftime.online/api/app_versions.php" -o ver.json
+          python3 - <<'PY'
+          import json
+
+          d = json.load(open("ver.json"))
+          if not d.get("ready"):
+              print("  колонка версии ещё не создана:", d.get("note", ""))
+              print("  появится после первой синхронизации любого игрока")
+          elif not d.get("groups"):
+              print("  групп нет — ни один игрок ещё не синхронизировался")
+          else:
+              print(f"  {'версия':<10} {'платформа':<10} {'игроков':>8} {'попыток':>9} "
+                    f"{'за неделю':>10}  последняя синхронизация")
+              for g in d["groups"]:
+                  ver = g.get("appVersion") or "не сообщ."
+                  print(f"  {ver:<10} {g.get('platform') or '?':<10} {g.get('players'):>8} "
+                        f"{g.get('attempts'):>9} {g.get('activeWeek'):>10}  "
+                        f"{(g.get('lastSyncAt') or '—')[:16]}")
+              print()
+              print("  «не сообщ.» — сборка старее 15.02 (новое) или 14.93 (мостовое).")
+              print("  Мостовую версию можно убирать с сайта, когда в группах 14.9x")
+              print("  и «не сообщ.» не останется игроков, заходивших за последнюю неделю.")
+          PY

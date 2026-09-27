@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import online.playoftime.BuildConfig
 import online.playoftime.core.data.LocalStorageService
 import online.playoftime.core.utils.resolutionFloorMs
 import online.playoftime.database.SyncAttemptRow
@@ -80,6 +81,14 @@ class LeaderboardSyncManager(
                     put("syncToken", localStorage.getOrCreateSyncToken())
                     put("levelId", localStorage.getCurrentLevelId())
                     put("taskId", localStorage.getCurrentTaskId())
+                    // Версия сборки (Alex 2026-09-27). До этого синхронизация
+                    // не сообщала о себе НИЧЕГО, и при переезде на новый
+                    // идентификатор пакета выяснилось, что узнать, кто ещё
+                    // сидит в старом приложении, нечем — а мостовую версию
+                    // нельзя убирать с сайта, пока такие есть. Сервер пишет
+                    // это в players.app_version при каждой синхронизации,
+                    // сводку отдаёт api/app_versions.php.
+                    put("appVersion", BuildConfig.VERSION_NAME)
                     put("attempts", JSONArray(batch.map { it.toSyncJson() }))
                 }
 

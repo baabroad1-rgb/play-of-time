@@ -24,6 +24,18 @@ try {
     try { $pdo->exec("ALTER TABLE attempts ADD COLUMN recorded_ms BIGINT NULL"); } catch (Exception $ignored) {}
 }
 
+// Self-migration (2026-09-27): which app build the player is actually running.
+// Added because nothing in a sync said WHICH app it came from, and during the
+// move to the renamed package (online.playoftime) that was the one thing we
+// needed to know: who is still on the old app and therefore still needs the
+// bridge version kept alive. NULL means a build older than 15.02 / 14.93 —
+// those don't send it. Same pattern as recorded_ms above.
+try {
+    $pdo->query("SELECT app_version FROM players LIMIT 0");
+} catch (Exception $e) {
+    try { $pdo->exec("ALTER TABLE players ADD COLUMN app_version VARCHAR(16) NULL"); } catch (Exception $ignored) {}
+}
+
 try {
     $pdo->beginTransaction();
 
@@ -42,14 +54,23 @@ try {
     // nothing, i.e. the native app) defaults to the column's own DEFAULT
     // 'native' (see migrate_002_add_platform).
     $platform = (isset($input["platform"]) && $input["platform"] === "web") ? "web" : "native";
+    // Версия приложения. В отличие от platform, пишется при КАЖДОЙ
+    // синхронизации: она меняется, когда игрок обновляется, и нам нужно
+    // текущее значение, а не первое. Формат жёстко ограничен — это строка из
+    // клиента, и в базу она попадает как есть.
+    $appVersion = null;
+    if (isset($input["appVersion"]) && is_string($input["appVersion"])
+        && preg_match('/^[0-9]{1,3}\.[0-9]{1,3}$/', $input["appVersion"])) {
+        $appVersion = $input["appVersion"];
+    }
 
     if ($existing === false) {
         // First time this device has ever synced — register it.
         $ins = $pdo->prepare(
-            "INSERT INTO players (id, sync_token, display_name, level_id, task_id, platform, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO players (id, sync_token, display_name, level_id, task_id, platform, app_version, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
-        $ins->execute(array($playerId, $syncToken, $name, $levelId, $taskId, $platform, $now, $now));
+        $ins->execute(array($playerId, $syncToken, $name, $levelId, $taskId, $platform, $appVersion, $now, $now));
         if ($name === null) {
             // No custom name yet — assign a short generated name instead of
             // leaving it blank ("Anonymous").
@@ -69,12 +90,16 @@ try {
             $name = generate_short_name($pdo);
         }
         $resolvedName = $name !== null ? $name : (string) $existing["display_name"];
+        // COALESCE(?, app_version): клиент, который версию не присылает
+        // (сборки старее 15.02 / 14.93), не должен затирать уже известную —
+        // иначе игрок, синхронизировавшийся один раз со старого устройства,
+        // терял бы отметку.
         if ($name !== null) {
-            $upd = $pdo->prepare("UPDATE players SET level_id = ?, task_id = ?, display_name = ?, updated_at = ? WHERE id = ?");
-            $upd->execute(array($levelId, $taskId, $name, $now, $playerId));
+            $upd = $pdo->prepare("UPDATE players SET level_id = ?, task_id = ?, display_name = ?, app_version = COALESCE(?, app_version), updated_at = ? WHERE id = ?");
+            $upd->execute(array($levelId, $taskId, $name, $appVersion, $now, $playerId));
         } else {
-            $upd = $pdo->prepare("UPDATE players SET level_id = ?, task_id = ?, updated_at = ? WHERE id = ?");
-            $upd->execute(array($levelId, $taskId, $now, $playerId));
+            $upd = $pdo->prepare("UPDATE players SET level_id = ?, task_id = ?, app_version = COALESCE(?, app_version), updated_at = ? WHERE id = ?");
+            $upd->execute(array($levelId, $taskId, $appVersion, $now, $playerId));
         }
     }
 
