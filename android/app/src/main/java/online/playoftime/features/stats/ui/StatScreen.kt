@@ -156,8 +156,12 @@ private fun SlashCell(
     slashW    : Dp,
     rightW    : Dp
 ) {
+    // Ширина столбцов фиксирована, чтобы значения выстраивались вертикально,
+    // поэтому четырёхзначные миллисекунды с разделителем разрядов в них уже не
+    // влезают. FitValueText уменьшает шрифт ровно настолько, насколько нужно
+    // (Alex 2026-09-27), вместо того чтобы обрезать цифру.
     Row(verticalAlignment = Alignment.CenterVertically) {
-        BasicText(
+        FitValueText(
             modifier = Modifier.width(leftW),
             text  = leftText,
             style = leftStyle.copy(textAlign = TextAlign.End)
@@ -167,7 +171,7 @@ private fun SlashCell(
             text  = "/",
             style = slashStyle.copy(textAlign = TextAlign.Center)
         )
-        BasicText(
+        FitValueText(
             modifier = Modifier.width(rightW),
             text  = rightText,
             style = rightStyle.copy(textAlign = TextAlign.Start)
@@ -748,8 +752,11 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 .background(cardBg)
                 .padding(horizontal = 18.dp, vertical = 16.dp)
         ) {
+            // Колонки равной ширины (Alex 2026-09-27). Было 0.64/0.36, и правой
+            // не хватало места: «SERENITY COINS» с иконкой монеты переносило
+            // дробную часть значения на вторую строку.
             Column(
-                modifier = Modifier.weight(0.64f),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 SummaryStat("PLAY TIME", textColor) { SummaryValue(formatDuration(data.periodPlayTimeMs), textColor) }
@@ -760,21 +767,27 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 }
             }
             Column(
-                modifier = Modifier.weight(0.36f),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 SummaryStat("SERENITY COINS", textColor) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        SummaryValue("%.2f".format(data.periodScm), textColor)
+                        // weight(1f) — значение получает ровно остаток строки
+                        // после иконки, и по этой ширине подгоняет себе шрифт.
+                        SummaryValue(
+                            groupDigits("%.2f".format(data.periodScm)),
+                            textColor,
+                            Modifier.weight(1f)
+                        )
                     }
                 }
                 SummaryStat("PACE OF PLAY", textColor) {
-                    SummaryValue(if (data.paceOfPlayPerMin > 0) "%.1f att/min".format(data.paceOfPlayPerMin) else "—", textColor)
+                    SummaryValue(if (data.paceOfPlayPerMin > 0) groupDigits("%.1f att/min".format(data.paceOfPlayPerMin)) else "—", textColor)
                 }
                 SummaryStat("PRACTICE", textColor) {
-                    SummaryValue(if (data.practiceDensityMinPerDay > 0) "%.1f min/day".format(data.practiceDensityMinPerDay) else "—", textColor)
+                    SummaryValue(if (data.practiceDensityMinPerDay > 0) groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay)) else "—", textColor)
                 }
             }
         }
@@ -799,14 +812,80 @@ private fun SummaryStat(label: String, textColor: Color, value: @Composable () -
 }
 
 @Composable
-private fun SummaryValue(text: String, color: Color) {
-    BasicText(text = text, style = metricStyle(14.sp, FontWeight.SemiBold, color))
+private fun SummaryValue(text: String, color: Color, modifier: Modifier = Modifier) {
+    // 12sp Medium — тот же размер, что у значений в следующей карточке
+    // (CardMetricRow), чтобы верхняя карточка не выбивалась из ряда
+    // (Alex 2026-09-27). Раньше было 14sp SemiBold.
+    FitValueText(
+        text     = text,
+        style    = metricStyle(12.sp, FontWeight.Medium, color),
+        modifier = modifier
+    )
 }
 
-/** Format large numbers with space as thousands separator */
-private fun formatNumber(value: String): String {
-    val num = value.toLongOrNull() ?: return value
-    return "%,d".format(num).replace(',', ' ')
+// ── Разделители разрядов и защита от разъезда ──────────────────────────────
+//
+// Alex 2026-09-27: «сделать разделители разрядов для всех значений» и
+// «убедиться что ничего не разъедется при росте значений» — у Serenity Coins
+// знак после запятой уезжал на следующую строку.
+//
+// Разделитель — НЕразрывный пробел. Выглядит как обычный, но внутри числа
+// строка по нему не переносится, поэтому «23 945» не разорвётся на две
+// строки даже там, где перенос разрешён.
+private const val GROUP_SEP = '\u00A0'
+
+private val INT_DIGIT_RUN = Regex("""(?<![\d.])\d{4,}""")
+
+/**
+ * Ставит разделители разрядов в целой части каждого числа внутри строки.
+ *
+ * Работает по готовому тексту, а не по числу, поэтому годится и для
+ * «1234.56», и для «+1234ms», и для «1234 att/min» — везде, где значение
+ * уже отформатировано под свою единицу измерения.
+ *
+ * Дробная часть не группируется: цифры после точки к разрядам не относятся,
+ * за это отвечает отрицательный lookbehind на точку. Числа короче четырёх
+ * цифр не трогаются — «999» остаётся «999».
+ */
+private fun groupDigits(text: String): String = INT_DIGIT_RUN.replace(text) { m ->
+    m.value.reversed().chunked(3).joinToString(GROUP_SEP.toString()).reversed()
+}
+
+/** Целое число с разделителями разрядов. */
+private fun formatNumber(value: String): String = groupDigits(value)
+
+/**
+ * Значение, которое не разъезжается. Пишется всегда одной строкой; если не
+ * влезает в отведённую ширину — шрифт уменьшается шагами по 0.5sp до
+ * [minSize], и только потом текст обрезается.
+ *
+ * Нужно потому, что значения растут вместе с историей игрока: Serenity Coins
+ * за всё время, четырёхзначные миллисекунды в дереве, att4win на длинной
+ * серии без побед. При фиксированном размере шрифта такое значение либо
+ * переносилось на вторую строку (и ломало высоту карточки), либо обрезалось
+ * без предупреждения.
+ */
+@Composable
+private fun FitValueText(
+    text     : String,
+    style    : TextStyle,
+    modifier : Modifier = Modifier,
+    minSize  : androidx.compose.ui.unit.TextUnit = 8.sp
+) {
+    val startSize = style.fontSize
+    var size by remember(text, startSize) { mutableStateOf(startSize) }
+    BasicText(
+        text     = text,
+        modifier = modifier,
+        style    = style.copy(fontSize = size),
+        maxLines = 1,
+        softWrap = false,
+        onTextLayout = { result ->
+            if (result.didOverflowWidth && size.value > minSize.value) {
+                size = (size.value - 0.5f).sp
+            }
+        }
+    )
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -987,7 +1066,7 @@ private fun RangeBar(
             val cy = size.height / 2f
             // Разделитель разрядов пробелом для трёхзначных+ значений.
             fun fmtCount(n: Long): String =
-                if (n >= 1000L) "%,d".format(n).replace(',', ' ') else n.toString()
+                groupDigits(n.toString())
 
             if (earlyCount > 0 && rW > 16f) {
                 val ml = textMeasurer.measure(fmtCount(earlyCount), countStyle)
@@ -1163,7 +1242,7 @@ private fun RangeBar(
                     val floorHeightDp     = 15.dp
                     val floorFormatting   = { dev: online.playoftime.features.stats.domain.entity.TopDeviation ->
                         // Разделитель разрядов пробелом для count > 999.
-                        val countStr = "%,d".format(dev.count).replace(',', ' ')
+                        val countStr = groupDigits(dev.count.toString())
                         "%.3f x %s".format(abs(dev.errorMs) / 1000.0, countStr)
                     }
                     val sortedModes = modeRows.sortedBy { it.second.errorMs }
@@ -1426,7 +1505,10 @@ private fun CardMetricRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment     = Alignment.CenterVertically
     ) {
-        Column {
+        // weight(1f) у подписи (Alex 2026-09-27): длинная подпись с пояснением
+        // теперь переносится внутри своей доли строки, а не отжимает значение
+        // к правому краю, пока то не начнёт переноситься само.
+        Column(modifier = Modifier.weight(1f)) {
             BasicText(
                 text  = label,
                 style = labelStyle(11.sp, FontWeight.Medium, color = textColor.copy(alpha = 0.73f))
@@ -1436,8 +1518,9 @@ private fun CardMetricRow(
                 style = labelStyle(9.sp, color = textColor.copy(alpha = subtleText))
             )
         }
-        BasicText(
-            text  = value,
+        Spacer(Modifier.width(8.dp))
+        FitValueText(
+            text  = groupDigits(value),
             style = metricStyle(12.sp, FontWeight.Medium,
                 if (valueColor == Color.Unspecified) textColor else valueColor)
         )
@@ -1453,17 +1536,13 @@ private fun CardMetricRow(
  * blue = late), знаки +/− убраны (Alex 2026-07-12). "—" if no data.
  */
 private fun formatGeomMs(ms: Double, early: Boolean): String =
-    if (ms <= 0.0) "—" else ms.roundToInt().toString()
+    if (ms <= 0.0) "—" else groupDigits(ms.roundToInt().toString())
 
 /** attempts ÷ clean true-three wins, "—" if no true-three win in this node. */
 private fun formatAttemptsPerWin(attempts: Int, trueThreeWins: Int): String {
     if (trueThreeWins <= 0) return "—"
     val ratio = attempts.toDouble() / trueThreeWins
-    return if (ratio >= 1000.0) {
-        val intPart = ratio.toLong()
-        val frac    = ((ratio - intPart) * 10).toLong()
-        "%s.%d".format("%,d".format(intPart).replace(',', ' '), frac)
-    } else "%.1f".format(ratio)
+    return groupDigits("%.1f".format(ratio))
 }
 
 /** Lucky index formatted as "0.87". "—" if lucky index is 0.0 (нет данных / нет побед). */
@@ -1542,7 +1621,7 @@ private fun TreeRow(
         // как его заголовок "lucky" (Alex 2026-07-12).
         val luckyColor = if (luckyIndex <= 0.0)
             textColor.copy(alpha = subtleText) else textColor
-        BasicText(
+        FitValueText(
             modifier = Modifier.width(TREE_COL_LUCKY),
             text  = formatLucky(luckyIndex),
             style = metricStyle(11.sp, FontWeight.Normal, luckyColor)
@@ -1558,7 +1637,7 @@ private fun TreeRow(
             leftW = TREE_EL_LEFT_W, slashW = TREE_EL_SLASH_W, rightW = TREE_EL_RIGHT_W
         )
         // att4win — attempts per one clean-three win; центрирован по столбцу
-        BasicText(
+        FitValueText(
             modifier = Modifier.width(TREE_COL_ATT4WIN),
             text  = formatAttemptsPerWin(attempts, trueThreeWins),
             style = metricStyle(11.sp, FontWeight.Normal, textColor.copy(alpha = 0.58f))
@@ -1632,10 +1711,10 @@ private fun TreeSessionRow(
             val noLuck = lucky <= 0.0
             val luckyColor = if (noLuck)
                 textColor.copy(alpha = subtleText) else textColor
-            BasicText(
+            FitValueText(
                 modifier = Modifier.width(TREE_COL_LUCKY),
                 text  = if (noLuck) "no luck" else formatLucky(lucky),
-                maxLines = 1,
+                minSize = 7.sp,
                 style = metricStyle(if (noLuck) 8.sp else 11.sp, FontWeight.Normal, luckyColor)
                     .copy(textAlign = TextAlign.Center)
             )
@@ -1649,7 +1728,7 @@ private fun TreeSessionRow(
                 leftW = TREE_EL_LEFT_W, slashW = TREE_EL_SLASH_W, rightW = TREE_EL_RIGHT_W
             )
             // att4win — attempts per one clean-three win; центрирован по столбцу
-            BasicText(
+            FitValueText(
                 modifier = Modifier.width(TREE_COL_ATT4WIN),
                 text  = formatAttemptsPerWin(session.attempts, session.trueThreeWins()),
                 style = labelStyle(11.sp, color = textColor.copy(alpha = 0.58f))
@@ -2129,15 +2208,16 @@ private fun DeviationRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         BasicText(
+            modifier = Modifier.weight(1f),
             text  = label,
             style = labelStyle(11.sp, FontWeight.Medium, labelColor)
         )
         val displayMs = if (negated) -profile.medianMs else profile.medianMs
-        BasicText(
+        FitValueText(
             text  = if (profile.medianMs != 0.0)
                 // Фактор разброса вплотную к значению через двойной пробел:
                 // «−18ms  ×/÷1.4».
-                "%s  %s".format(formatMs(displayMs), fmtFold(profile.stdPct))
+                groupDigits("%s  %s".format(formatMs(displayMs), fmtFold(profile.stdPct)))
             else "—",
             style = metricStyle(12.sp, FontWeight.Medium, textColor.copy(alpha = 0.88f))
         )
@@ -2159,7 +2239,7 @@ private fun formatDuration(ms: Long): String {
     val h = totalSec / 3600
     val m = (totalSec % 3600) / 60
     val s = totalSec % 60
-    return if (h > 0) "${h}h %02dm %02ds".format(m, s)
+    return if (h > 0) "${groupDigits(h.toString())}h %02dm %02ds".format(m, s)
     else "%dm %02ds".format(m, s)
 }
 
