@@ -503,14 +503,13 @@ class MainViewModel(
             // сервере ещё нет ⇒ просто null, кнопка не появляется.
             // Полный комментарий про заплатку и что удалять — UpdateApi.kt.
             val updateInfo = updateApi.fetchIfNewer()
-            // ⚠️ ДИАГНОСТИЧЕСКИЙ ТОСТ (Alex 2026-09-22) — временный, показывает
-            // РЕАЛЬНЫЙ результат проверки на каждом старте, без adb/logcat.
-            // Убрать вместе с остальной заплаткой самообновления.
-            android.widget.Toast.makeText(
-                context(),
-                "Update check (installed v${online.playoftime.BuildConfig.VERSION_NAME}): ${updateApi.lastResultDebug}",
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            // Диагностический тост про результат проверки обновления УБРАН
+            // (Alex 2026-09-27). В мостовой версии он создавал прямое
+            // противоречие: по основному адресу лежит она сама, проверка
+            // честно отвечала «установлена последняя», и тут же рядом висела
+            // кнопка «Новая версия», предлагающая качать. Игрок читал два
+            // взаимоисключающих утверждения одновременно.
+            // Результат проверки по-прежнему доступен в updateApi.lastResultDebug.
             updateInfo?.let { info ->
                 setState { copy(updateApkUrl = info.apkUrl) }
             }
