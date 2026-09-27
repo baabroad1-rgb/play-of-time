@@ -729,65 +729,101 @@ private fun AnalyticsContent(
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-//  Summary Header (всегда ALL_TIME)
+//  Summary Header — верхняя карточка: цифры периода + мордочка отчёта.
+//  Вопреки прежнему комментарию «всегда ALL_TIME», все значения здесь считаются
+//  по ВЫБРАННОМУ периоду (AnalyticsUseCase складывает их из periodAttempts).
 // ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
 
-    // Две карточки в ряд: слева цифры в две колонки (2/3 ширины), справа —
-    // кнопка отчёта (1/3). Равной высоты (IntrinsicSize.Max).
+    // Две карточки в ряд: слева цифры (2/3 ширины), справа — кнопка отчёта
+    // с мордочкой (1/3). Равной высоты (IntrinsicSize.Max).
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(androidx.compose.foundation.layout.IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .weight(2f)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(12.dp))
                 .background(cardBg)
-                .padding(horizontal = 18.dp, vertical = 16.dp)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Сколько сыграно и сколько попыток — одной строкой над остальным
+            // (Alex 2026-09-27: «поставим количество попыток рядом со временем»).
+            // Оба значения отвечают на один вопрос — сколько было игры — и
+            // читаются вместе. Раньше ATTEMPTS стоял третьей строкой в левой
+            // колонке, между SESSIONS и WINS/PRECISE.
+            //
+            // Строка занимает всю ширину карточки, поэтому каждому значению
+            // достаётся вдвое больше места, чем внутри колонки, и «2h 05m 13s»
+            // умещается целиком, без уменьшения шрифта.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SummaryStat("PLAY TIME", textColor, Modifier.weight(1f)) {
+                    SummaryValue(formatDuration(data.periodPlayTimeMs), textColor)
+                }
+                SummaryStat("ATTEMPTS", textColor, Modifier.weight(1f)) {
+                    SummaryValue(formatNumber(data.periodAttempts.toString()), textColor)
+                }
+            }
+
             // Колонки равной ширины (Alex 2026-09-27). Было 0.64/0.36, и правой
             // не хватало места: «SERENITY COINS» с иконкой монеты переносило
             // дробную часть значения на вторую строку.
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                SummaryStat("PLAY TIME", textColor) { SummaryValue(formatDuration(data.periodPlayTimeMs), textColor) }
-                SummaryStat("SESSIONS", textColor)  { SummaryValue(formatNumber(data.periodSessionsCount.toString()), textColor) }
-                SummaryStat("ATTEMPTS", textColor)  { SummaryValue(formatNumber(data.periodAttempts.toString()), textColor) }
-                SummaryStat("WINS/PRECISE", textColor) {
-                    SummaryValue("${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}", resultGreenColor)
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                SummaryStat("SERENITY COINS", textColor) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        // weight(1f) — значение получает ровно остаток строки
-                        // после иконки, и по этой ширине подгоняет себе шрифт.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    SummaryStat("SESSIONS", textColor) {
+                        SummaryValue(formatNumber(data.periodSessionsCount.toString()), textColor)
+                    }
+                    SummaryStat("WINS/PRECISE", textColor) {
                         SummaryValue(
-                            groupDigits("%.2f".format(data.periodScm)),
-                            textColor,
-                            Modifier.weight(1f)
+                            "${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}",
+                            resultGreenColor
+                        )
+                    }
+                    SummaryStat("PRACTICE", textColor) {
+                        SummaryValue(
+                            if (data.practiceDensityMinPerDay > 0)
+                                groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay))
+                            else "—",
+                            textColor
                         )
                     }
                 }
-                SummaryStat("PACE OF PLAY", textColor) {
-                    SummaryValue(if (data.paceOfPlayPerMin > 0) groupDigits("%.1f att/min".format(data.paceOfPlayPerMin)) else "—", textColor)
-                }
-                SummaryStat("PRACTICE", textColor) {
-                    SummaryValue(if (data.practiceDensityMinPerDay > 0) groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay)) else "—", textColor)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    SummaryStat("SERENITY COINS", textColor) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            // weight(1f) — значению достаётся ровно остаток
+                            // строки после иконки, по нему оно и подгоняет шрифт.
+                            SummaryValue(
+                                groupDigits("%.2f".format(data.periodScm)),
+                                textColor,
+                                Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    SummaryStat("PACE OF PLAY", textColor) {
+                        SummaryValue(
+                            if (data.paceOfPlayPerMin > 0)
+                                groupDigits("%.1f att/min".format(data.paceOfPlayPerMin))
+                            else "—",
+                            textColor
+                        )
+                    }
                 }
             }
         }
@@ -801,8 +837,13 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
 }
 
 @Composable
-private fun SummaryStat(label: String, textColor: Color, value: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+private fun SummaryStat(
+    label: String,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+    value: @Composable () -> Unit
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BasicText(
             text  = label,
             style = labelStyle(9.sp, color = textColor.copy(alpha = subtleText))
