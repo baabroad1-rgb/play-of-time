@@ -1019,26 +1019,47 @@ fun MainScreen(
         // сайта лежит ЭТА версия, а новое приложение достаётся только отсюда —
         // значит к моменту его установки у игрока гарантированно есть старое,
         // умеющее отдать историю. Порядок зашит в софт, а не в расписание.
-        if (!isPackageInstalled(LocalContext.current, "online.playoftime")) {
-            online.playoftime.ui_lib.AppUpdateButton(
-                apkUrl                = "https://playoftime.online/api/next_apk.php",
-                label                 = "Новая версия",
-                labelWhileDownloading = "Качаю…",
-                crashReporter         = org.koin.compose.koinInject<online.playoftime.core.telemetry.CrashReporter>(),
-                modifier              = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 10.dp, top = 6.dp)
-            )
-        }
+        // Обе кнопки живут в ОДНОЙ колонке (исправлено 27.09.2026): раньше они
+        // стояли отдельными детьми Box, обе с align(TopStart) и одинаковым
+        // отступом — то есть налезали друг на друга, если показывались вместе.
+        // А показаться вместе они могут: как только по основному адресу сайта
+        // появляется мостовая версия свежее установленной, приходит и
+        // предложение обновить саму мостовую.
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 10.dp, top = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            state.updateApkUrl?.let { apkUrl ->
+                online.playoftime.ui_lib.AppUpdateButton(
+                    apkUrl        = apkUrl,
+                    crashReporter = org.koin.compose.koinInject<online.playoftime.core.telemetry.CrashReporter>()
+                )
+            }
 
-        state.updateApkUrl?.let { apkUrl ->
-            online.playoftime.ui_lib.AppUpdateButton(
-                apkUrl        = apkUrl,
-                crashReporter = org.koin.compose.koinInject<online.playoftime.core.telemetry.CrashReporter>(),
-                modifier      = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 10.dp, top = 6.dp)
-            )
+            if (nextAppNeedsPush(installedVersionName(LocalContext.current, NEXT_PACKAGE))) {
+                online.playoftime.ui_lib.AppUpdateButton(
+                    apkUrl                = "https://playoftime.online/api/next_apk.php",
+                    label                 = "Новая версия",
+                    labelWhileDownloading = "Качаю…",
+                    crashReporter         = org.koin.compose.koinInject<online.playoftime.core.telemetry.CrashReporter>()
+                )
+                // Объяснение под кнопкой (Alex 2026-09-27). Без него игрок
+                // видит на телефоне две иконки с одинаковым названием и не
+                // понимает, какая рабочая и почему в новой сначала пусто.
+                BasicText(
+                    text  = "Приложение переехало. Поставится рядом со старым, " +
+                            "история перенесётся сама при первом запуске. Старое " +
+                            "удали, когда убедишься, что всё на месте.",
+                    modifier = Modifier.width(196.dp),
+                    style = TextStyle(
+                        fontSize   = 9.5.sp,
+                        lineHeight = 12.sp,
+                        color      = MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.62f)
+                    )
+                )
+            }
         }
         }
 
@@ -1188,5 +1209,40 @@ fun MainScreenPreview() {
 
 /** Стоит ли на телефоне приложение с таким идентификатором. Нужно мостовой
  *  версии, чтобы не предлагать переезд тому, кто уже переехал. */
-private fun isPackageInstalled(context: android.content.Context, packageName: String): Boolean =
-    runCatching { context.packageManager.getPackageInfo(packageName, 0); true }.getOrDefault(false)
+/** Идентификатор переименованного приложения, на которое идёт переезд. */
+private const val NEXT_PACKAGE = "online.playoftime"
+
+// Первая версия нового приложения, которая проверяет обновления В СВОЕЙ папке
+// (api/next_apk.php). Всё, что ниже, смотрит в папку старого приложения, видит
+// там мостовую версию и до настоящих обновлений само никогда не доберётся.
+private const val NEXT_SELF_UPDATING_MAJOR = 15
+private const val NEXT_SELF_UPDATING_MINOR = 1
+
+/** versionName установленного пакета, null если пакета нет или его не видно. */
+private fun installedVersionName(context: android.content.Context, packageName: String): String? =
+    runCatching { context.packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull()
+
+/**
+ * Нужна ли этому телефону кнопка переезда.
+ *
+ * Да, если нового приложения нет вообще — обычный случай, для которого кнопку
+ * и делали.
+ *
+ * Да и в том случае, если новое приложение УЖЕ стоит, но версии ниже 15.01
+ * (Alex 2026-09-27). Такие сборки 26 сентября несколько часов лежали по
+ * основному адресу сайта, и кто скачал в тот момент, получил приложение,
+ * которое ищет свои обновления в папке старого. Раньше кнопка была спрятана по
+ * признаку «новое установлено» — и такой игрок оставался в состоянии, из
+ * которого нет выхода: сам не обновится и кнопки не увидит. Проверяем не
+ * наличие, а версию.
+ *
+ * Нечитаемый versionName считаем поводом показать кнопку: лишнее предложение
+ * обновиться безобидно, застрять навсегда — нет.
+ */
+private fun nextAppNeedsPush(versionName: String?): Boolean {
+    val parts = Regex("""(\d+)\.(\d+)""").find(versionName ?: return true) ?: return true
+    val major = parts.groupValues[1].toIntOrNull() ?: return true
+    val minor = parts.groupValues[2].toIntOrNull() ?: return true
+    return major < NEXT_SELF_UPDATING_MAJOR ||
+        (major == NEXT_SELF_UPDATING_MAJOR && minor < NEXT_SELF_UPDATING_MINOR)
+}
