@@ -44,4 +44,15 @@ jobs:
             -X POST -H "Content-Type: application/json" \
             -d '{}' "$base/sync.php"
 
-          show "latest_apk.php (только заголовки)" -I "$base/latest_apk.php"
+          # Какое приложение лежит по каждому адресу. На время переезда их два:
+          # latest_apk.php должен отдавать МОСТОВУЮ версию старого приложения
+          # (14.9x), next_apk.php — новое (15.xx). Если перепутано, игрок
+          # поставит не то и переедет без истории.
+          echo "══════════════════════════════════════════"
+          echo "Что лежит на сайте по каждому адресу:"
+          for ep in latest_apk.php next_apk.php; do
+            code=$(curl -s -o /dev/null -D h.txt -w "%{http_code}" -I "$base/$ep")
+            name=$(grep -i '^content-disposition' h.txt | sed 's/.*filename="\([^"]*\)".*/\1/')
+            size=$(grep -i '^content-length' h.txt | tr -d '\r' | awk '{print $2}')
+            printf '  %-16s HTTP %s  %s  %s байт\n' "$ep" "$code" "${name:-без имени файла}" "${size:-?}"
+          done
