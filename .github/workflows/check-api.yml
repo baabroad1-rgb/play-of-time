@@ -14,6 +14,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Рабочая копия нужна, чтобы сверить выложенный report.html с тем, что
+      # лежит в репозитории.
+      - uses: actions/checkout@v4
       - name: Опрос эндпоинтов
         shell: bash
         run: |
@@ -43,6 +46,29 @@ jobs:
           show "sync.php (пустой POST)" \
             -X POST -H "Content-Type: application/json" \
             -d '{}' "$base/sync.php"
+
+          # Совпадает ли выложенный report.html с тем, что в репозитории.
+          # 27.09.2026: на скриншоте от Алекса страница отчёта показывает ОДНО
+          # лицо с вертикальным разрезом и одну пару ‹› по центру, а
+          # buildFaces() в репозитории рисует ДВЕ отдельные морды рядом, у
+          # каждой свои ‹› возле своей подписи. Мобильной ветки вёрстки в файле
+          # нет. Значит либо на сервере другая версия страницы, либо скриншот
+          # сделан до сегодняшних выкладок. Планировать доработку, не зная
+          # этого, нельзя — можно починить код, который никто не видит.
+          echo "══════════════════════════════════════════"
+          echo "report.html на сервере против репозитория:"
+          curl -sS "https://playoftime.online/report.html" -o live_report.html
+          echo "  сервер:      $(sha256sum live_report.html   | cut -c1-16)  $(wc -c < live_report.html) байт"
+          echo "  репозиторий: $(sha256sum webapp/report.html | cut -c1-16)  $(wc -c < webapp/report.html) байт"
+          if cmp -s live_report.html webapp/report.html; then
+            echo "  СОВПАДАЮТ — правим то, что видит игрок"
+          else
+            echo "  РАЗЛИЧАЮТСЯ — на сервере не то, что в git"
+            echo "  маркеры вёрстки морд в выложенной версии:"
+            for m in faces-row face-visual face-labels-row buildFaces; do
+              printf '      %-18s встречается %s раз\n' "$m" "$(grep -c -- "$m" live_report.html)"
+            done
+          fi
 
           # Какое приложение лежит по каждому адресу. На время переезда их два:
           # latest_apk.php должен отдавать МОСТОВУЮ версию старого приложения
