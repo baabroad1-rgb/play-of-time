@@ -2,7 +2,6 @@ package online.playoftime.ui_lib
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,35 +71,18 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFF1A1A1A))
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // Alex 2026-09-15: "уменьши расстояние от начала бежевой
-                    // плашки до начала черной на 30" — this row's own height
-                    // WAS the gap (the WebView's cream page starts right
-                    // below it, at the WebView's own y=0). Vertical padding
-                    // 10.dp -> 2.dp and the button 24.dp -> 18.dp cuts the
-                    // row from 44dp to 22dp (-22dp); the other -8dp comes
-                    // from report.html's own stray default body margin, now
-                    // reset alongside this (see html,body{margin:0} there).
-                    .padding(horizontal = 14.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .clickable(onClick = onDismiss),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Жёлтый, как крестик выхода из справки и как бабл подсказки
-                    // (Alex 2026-09-27) — чтобы «закрыть» везде выглядело одинаково.
-                    BasicText(text = "×", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.helpAccentColor))
-                }
-            }
+            // Крестик закрытия переехал ВНУТРЬ страницы (Alex 2026-09-27, по
+            // присланному эскизу): справа вверху кремового листа, на одной
+            // линии с заголовком, крупный и тонкий.
+            //
+            // Раньше он жил в отдельной чёрной полоске НАД страницей: 18dp,
+            // цветом baseTextColor, то есть в светлой теме — тёмно-серым по
+            // почти чёрному фону. Его было и не видно, и он съедал 22dp
+            // высоты полоской, которой на эскизе нет вовсе.
+            //
+            // Полоска убрана целиком, крестик лежит поверх WebView в его
+            // правом верхнем углу. Отступы подобраны под поля самой страницы,
+            // чтобы он встал вровень с заголовком.
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 androidx.compose.ui.viewinterop.AndroidView(
                     modifier = Modifier.fillMaxSize(),
@@ -132,6 +113,30 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.accentColor
+                    )
+                }
+                // Крестик поверх страницы, как на эскизе: правый верхний угол
+                // кремового листа, вровень с заголовком, крупный и тонкий.
+                //
+                // Цвет — чернила самой страницы, не жёлтый. Жёлтый просили для
+                // крестика ВЫХОДА ИЗ СПРАВКИ, и там он лежит на тёмном; на
+                // кремовом листе тот же жёлтый почти не виден. На эскизе
+                // крестик тоже тёмный. Скажешь — перекрашу одной строкой.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 6.dp, end = 10.dp)
+                        .size(40.dp)                       // палец, а не глиф
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicText(
+                        text  = "✕",
+                        style = TextStyle(
+                            fontSize   = 22.sp,
+                            fontWeight = FontWeight.Normal,
+                            color      = Color(0xFF2A1E00)  // --text-primary страницы отчёта
+                        )
                     )
                 }
             }
