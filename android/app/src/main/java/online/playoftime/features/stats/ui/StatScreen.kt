@@ -773,13 +773,22 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 String, @Composable () -> Unit,
                 String, @Composable () -> Unit
             ) -> Unit = { labelL, valueL, labelR, valueR ->
+                // Общий кегль подписей этой строки. Любая из двух ячеек, не
+                // поместившись, опускает его для ОБЕИХ — так пара всегда
+                // одного размера и на одной линии. Шаг 0.5sp, ниже 7sp не
+                // опускаемся; уменьшение только вниз, поэтому процесс
+                // сходится за пару кадров и не зацикливается.
+                var labelSp by remember { mutableStateOf(9.sp) }
+                val shrink = {
+                    if (labelSp.value > 7f) labelSp = (labelSp.value - 0.5f).sp
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    SummaryStat(labelL, textColor, Modifier.weight(1f), valueL)
-                    SummaryStat(labelR, textColor, Modifier.weight(1f), valueR)
+                    SummaryStat(labelL, textColor, Modifier.weight(1f), labelSp, shrink, valueL)
+                    SummaryStat(labelR, textColor, Modifier.weight(1f), labelSp, shrink, valueR)
                 }
             }
 
@@ -861,17 +870,23 @@ private fun SummaryStat(
     label: String,
     textColor: Color,
     modifier: Modifier = Modifier,
+    // Кегль подписи ОБЩИЙ на всю строку карточки, а не свой у каждой ячейки.
+    // Раньше подпись ужималась сама по себе: длинная «SERENITY COINS»
+    // садилась до 7.5sp, соседняя «SESSIONS» оставалась 9sp — разный размер,
+    // разная базовая линия, и пара смотрелась вразнобой (Alex 2026-09-27:
+    // «надписи в карточке выравнять забыл»). Теперь ячейка только СООБЩАЕТ,
+    // что не помещается, а решение принимает строка — и уменьшает обе сразу.
+    labelSize: androidx.compose.ui.unit.TextUnit = 9.sp,
+    onLabelOverflow: () -> Unit = {},
     value: @Composable () -> Unit
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // Подпись строго в одну строку. Если бы она переносилась, ячейка
-        // стала бы выше соседней и значение под ней уехало бы вниз
-        // относительно значения справа — та самая кривизна, из-за которой
-        // карточку и переделали в сетку. Не влезает — уменьшается шрифт.
-        FitValueText(
-            text    = label,
-            style   = labelStyle(9.sp, color = textColor.copy(alpha = subtleText)),
-            minSize = 7.sp
+        BasicText(
+            text     = label,
+            style    = labelStyle(labelSize, color = textColor.copy(alpha = subtleText)),
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { if (it.didOverflowWidth) onLabelOverflow() }
         )
         value()
     }
