@@ -307,18 +307,28 @@
   }
   .face-layer.past{ position:absolute; inset:0; width:100%; height:100%; z-index:1; }
   .faces-stage.single .face-layer.now{ clip-path: none; }
+  /* Шов виден только когда он РАЗДЕЛЯЕТ две морды. У края разделять нечего:
+     там он был просто вертикальной палкой по границе рамки (Alex 2026-09-27,
+     по скриншоту). Поэтому на краях он гаснет, а ручка остаётся — она и есть
+     подсказка, что кадр можно потянуть. */
   .face-seam{
     position:absolute; top:0; bottom:0; left: var(--curtain, 100%);
     width:2px; margin-left:-1px; background: var(--text-primary);
     z-index:3; pointer-events:none;
+    opacity:1; transition: opacity .2s ease;
   }
+  .faces-stage[data-edge="1"] .face-seam{ opacity:0; }
+  /* clamp — ручка всегда целиком внутри кадра: на краю она прижимается
+     к нему, а не свешивается половиной наружу. */
   .face-grip{
-    position:absolute; top:50%; left: var(--curtain, 100%);
+    position:absolute; top:50%;
+    left: clamp(17px, var(--curtain, 100%), calc(100% - 17px));
     width:32px; height:32px; margin:-16px 0 0 -16px;
     border-radius:50%; background: var(--text-primary); color: var(--surface);
     display:grid; place-items:center; font-size:12px; line-height:1;
     box-shadow: var(--shadow-sm); z-index:4; pointer-events:none;
   }
+  @media (prefers-reduced-motion: reduce){ .face-seam{ transition:none; } }
   .faces-stage:focus-visible{ outline:2px solid var(--good); outline-offset:4px; border-radius:6px; }
   /* Fixed, deterministic width -- NOT flex:1 1 0's content-driven share
      (Alex 2026-09-17: "определи квадрат за пределы которого морды не
@@ -355,11 +365,12 @@
     color: var(--surface); background: var(--text-primary);
     border: 1px solid var(--text-primary); border-radius: 999px;
     padding: 8px 13px; cursor: pointer;
-    opacity: .42; transition: opacity .25s ease;
   }
-  .face-label[data-lead="1"]{ opacity: 1; }
-  .face-label:hover{ opacity: 1; }
-  @media (prefers-reduced-motion: reduce){ .face-label{ transition: none; } }
+  /* Приглушения неактивной стороны больше НЕТ (Alex 2026-09-27). Я добавил
+     его как «подсветку той морды, что в кадре», и ровно оно ломало главное
+     требование: на скриншоте две кнопки выглядят как два разных контрола —
+     чёрная плашка и оливковая. Одинаковые значит одинаковые. Какая морда
+     сейчас в кадре, видно по самой морде. */
   /* Wraps the label + its optional ‹› pager (periodNavArrow(), only present
      when that side's selection is a week or month) so all three center as
      one unit below the face. margin-top (not the old margin-bottom) is
@@ -2556,8 +2567,8 @@ function buildFaces(beforeSet, afterSet, lang, labelBefore, labelAfter, scaleMax
     </div>
     ${emptyNote}
     <div class="face-ends">
-      <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label" data-which="A" data-lead="1">${labelAfter}</button>${periodNavArrow("A",1)}</div>
-      <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label" data-which="B" data-lead="0">${labelBefore}</button>${periodNavArrow("B",1)}</div>
+      <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label" data-which="A">${labelAfter}</button>${periodNavArrow("A",1)}</div>
+      <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label" data-which="B">${labelBefore}</button>${periodNavArrow("B",1)}</div>
     </div>`;
 }
 function wireFaces(){
@@ -2598,15 +2609,12 @@ function wireCurtain(){
   const stage = document.getElementById("facesStage");
   if (!stage || stage.classList.contains("single")) return;
 
-  const labelA = document.querySelector('#faces .face-label[data-which="A"]');
-  const labelB = document.querySelector('#faces .face-label[data-which="B"]');
-
   const paint = () => {
     stage.style.setProperty("--curtain", curtainPct + "%");
     stage.setAttribute("aria-valuenow", Math.round(curtainPct));
-    const nowLeads = curtainPct >= 50;
-    if (labelA) labelA.dataset.lead = nowLeads ? "1" : "0";
-    if (labelB) labelB.dataset.lead = nowLeads ? "0" : "1";
+    // У края шов гаснет: разделять там нечего, а палка по границе рамки
+    // выглядит как артефакт вёрстки.
+    stage.dataset.edge = (curtainPct >= 99.5 || curtainPct <= 0.5) ? "1" : "0";
   };
   const set = v => { curtainPct = Math.max(0, Math.min(100, v)); paint(); };
   const stop = () => { if (curtainRaf){ cancelAnimationFrame(curtainRaf); curtainRaf = 0; } };
