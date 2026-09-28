@@ -342,7 +342,7 @@
     display:grid; place-items:center; font-size:12px; line-height:1;
     box-shadow: var(--shadow-sm); z-index:4; pointer-events:none;
   }
-  @media (prefers-reduced-motion: reduce){ .face-seam{ transition:none; } }
+  @media (prefers-reduced-motion: reduce){ .face-seam, .face-label-row{ transition:none; } }
   .faces-stage:focus-visible{ outline:2px solid var(--good); outline-offset:4px; border-radius:6px; }
   /* Fixed, deterministic width -- NOT flex:1 1 0's content-driven share
      (Alex 2026-09-17: "определи квадрат за пределы которого морды не
@@ -380,11 +380,20 @@
     border: 1px solid var(--text-primary); border-radius: 999px;
     padding: 8px 13px; cursor: pointer;
   }
-  /* Приглушения неактивной стороны больше НЕТ (Alex 2026-09-27). Я добавил
-     его как «подсветку той морды, что в кадре», и ровно оно ломало главное
-     требование: на скриншоте две кнопки выглядят как два разных контрола —
-     чёрная плашка и оливковая. Одинаковые значит одинаковые. Какая морда
-     сейчас в кадре, видно по самой морде. */
+  /* Подсветка стороны — ТОЛЬКО пока шторка не у края (Alex 2026-09-28:
+     «пропала подсветка даты при пробеге шторки»).
+     История в двух шагах, и обе половины требования живы одновременно.
+     27.09 приглушение висело ВСЕГДА, и в покое две кнопки выглядели как два
+     разных контрола — чёрная плашка и оливковая; это ломало «одинаково как
+     кнопку today», поэтому я снял его целиком. Вместе с ним пропало и то,
+     ради чего оно было: на ходу шторки не видно, чей день сейчас в кадре.
+     Теперь приглушение живёт ровно в движении: [data-edge="0"] ставится
+     paint()-ом, пока шторка между краями. В покое кнопки снова
+     неотличимы. */
+  .faces-stage[data-edge="0"][data-side="A"] ~ .face-ends .face-label-row[data-which="B"],
+  .faces-stage[data-edge="0"][data-side="B"] ~ .face-ends .face-label-row[data-which="A"]{
+    opacity: .42;
+  }
   /* Wraps the label + its optional ‹› pager (periodNavArrow(), only present
      when that side's selection is a week or month) so all three center as
      one unit below the face. margin-top (not the old margin-bottom) is
@@ -394,7 +403,9 @@
      stretched column's bottom — that mechanism is gone along with
      .faces-wrap's align-items:stretch, see its own comment; minimal
      total height wins over a shared bottom line now). */
-  .face-label-row{ display:flex; align-items:center; gap:4px; }
+  /* transition — приглушение гаснет и возвращается плавно, иначе на каждом
+     пересечении середины кадра подписи дёргаются рывком. */
+  .face-label-row{ display:flex; align-items:center; gap:4px; transition: opacity .18s ease; }
   .face-label-row .period-nav{ width:20px; height:20px; font-size:12px; }
   /* Stands in for chFaceSvg() on a side with no attempts (Alex 2026-09-17
      bug fix — see buildFaces()'s own comment: the label row, with the
@@ -1345,17 +1356,36 @@ function setDefaultRanges(){
   }
   state.aFrom = day; state.aTo = day;
   state.aSel = offset === 0 ? {type:"today"} : {type:"day", dayOffset: offset};
-  // B defaults to "the week right before today" — same spirit as the old
-  // shared default (today vs. the preceding stretch), now expressed as B's
-  // own "week" preset instead of a hardcoded one-off.
-  const refB = daysAgoDate(b.max, 1);
-  const bb = presetRangeFrom("week", refB, b.min);
-  // Clamp to the level boundary (Alex 2026-09-11) — a "week" preset's from-date
-  // is computed purely by calendar math and doesn't know DATA only contains
-  // the current tier; for a player with a short current-level history the
-  // naive "week" window can reach earlier than any same-tier attempt exists.
-  state.bFrom = bb.from < b.min ? b.min : bb.from; state.bTo = bb.to;
-  state.bSel = {type:"week"};
+  // B по умолчанию — ДЕНЬ ПЕРЕД A (Alex 2026-09-28: «по умолчанию поставь
+  // слева кнопку сегодня а справа кнопку вчера»). Раньше здесь была неделя,
+  // и пара читалась как «сегодня против недели» — сравнение разнородных
+  // отрезков. День против дня сравнивает сопоставимое.
+  //
+  // Тот же проход по пустым дням назад, что и у A выше, и по той же причине:
+  // морды должно быть две, а не одна и заглушка. Тип day (а не пресет
+  // yesterday) выбран сознательно — он honest в подписи через dayOffset
+  // («Вчера», «Позавчера», дальше просто дата) и приносит листалку ‹›, так
+  // что соседние дни листаются без захода в меню.
+  let bOffset = offset + 1, bDay = daysAgoDate(REAL_TODAY, bOffset);
+  while (bDay >= b.min && attemptsCountInRange(bDay, bDay) === 0){
+    bOffset += 1;
+    bDay = daysAgoDate(REAL_TODAY, bOffset);
+  }
+  if (bDay >= b.min){
+    state.bFrom = bDay; state.bTo = bDay;
+    state.bSel = {type:"day", dayOffset: bOffset};
+  } else {
+    // Раньше дня A ни одного дня с попытками нет — сравнивать по дням не с
+    // чем, остаётся прежнее умолчание «неделя».
+    // Clamp to the level boundary (Alex 2026-09-11) — a "week" preset's from-date
+    // is computed purely by calendar math and doesn't know DATA only contains
+    // the current tier; for a player with a short current-level history the
+    // naive "week" window can reach earlier than any same-tier attempt exists.
+    const refB = daysAgoDate(b.max, 1);
+    const bb = presetRangeFrom("week", refB, b.min);
+    state.bFrom = bb.from < b.min ? b.min : bb.from; state.bTo = bb.to;
+    state.bSel = {type:"week"};
+  }
 }
 
 // ---------- Popover: клик по слову-периоду в заголовке предложения ----------
@@ -2572,8 +2602,8 @@ function buildFaces(beforeSet, afterSet, lang, labelBefore, labelAfter, scaleMax
     </div>
     ${emptyNote}
     <div class="face-ends">
-      <div class="face-label-row">${periodNavArrow("A",-1)}<button class="face-label" data-which="A">${labelAfter}</button>${periodNavArrow("A",1)}</div>
-      <div class="face-label-row">${periodNavArrow("B",-1)}<button class="face-label" data-which="B">${labelBefore}</button>${periodNavArrow("B",1)}</div>
+      <div class="face-label-row" data-which="A">${periodNavArrow("A",-1)}<button class="face-label" data-which="A">${labelAfter}</button>${periodNavArrow("A",1)}</div>
+      <div class="face-label-row" data-which="B">${periodNavArrow("B",-1)}<button class="face-label" data-which="B">${labelBefore}</button>${periodNavArrow("B",1)}</div>
     </div>`;
 }
 function wireFaces(){
@@ -2620,6 +2650,9 @@ function wireCurtain(){
     // У края шов гаснет: разделять там нечего, а палка по границе рамки
     // выглядит как артефакт вёрстки.
     stage.dataset.edge = (curtainPct >= 99.5 || curtainPct <= 0.5) ? "1" : "0";
+    // Чей день сейчас занимает бОльшую часть кадра — по нему подсвечивается
+    // подпись, пока шторка идёт (CSS, .face-label-row).
+    stage.dataset.side = curtainPct >= 50 ? "A" : "B";
   };
   const set = v => { curtainPct = Math.max(0, Math.min(100, v)); paint(); };
   const stop = () => { if (curtainRaf){ cancelAnimationFrame(curtainRaf); curtainRaf = 0; } };
