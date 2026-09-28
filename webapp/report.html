@@ -535,12 +535,11 @@
 
   /* Режим "только мордочка" для карточки на экране Analytics (Alex 2026-09-21):
      ?mode=face&fromMs=..&toMs=..&min=..  Страница подменяет body одной
-     мордочкой периода, прозрачный фон, без пунктирного квадрата. */
+     мордочкой периода, прозрачный фон. */
   html.face-mode, body.face-mode{ margin:0; background:transparent !important; overflow:hidden; }
   #faceOnly{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
     --surface:#FBE7A6; --text-primary:#2A1E00; --good:#1F7A3D; --border:rgba(42,30,0,0.14); }
   #faceOnly svg{ width:100% !important; height:100% !important; }
-  #faceOnly svg rect{ display:none; }
   #faceOnly.blurred svg{ filter: blur(5px); }
 </style>
 </head>
@@ -1861,52 +1860,45 @@ function chHeadCy(headH){ return CH_HEAD_BOTTOM_Y - headH; }
 // worst-case value can't silently drift apart via two separate "45"s.
 const CH_HEAD_H_FLOOR = 45;
 
-// Dashed "never exceeds this" square (Alex 2026-09-18: "морды ни при
+// Кадр безопасной области. Пунктирный прямоугольник вокруг морды БОЛЬШЕ НЕ
+// РИСУЕТСЯ — снят 28.09.2026 по прямому требованию Алекса: «убери нахуй
+// пунктирный прямоугольник в который вписывается морда. все остается как
+// есть только без прямоугольника». Геометрия при этом не тронута: кадр
+// по-прежнему считается и по-прежнему задаёт viewBox, так что размер и
+// положение морды на странице ровно те же, что и с рамкой. Убрана только
+// сама линия.
+//
+// Зачем эти границы вообще были введены (Alex 2026-09-18: «морды ни при
 // каких условиях не должны выходить за пределы... расстояние до сторон
 // квадрата должно быть минимальным в ситуации когда морды раздуты на
-// максимум"). [CH_FACE_MARGIN, CH_HEAD_BOTTOM_Y] on BOTH axes is not a
-// guess — it's the exact worst-case bound this file's own geometry
-// clamps already enforce: headW is clamped against
-// CH_CANVAS_HALF-CH_FACE_MARGIN minus the wider ear (so head+ear extent
-// is AT MOST 106 from center each way horizontally), and headH's bottom
-// is pinned at CH_HEAD_BOTTOM_Y with its own top clamped the same way
-// vertically (see the headW/headH clamp above and CH_HEAD_BOTTOM_Y's own
-// comment) — so [4,216] is simultaneously the tightest square that could
-// ever be drawn AND one nothing can ever cross. Checked the other
-// features too, not just head+ears: eyeDx's own max (~32) plus eyeWidth's
-// own max radius (~19) only reaches cx±51 — nowhere near this square's
-// edge — and mouth/nose are already clamped to stay inside the head
-// itself (chFaceGeometry's own mouth-safety block), so head+ears really
-// is the binding constraint, not an assumption.
-const CH_FACE_SAFE_SIZE = CH_HEAD_BOTTOM_Y - CH_FACE_MARGIN; // 212 — the fixed WIDTH bound (still the worst case; only height shrinks, see below)
+// максимум»): [CH_FACE_MARGIN, CH_HEAD_BOTTOM_Y] по обеим осям — не
+// догадка, а точная наихудшая граница, которую клампы этого файла уже
+// обеспечивают. headW зажат в CH_CANVAS_HALF-CH_FACE_MARGIN минус большее
+// ухо (голова с ухом уходит от центра не дальше 106 в каждую сторону), низ
+// головы приколот к CH_HEAD_BOTTOM_Y, верх зажат так же по вертикали.
+// Остальные черты проверены отдельно: eyeDx на максимуме (~32) плюс
+// максимальный радиус глаза (~19) дают всего cx±51, а рот и нос уже зажаты
+// внутрь самой головы (блок безопасности рта в chFaceGeometry). То есть
+// связывающее ограничение — голова с ушами, и на нём держится вся вертикаль
+// ниже.
 
-// Per-render vertical sizing for the dashed square + its SVG canvas — shrinks
-// snugly around whatever THIS render's actual head extent is (Alex
-// 2026-09-18: "квадрат уменьшить по высоте... расстояние до низа морды
-// должно быть таким же как до верха"), instead of always reserving the
-// full worst-case CH_FACE_SAFE_SIZE height regardless of the current head.
-// Width stays the fixed worst-case bound above — only height was asked to
-// shrink.
+// Вертикальный размер кадра на каждый рендер — обжимает холст вплотную по
+// фактической высоте ИМЕННО ЭТОЙ головы (Alex 2026-09-18: «квадрат
+// уменьшить по высоте... расстояние до низа морды должно быть таким же как
+// до верха»), вместо того чтобы всегда резервировать наихудшую высоту.
 //
-// The square's own top edge is set to coincide EXACTLY with the head's own
-// top edge (zero gap) — generalizing the pre-existing worst-case property
-// (square and head already touched with zero slack at headH's own ceiling)
-// to every headH, not just the extreme. The square's bottom stays pinned
-// to CH_HEAD_BOTTOM_Y always, matching the head's own bottom (chHeadCy()
-// already pins that regardless of headH) — so both faces' squares (and
-// heads) keep sharing one bottom baseline no matter how their own heights
-// differ from each other. The viewBox gets the same CH_FACE_MARGIN hairline
-// buffer above the square's own (now dynamic) top that the canvas always
-// had at the true worst case, for the same reason as before: without it
-// the square's own stroke-width would render clipped against the viewBox's
-// own boundary.
+// Верх кадра совпадает с верхом головы (нулевой зазор) — то же свойство,
+// что раньше выполнялось только на потолке headH, распространено на любую
+// высоту. Низ всегда приколот к CH_HEAD_BOTTOM_Y, то есть к низу головы
+// (chHeadCy() держит это при любом headH) — поэтому две морды рядом делят
+// одну нижнюю линию, как бы ни расходились их высоты. Над верхом кадра
+// остаётся тот же волосок CH_FACE_MARGIN, что был и раньше: он держит
+// запас под обводку головы, чтобы та не обрезалась о границу viewBox.
 function chFaceCanvasBox(headH){
   const headTop = CH_HEAD_BOTTOM_Y - 2 * headH;
-  const rectY = headTop;
-  const rectHeight = CH_HEAD_BOTTOM_Y - rectY; // = 2*headH
-  const viewBoxY = rectY - CH_FACE_MARGIN;
+  const viewBoxY = headTop - CH_FACE_MARGIN;
   const viewBoxH = (2 * CH_CANVAS_HALF) - viewBoxY; // canvas BOTTOM stays fixed at 220, same as always
-  return { rectY, rectHeight, viewBoxY, viewBoxH };
+  return { viewBoxY, viewBoxH };
 }
 
 // Invisible fat hit-targets for the three stroke-only, fill:none features
@@ -2273,7 +2265,6 @@ function chFaceSvg(p, cx, faceId, opts){
       <clipPath id="${clipIdL}">${eyeClipShape("L", "eyeL", cx-p.eyeDx, p.eyeRxL, p.openL)}</clipPath>
       <clipPath id="${clipIdR}">${eyeClipShape("R", "eyeR", cx+p.eyeDx, p.eyeRxR, p.openR)}</clipPath>
     </defs>
-    <rect x="${CH_FACE_MARGIN}" y="${box.rectY.toFixed(1)}" width="${CH_FACE_SAFE_SIZE}" height="${box.rectHeight.toFixed(1)}" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3" pointer-events="none"/>
     <circle data-feature="ears" cx="${(cx-p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadL.toFixed(1)}" fill="var(--surface)" stroke="${ink('earL')}" stroke-width="2"/>
     <circle data-feature="ears" cx="${(cx+p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadR.toFixed(1)}" fill="var(--surface)" stroke="${ink('earR')}" stroke-width="2"/>
     <ellipse data-feature="headW headEcc" cx="${cx}" cy="${cy}" rx="${p.headW.toFixed(1)}" ry="${p.headH.toFixed(1)}" fill="var(--surface)" stroke="${ink('head')}" stroke-width="3"/>
@@ -2719,19 +2710,16 @@ function chApplySvgParams(svg, p, cx){
   const bh = p.browHalf;
   const my = cy + mouthBaseY;
 
-  // Square + canvas resize along with the head every frame, same as the
-  // initial render (chFaceSvg) — otherwise the legend's live demo-sweep
-  // would show the square staying at whatever size the page loaded with
-  // while only the head itself visibly grows/shrinks, the same desync bug
-  // class as the 2026-09-17 cy-not-updating one (see chHeadCy's own history).
-  // Кадр закреплён (шторка, см. chFaceSvg) — пересчитывать его нельзя: две
-  // наложенные морды обязаны жить в одном viewBox, иначе во время прогона
-  // одна поедет относительно другой. Рамка безопасной области при этом тоже
-  // остаётся на месте: она часть того же кадра.
+  // Кадр пересчитывается вместе с головой на каждом кадре анимации, как и
+  // при первом рендере (chFaceSvg) — иначе живой прогон в легенде показывал
+  // бы холст того размера, с которым страница загрузилась, пока сама голова
+  // растёт и сжимается: тот же класс расхождения, что баг с незапоминающимся
+  // cy от 17.09.2026 (см. историю chHeadCy).
+  // Исключение: кадр закреплён (шторка, см. chFaceSvg) — там пересчитывать
+  // его нельзя, две наложенные морды обязаны жить в одном viewBox, иначе во
+  // время прогона одна поедет относительно другой.
   if (svg.dataset.vbY === undefined){
     svg.setAttribute("viewBox", `0 ${box.viewBoxY.toFixed(1)} 220 ${box.viewBoxH.toFixed(1)}`);
-    const square = svg.querySelector("rect");
-    if (square){ square.setAttribute("y", box.rectY.toFixed(1)); square.setAttribute("height", box.rectHeight.toFixed(1)); }
   }
 
   const head = svg.querySelector('ellipse[data-feature~="headW"]');
