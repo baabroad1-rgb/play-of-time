@@ -43,9 +43,10 @@
   .note{font-size:13px; color:var(--muted); margin:14px 0 0; padding:12px;
     border:1px solid var(--line); border-radius:10px;}
   .note b{color:var(--ink);}
-  .swatches{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
-  .sw{display:flex; align-items:center; gap:6px; font-size:12px;}
-  .dot{width:16px; height:16px; border-radius:50%; border:1px solid var(--line);}
+  table.key{width:100%; border-collapse:collapse; margin:10px 0;}
+  table.key td{padding:5px 0; vertical-align:middle; font-size:12.5px;}
+  table.key td:first-child{width:34px;}
+  .dot{display:inline-block; width:22px; height:6px; border-radius:3px;}
   .presets{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
   .presets button{font:inherit; font-size:13px; font-weight:700; background:var(--ink);
     color:var(--surface); border:0; border-radius:999px; padding:9px 15px;}
@@ -74,18 +75,19 @@
 </div>
 
 <div class="note">
-  <b>Волосы трёх цветов.</b> Близнецы — синие, соседи — красные, и любой
-  волосок тем зеленее, чем ближе его пара к тройке. Сколько волосков —
-  столько повторов; какого они цвета — настолько повторы далеки от цели.
-  Значит зелёная башка это «повторяюсь, и повторяюсь точно», а яркая
-  сине-красная — «повторяюсь, но мимо».
-  Волоски вперемешку, а не двумя кучками слева и справа: лево и право на
-  этом лице уже заняты смыслом «раннее против позднего».
-  <div class="swatches">
-    <div class="sw"><span class="dot" id="swA"></span>пара рядом с тройкой</div>
-    <div class="sw"><span class="dot" id="swB"></span>близнецы далеко</div>
-    <div class="sw"><span class="dot" id="swC"></span>соседи далеко</div>
-  </div>
+  <b>Расшифровка шевелюры.</b> Один волосок — одна пара. Сколько было
+  повторов, столько и волосков, и каждый несёт свою удалённость от тройки,
+  поэтому волосы получаются разной длины и разного цвета одновременно.
+  <table class="key">
+    <tr><td><span class="dot" id="swA"></span></td><td>пара рядом с тройкой — волосок зелёный и короткий</td></tr>
+    <tr><td><span class="dot" id="swB"></span></td><td>близнецы, чем дальше от тройки, тем синее и длиннее</td></tr>
+    <tr><td><span class="dot" id="swC"></span></td><td>соседи, чем дальше от тройки, тем краснее и длиннее</td></tr>
+  </table>
+  Короткая зелёная щетина и длинные синие патлы — это две разные истории,
+  хотя близнецов в обоих случаях может быть поровну. Цвет отвечает с одного
+  взгляда «хорошо или мимо», длина даёт сравнить пары между собой.
+  Вперемешку, а не кучками слева и справа: лево и право на этом лице уже
+  заняты смыслом «раннее против позднего».
 </div>
 
 <div class="note">
@@ -140,15 +142,43 @@ const val = k => F[k].lo + (F[k].hi - F[k].lo) * t05[k];
 const isGood = k => F[k].good === "hi" ? t05[k] > 0.72 : t05[k] < 0.28;
 const ink = k => isGood(k) ? "#1F7A3D" : "#2A1E00";
 
-// Волос ровно три цвета (Alex 29.09.2026). Близнецы — синие, соседи —
-// красные, и любой волосок тем зеленее, чем ближе его пара к тройке. То
-// есть зелёная башка значит то же, что зелёная бровь: тут хорошо. Красный
-// и синий включаются по мере того, как повторы уезжают от тройки.
+// ОДИН ВОЛОСОК = ОДНА ПАРА (Alex 29.09.2026: «я как раз ожидаю что
+// одновременно появятся волосы разных цветов и длин»). Шевелюра — это не
+// четыре усреднённых числа, а сами события: сколько было повторов, столько
+// и волосков, и каждый несёт СВОЮ удалённость от тройки.
+//
+// Цвет волоска — чей это повтор и насколько он удачен: близнецы синие,
+// соседи красные, и любой волосок тем зеленее, чем ближе его пара к
+// тройке. Длина волоска — та же удалённость числом: чем дальше пара от
+// тройки, тем волосок длиннее.
+//
+// Цвет и длина намеренно говорят об одном и том же. Цвет отвечает с
+// одного взгляда «хорошо или мимо», длина позволяет сравнить пары между
+// собой и увидеть разброс: короткая зелёная щетина против длинных синих
+// патл — это две разные истории, хотя близнецов поровну.
+// Поворот по тону, а не смешивание красок. Линейная смесь зелёного с
+// красным проходит через хаки, зелёного с синим — через грязную бирюзу, и
+// середина шкалы получается болотной, будто волосок выцвел. Поворот по
+// кругу тонов держит насыщенность: близнецы уходят зелёный → бирюза →
+// синий, соседи зелёный → жёлтый → красный. На полюсах всё те же три
+// цвета, а промежуточные волоски остаются живыми.
 function strandColor(kind, d){
-  const near = [45, 205, 60];                                  // на тройке — зелёный
-  const far  = kind === "twin" ? [40, 50, 230] : [215, 55, 40];  // далеко — синий / красный
-  const mix = i => Math.round(near[i] + (far[i] - near[i]) * d);
-  return `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
+  const h = kind === "twin" ? 130 + 100*d : 130 - 125*d;
+  const l = kind === "twin" ? 42 - 4*d : 44 - 6*d;
+  return `hsl(${h.toFixed(0)}, 68%, ${l.toFixed(0)}%)`;
+}
+// Разброс внутри сорта. У живого игрока пары не стоят на одной удалённости,
+// поэтому в прототипе он подмешан детерминированно: без него шевелюра
+// выходит гребёнкой из одинаковых волосков и врёт про то, как это выглядит
+// на настоящих данных.
+function strandsOf(kind, n, base){
+  const out = [];
+  for (let i = 0; i < n; i++){
+    const j = (((i*37 + (kind === "twin" ? 11 : 23)) % 19) / 19 - 0.5) * 0.5;
+    const d = Math.max(0, Math.min(1, base + j));
+    out.push({kind, d, col: strandColor(kind, d), len: 6 + 30*d});
+  }
+  return out;
 }
 
 function draw(){
@@ -169,27 +199,25 @@ function draw(){
   const noseTop = eyeY + 8, noseBot = CY + HEAD_H*0.22;
   const mouthY = CY + HEAD_H*0.52;
 
-  // Близнецы и соседи — разные волоски, вперемешку. Не двумя кучками слева
-  // и справа: лево и право на этом лице уже значат «раннее против
-  // позднего», и вторую, другую левизну вводить нельзя.
+  // Близнецы и соседи вперемешку, а не двумя кучками слева и справа: лево
+  // и право на этом лице уже значат «раннее против позднего», и вводить
+  // вторую, другую левизну нельзя.
+  const tws = strandsOf("twin", nTw, t05.hairBlue);
+  const nbs = strandsOf("nb",   nNb, t05.hairRed);
   const strands = [];
-  let tw = nTw, nb = nNb;
-  while (tw > 0 || nb > 0){
-    if (tw > 0 && (nb === 0 || strands.length % 2 === 0)){
-      tw--; strands.push(strandColor("twin", t05.hairBlue));
-    } else if (nb > 0){
-      nb--; strands.push(strandColor("nb", t05.hairRed));
-    }
+  while (tws.length || nbs.length){
+    if (tws.length && (!nbs.length || strands.length % 2 === 0)) strands.push(tws.pop());
+    else if (nbs.length) strands.push(nbs.pop());
   }
   let hair = "";
-  strands.forEach((col, i) => {
+  strands.forEach((st, i) => {
     const n = strands.length;
     const a = -Math.PI*0.80 + (Math.PI*0.60) * (n === 1 ? 0.5 : i/(n-1));
     const x1 = CX + HEAD_W*Math.cos(a), y1 = CY + HEAD_H*Math.sin(a);
-    const k = 1 + 20/HEAD_H;
+    const k = 1 + st.len/HEAD_H;
     const x2 = CX + HEAD_W*k*Math.cos(a), y2 = CY + HEAD_H*k*Math.sin(a);
     hair += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
-      stroke="${col}" stroke-width="3" stroke-linecap="round"/>`;
+      stroke="${st.col}" stroke-width="3" stroke-linecap="round"/>`;
   });
 
   const mouthPath = `M ${(CX-mLen/2).toFixed(1)} ${mouthY.toFixed(1)}
@@ -264,9 +292,9 @@ const ROWS = [
   {p:"Соседи, количество", m:"Доля попыток ровно в одной клетке точности от предыдущей", tag:"new",
    f:"Сколько красных волос", keys:["hairNb"]},
   {p:"Близнецы, удалённость", m:"Насколько далеко от тройки стоит сама пара", tag:"new",
-   f:"Синева близнецов", keys:["hairBlue"]},
+   f:"Длина и синева этих волос", keys:["hairBlue"]},
   {p:"Соседи, удалённость", m:"То же для соседей", tag:"new",
-   f:"Краснота соседей", keys:["hairRed"]},
+   f:"Длина и краснота этих волос", keys:["hairRed"]},
 
   {g:"Снято с лица"},
   {p:"—", m:"Ширину и высоту головы больше не двигаем", tag:"gone", dead:true,
