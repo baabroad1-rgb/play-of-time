@@ -46,10 +46,6 @@
   .swatches{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
   .sw{display:flex; align-items:center; gap:6px; font-size:12px;}
   .dot{width:16px; height:16px; border-radius:50%; border:1px solid var(--line);}
-  .modes{display:flex; gap:6px; margin-bottom:10px;}
-  .modes button{flex:1; font:inherit; font-size:13px; font-weight:700; padding:9px 8px;
-    border:1px solid var(--line); background:transparent; color:var(--muted); border-radius:999px;}
-  .modes button.on{background:var(--ink); color:var(--surface); border-color:var(--ink);}
   .presets{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
   .presets button{font:inherit; font-size:13px; font-weight:700; background:var(--ink);
     color:var(--surface); border:0; border-radius:999px; padding:9px 15px;}
@@ -63,17 +59,11 @@
 <p class="sub">Голова зафиксирована: ни размер, ни форма больше не меняются.
 Тюкни по строке — соответствующая черта прогоняется от одного края к другому.</p>
 
-<div class="modes">
-  <button data-mode="mix" class="on">Смешанный цвет</button>
-  <button data-mode="two">Два пучка</button>
-</div>
-
 <div class="stage">
   <svg class="face" viewBox="0 6 220 216" id="face" aria-label="пробная морда"></svg>
   <div class="now" id="now">Ни одна черта не выбрана — всё стоит в середине своего хода.</div>
 </div>
 
-<p class="sub" id="rowsNote" style="margin:10px 0 0">Сейчас: один смешанный цвет на все волосы.</p>
 <table id="tbl"></table>
 
 <div class="presets">
@@ -84,16 +74,17 @@
 </div>
 
 <div class="note">
-  <b>Цвет волос — одна двумерная шкала, а не три параметра.</b>
-  Синева растёт с удалённостью близнецов от тройки, краснота — с удалённостью
-  соседей. Чем ближе и те, и другие, тем оба цвета бледнее, а зелень ярче.
-  Точные числа всё равно лежат в таблице под мордами — от цвета нужен общий
-  ответ «хорошо или мимо», а не считывание двух величин по отдельности.
+  <b>Волосы трёх цветов.</b> Близнецы — синие, соседи — красные, и любой
+  волосок тем зеленее, чем ближе его пара к тройке. Сколько волосков —
+  столько повторов; какого они цвета — настолько повторы далеки от цели.
+  Значит зелёная башка это «повторяюсь, и повторяюсь точно», а яркая
+  сине-красная — «повторяюсь, но мимо».
+  Волоски вперемешку, а не двумя кучками слева и справа: лево и право на
+  этом лице уже заняты смыслом «раннее против позднего».
   <div class="swatches">
-    <div class="sw"><span class="dot" id="swA"></span>оба рядом с тройкой</div>
+    <div class="sw"><span class="dot" id="swA"></span>пара рядом с тройкой</div>
     <div class="sw"><span class="dot" id="swB"></span>близнецы далеко</div>
     <div class="sw"><span class="dot" id="swC"></span>соседи далеко</div>
-    <div class="sw"><span class="dot" id="swD"></span>оба далеко</div>
   </div>
 </div>
 
@@ -132,8 +123,8 @@ const F = {
   smile:    {lo:-18, hi:18,  good:"hi"},
   mouthOpen:{lo:0,   hi:15,  good:"hi"},   // hit — НОВОЕ МЕСТО
   outline:  {lo:1.6, hi:7,   good:"hi"},   // gcv — НОВОЕ МЕСТО
-  hairN:    {lo:0,   hi:22,  good:"hi"},   // близнецы, количество
-  hairLen:  {lo:4,   hi:32,  good:"hi"},   // соседи, количество
+  hairTw:   {lo:0,   hi:20,  good:"hi"},           // близнецы, количество
+  hairNb:   {lo:0,   hi:20,  good:"hi"},           // соседи, количество
   hairBlue: {lo:0,   hi:1,   good:"lo", rest:0},   // близнецы, удалённость
   hairRed:  {lo:0,   hi:1,   good:"lo", rest:0},   // соседи, удалённость
 };
@@ -149,23 +140,16 @@ const val = k => F[k].lo + (F[k].hi - F[k].lo) * t05[k];
 const isGood = k => F[k].good === "hi" ? t05[k] > 0.72 : t05[k] < 0.28;
 const ink = k => isGood(k) ? "#1F7A3D" : "#2A1E00";
 
-// Схема 1 (предложение Алекса): ОДИН смешанный цвет на все волосы.
-// Синева = удалённость близнецов, краснота = соседей, зелень = остаток.
-function hairColor(b, r){
-  const g = 1 - Math.max(b, r);
-  return `rgb(${Math.round(35 + 205*r)}, ${Math.round(45 + 175*g)}, ${Math.round(35 + 205*b)})`;
-}
-// Схема 2 (доработка): волосы двух сортов, у каждого своя удалённость.
-// Волосок тем зеленее, чем ближе его пара к тройке, и тем синее/краснее,
-// чем дальше. Так каждый параметр читается отдельно, а общий вид всё равно
-// отвечает «зелёная башка — хорошо».
+// Волос ровно три цвета (Alex 29.09.2026). Близнецы — синие, соседи —
+// красные, и любой волосок тем зеленее, чем ближе его пара к тройке. То
+// есть зелёная башка значит то же, что зелёная бровь: тут хорошо. Красный
+// и синий включаются по мере того, как повторы уезжают от тройки.
 function strandColor(kind, d){
-  const g = [45, 205, 60];                       // на тройке
-  const far = kind === "twin" ? [40, 50, 230] : [215, 55, 40];
-  const mix = i => Math.round(g[i] + (far[i] - g[i]) * d);
+  const near = [45, 205, 60];                                  // на тройке — зелёный
+  const far  = kind === "twin" ? [40, 50, 230] : [215, 55, 40];  // далеко — синий / красный
+  const mix = i => Math.round(near[i] + (far[i] - near[i]) * d);
   return `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
 }
-let HAIR_MODE = "mix";
 
 function draw(){
   const browL = val("browL"), browR = val("browR");
@@ -178,44 +162,34 @@ function draw(){
   const nTilt = val("noseTilt");
   const mLen = val("mouthLen"), smile = val("smile"), mOpen = val("mouthOpen");
   const stroke = val("outline");
-  const hairN = Math.round(val("hairN")), hairLen = val("hairLen");
-  const hc = hairColor(t05.hairBlue, t05.hairRed);
-  const hairGood = t05.hairBlue < 0.28 && t05.hairRed < 0.28;
+  const nTw = Math.round(val("hairTw")), nNb = Math.round(val("hairNb"));
 
   const eyeY = CY - HEAD_H*0.18;
   const browY = eyeY - Math.max(openL, openR) - 9;
   const noseTop = eyeY + 8, noseBot = CY + HEAD_H*0.22;
   const mouthY = CY + HEAD_H*0.52;
 
-  // Волосы: короткие штрихи по верхней дуге головы. Количество — близнецы,
-  // длина — соседи, цвет — обе удалённости разом.
-  // Схема 1: hairN волосков одной длины и одного смешанного цвета.
-  // Схема 2: близнецы и соседи — РАЗНЫЕ волоски, вперемешку, чтобы ни одна
-  // сторона головы не намекала на смысл, которого нет.
-  const nTw = Math.round(val("hairN"));
-  const nNb = HAIR_MODE === "two" ? Math.round(6 + 16*t05.hairLen) : 0;
+  // Близнецы и соседи — разные волоски, вперемешку. Не двумя кучками слева
+  // и справа: лево и право на этом лице уже значат «раннее против
+  // позднего», и вторую, другую левизну вводить нельзя.
   const strands = [];
-  if (HAIR_MODE === "mix"){
-    for (let i = 0; i < hairN; i++) strands.push({len: hairLen, col: hc});
-  } else {
-    const total = nTw + nNb;
-    let tw = nTw, nb = nNb;
-    for (let i = 0; i < total; i++){
-      const takeTwin = tw > 0 && (nb === 0 || (i % 2 === 0));
-      if (takeTwin){ tw--; strands.push({len: 20, col: strandColor("twin", t05.hairBlue)}); }
-      else if (nb > 0){ nb--; strands.push({len: 20, col: strandColor("nb", t05.hairRed)}); }
-      else if (tw > 0){ tw--; strands.push({len: 20, col: strandColor("twin", t05.hairBlue)}); }
+  let tw = nTw, nb = nNb;
+  while (tw > 0 || nb > 0){
+    if (tw > 0 && (nb === 0 || strands.length % 2 === 0)){
+      tw--; strands.push(strandColor("twin", t05.hairBlue));
+    } else if (nb > 0){
+      nb--; strands.push(strandColor("nb", t05.hairRed));
     }
   }
   let hair = "";
-  strands.forEach((st, i) => {
+  strands.forEach((col, i) => {
     const n = strands.length;
     const a = -Math.PI*0.80 + (Math.PI*0.60) * (n === 1 ? 0.5 : i/(n-1));
     const x1 = CX + HEAD_W*Math.cos(a), y1 = CY + HEAD_H*Math.sin(a);
-    const k = 1 + st.len/HEAD_H;
+    const k = 1 + 20/HEAD_H;
     const x2 = CX + HEAD_W*k*Math.cos(a), y2 = CY + HEAD_H*k*Math.sin(a);
     hair += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
-      stroke="${st.col}" stroke-width="3" stroke-linecap="round"/>`;
+      stroke="${col}" stroke-width="3" stroke-linecap="round"/>`;
   });
 
   const mouthPath = `M ${(CX-mLen/2).toFixed(1)} ${mouthY.toFixed(1)}
@@ -252,10 +226,6 @@ function draw(){
     <path d="${mouthPath}" fill="none" stroke="${ink('smile')}" stroke-width="3.2" stroke-linecap="round"/>
     ${mouthOpenPath}
   `;
-  // Волосы зеленеют по тому же правилу, что и любая другая черта.
-  if (hairGood && hairN > 0){
-    document.querySelectorAll("#face line[stroke^='rgb']").forEach(l => l.setAttribute("stroke", hc));
-  }
 }
 
 // ── Таблица параметров ───────────────────────────────────────────────────
@@ -290,13 +260,13 @@ const ROWS = [
 
   {g:"Повторяемость — новое"},
   {p:"Близнецы, количество", m:"Доля попыток, повторивших |ошибку| предыдущей", tag:"new",
-   f:"Густота волос", keys:["hairN"]},
+   f:"Сколько синих волос", keys:["hairTw"]},
   {p:"Соседи, количество", m:"Доля попыток ровно в одной клетке точности от предыдущей", tag:"new",
-   f:"Длина волос", keys:["hairLen"]},
+   f:"Сколько красных волос", keys:["hairNb"]},
   {p:"Близнецы, удалённость", m:"Насколько далеко от тройки стоит сама пара", tag:"new",
-   f:"Цвет волос: синева", keys:["hairBlue"]},
+   f:"Синева близнецов", keys:["hairBlue"]},
   {p:"Соседи, удалённость", m:"То же для соседей", tag:"new",
-   f:"Цвет волос: краснота", keys:["hairRed"]},
+   f:"Краснота соседей", keys:["hairRed"]},
 
   {g:"Снято с лица"},
   {p:"—", m:"Ширину и высоту головы больше не двигаем", tag:"gone", dead:true,
@@ -377,25 +347,14 @@ function preset(q){
   document.getElementById("now").innerHTML = q > 0.75 ? "<b>Хорошая игра</b> — все черты в своих лучших диапазонах"
     : q < 0.25 ? "<b>Всё мимо</b> — все черты в худших" : "<b>Средняя игра</b>";
 }
-document.querySelectorAll(".modes button").forEach(b => {
-  b.addEventListener("click", () => {
-    HAIR_MODE = b.dataset.mode;
-    document.querySelectorAll(".modes button").forEach(x => x.classList.toggle("on", x === b));
-    document.getElementById("rowsNote").textContent = HAIR_MODE === "mix"
-      ? "Сейчас: один смешанный цвет на все волосы."
-      : "Сейчас: близнецы и соседи — разные волоски. Количество каждого сорта — сколько их, цвет сорта — как далеко от тройки.";
-    draw();
-  });
-});
 document.querySelectorAll(".presets button[data-q]").forEach(b => {
   b.addEventListener("click", () => preset(parseFloat(b.dataset.q)));
 });
 
 // образцы цвета волос
-document.getElementById("swA").style.background = hairColor(0, 0);
-document.getElementById("swB").style.background = hairColor(1, 0);
-document.getElementById("swC").style.background = hairColor(0, 1);
-document.getElementById("swD").style.background = hairColor(1, 1);
+document.getElementById("swA").style.background = strandColor("twin", 0);
+document.getElementById("swB").style.background = strandColor("twin", 1);
+document.getElementById("swC").style.background = strandColor("nb", 1);
 
 draw();
 </script>
