@@ -1,6 +1,8 @@
 # Play of Time — Project Briefing for Claude Code
 
-> **START HERE (передача проекта, 2026-09-20):** [`../docs/HANDOFF_2026-09-20.md`](../docs/HANDOFF_2026-09-20.md) — состояние, таблица решений, где что искать, как проверить, правила работы с Алексом. Читать перед любой работой. (Вторая копия этого документа удалена 2026-09-26 — она отставала; инструменты по-прежнему в `../webapp/handoff/tools/`.)
+> **START HERE:** [`../docs/HANDOFF_2026-09-29.md`](../docs/HANDOFF_2026-09-29.md) — состояние проекта, что живое, что открыто, правила работы с Алексом. Читать перед любой работой.
+>
+> Предыдущие записки не удалены и местами полезны, но как «состояние» устарели: [`../docs/HANDOFF_2026-09-26.md`](../docs/HANDOFF_2026-09-26.md) — секреты, автоматика и три грабли (по этим темам всё ещё точна), [`../docs/HANDOFF_2026-09-20.md`](../docs/HANDOFF_2026-09-20.md) — досье проекта до переезда в git, таблица решений D29–D39. Инструменты из неё — в `../webapp/handoff/tools/`.
 
 ## What is this app?
 Play of Time is a native Android stopwatch-based training app rooted in Gellerstein's psychotechnics methodology. The user taps RUN, waits ~3 seconds, taps STOP, and tries to hit exactly 3.000 seconds. The app tracks accuracy, calculates a "Serenity Coin Metric" (SCM), and progresses the user through quests.

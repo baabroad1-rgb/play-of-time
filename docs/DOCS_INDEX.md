@@ -41,7 +41,7 @@ Google Play. Индекс лежал в `handover/docs/` внутри июльс
 | [quests_oder.pdf](https://drive.google.com/file/d/1TNJDbgs-GPTdXKfbQs5KbFWxqnIiK35p/view) | 🔴 | Блок-схема квестов с адаптацией (старая) | 25.06.2025 |
 | [cheer_ups.docx](https://drive.google.com/file/d/10YW40ia0Zir_8AJul62F6l_YYVlEQmuP/view) | 🔴 | Старые триггеры и тексты подбадриваний | 02.12.2025 |
 
-Действующие истины по этим темам — в коде: квесты `android/app/src/main/java/ru/iflex/timemvp/core/utils/Quest.kt`,
+Действующие истины по этим темам — в коде: квесты `android/app/src/main/java/online/playoftime/core/utils/Quest.kt`,
 SCM `use_case/CalculateScmUseCase.kt`, подбадривания `core/utils/CheerUpMessages.kt`.
 
 ## Дизайн

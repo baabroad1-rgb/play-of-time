@@ -75,7 +75,7 @@ appCategory=GAME»). `isGame="true"` — легаси-дубль для стар
 Просит систему НЕ батчить тач-события, а отдавать сразу. Действует **до
 ACTION_UP** (per-gesture), поэтому пере-арм на каждом жесте.
 
-**Где:** [`StopWatchButton.kt`](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/stop_watch/StopWatchButton.kt).
+**Где:** [`StopWatchButton.kt`](../android/app/src/main/java/online/playoftime/ui_lib/stop_watch/StopWatchButton.kt).
 Функция `requestHiRateTouch()` + её вызовы:
 
 ```kotlin
@@ -136,7 +136,7 @@ API 34) не нужен, пока панель не отдаёт быстрее,
 значения (включая ровно 3.000) равной. Это ровно то, что раньше случайно делал
 джиттер диспетчера.
 
-**Где:** константа в [`Utils.kt`](../android/app/src/main/java/ru/iflex/timemvp/core/utils/Utils.kt):
+**Где:** константа в [`Utils.kt`](../android/app/src/main/java/online/playoftime/core/utils/Utils.kt):
 
 ```kotlin
 const val DITHER_HALF_MS = 2.0   // = половина ячейки сетки. Текущая база 240 Гц
@@ -145,7 +145,7 @@ const val DITHER_HALF_MS = 2.0   // = половина ячейки сетки. 
                                  // частота для тапа реально доступна).
 ```
 
-Применяется в [`MainViewModel.kt`](../android/app/src/main/java/ru/iflex/timemvp/features/main/ui/MainViewModel.kt),
+Применяется в [`MainViewModel.kt`](../android/app/src/main/java/online/playoftime/features/main/ui/MainViewModel.kt),
 STOP-хендлер, при расчёте `attemptDuration`:
 
 ```kotlin
@@ -200,11 +200,11 @@ print('mod 2:', chi(d, 2))   # проверка на 2-мс сетку (480 Гц
 Фикс-константа `DITHER_HALF_MS` заменена на адаптив: ширина шума = половина
 ФАКТИЧЕСКИ измеренной ячейки, замер вживую.
 
-- [`TouchRateEstimator`](../android/app/src/main/java/ru/iflex/timemvp/core/utils/TouchRateEstimator.kt)
+- [`TouchRateEstimator`](../android/app/src/main/java/online/playoftime/core/utils/TouchRateEstimator.kt)
   — singleton, копит межсемпловые интервалы по реальным ТАПАМ (не драгу), медиана →
   ячейка. `ditherHalfMs(fallback)` = половина ячейки, либо **0 если ячейка ≤ 1.2 мс**
   (≈1000 Гц — панель сама разрешает до 1 мс, дизеринг не нужен).
-- Кормится в [`StopWatchButton.kt`](../android/app/src/main/java/ru/iflex/timemvp/ui_lib/stop_watch/StopWatchButton.kt)
+- Кормится в [`StopWatchButton.kt`](../android/app/src/main/java/online/playoftime/ui_lib/stop_watch/StopWatchButton.kt)
   из семплов жеста (`down.historical` + move-семплы) после захвата длительности.
 - Последняя ячейка хранится в `LocalStorageService.getTouchCellMs()` (default 4.0 =
   250 Гц) как фоллбэк на старте сессии.

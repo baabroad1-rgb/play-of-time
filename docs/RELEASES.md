@@ -8,7 +8,7 @@ APK лежит на `playoftime.online` в папке `downloads/`, отдаёт
 `webapp/api/latest_apk.php`. Инструкция по выкладке — `webapp/downloads/README_update_deploy.md`.
 Этот механизм **не трогаем**: он единый источник правды сразу для двух вещей —
 кнопки «download app apk» на сайте и самообновления внутри приложения
-(`android/app/src/main/java/ru/iflex/timemvp/core/update/UpdateApi.kt` делает
+(`android/app/src/main/java/online/playoftime/core/update/UpdateApi.kt` делает
 HEAD-запрос на тот же URL и достаёт версию из `Content-Disposition`).
 
 **Почему не через GitHub Releases.** Репозиторий приватный, а ассеты релизов
