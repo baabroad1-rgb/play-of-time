@@ -15,6 +15,9 @@ on:
     branches: [main]
     paths:
       - 'webapp/**'
+      # Документация на сервер и так не уезжает (см. exclude ниже), так что
+      # выкладка из-за правки .md — это подключение к FTP ради нуля файлов.
+      - '!webapp/**/*.md'
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 

@@ -10,6 +10,9 @@ on:
     branches-ignore: [main]
     paths:
       - 'android/**'
+      # Та же причина, что в build-apk.yml: компилировать проект из-за
+      # правки .md незачем.
+      - '!android/**/*.md'
       - '.github/workflows/check-build.yml'
   workflow_dispatch:
 
