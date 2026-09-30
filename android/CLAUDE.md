@@ -66,7 +66,7 @@ Play of Time is a native Android stopwatch-based training app rooted in Gellerst
 переносятся. только в 15. 14 нужна только для преемственности».
 
 Мостовая версия живёт в ветке `legacy-bridge`: старый пакет
-`com.tikhonov.playoftime`, `versionName` 14.93. Её единственная работа —
+`ru.iflex.timemvp.quest`, `versionName` 14.93. Её единственная работа —
 дать тем, у кого стоит старое приложение, кнопку переезда на новое и
 отдать историю через ContentProvider. Новых функций и починок она НЕ
 получает, даже если правка ложится в неё за минуту. Номер 14.94 не
