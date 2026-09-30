@@ -20,6 +20,9 @@
   .stage{position:sticky; top:0; z-index:5; background:var(--surface);
     padding:6px 0 8px; border-bottom:1px solid var(--line);}
   svg.face{display:block; width:100%; max-width:300px; height:auto; margin:0 auto;}
+  .hairCount{text-align:center; font-size:12px; color:var(--muted); padding-top:4px;
+    font-variant-numeric:tabular-nums;}
+  .hairCount b{color:var(--ink);}
   .now{min-height:34px; text-align:center; font-size:13px; color:var(--muted);
     padding:6px 4px 0;}
   .now b{color:var(--ink);}
@@ -62,6 +65,7 @@
 
 <div class="stage">
   <svg class="face" viewBox="0 6 220 216" id="face" aria-label="пробная морда"></svg>
+  <div class="hairCount" id="hairCount"></div>
   <div class="now" id="now">Ни одна черта не выбрана — всё стоит в середине своего хода.</div>
 </div>
 
@@ -125,8 +129,11 @@ const F = {
   smile:    {lo:-18, hi:18,  good:"hi"},
   mouthOpen:{lo:0,   hi:15,  good:"hi"},   // hit — НОВОЕ МЕСТО
   outline:  {lo:1.6, hi:7,   good:"hi"},   // gcv — НОВОЕ МЕСТО
-  hairTw:   {lo:0,   hi:20,  good:"hi"},           // близнецы, количество
-  hairNb:   {lo:0,   hi:20,  good:"hi"},           // соседи, количество
+  // Потолки взяты не с потолка: модель (scratchpad/pairs.py) даёт при
+  // очень плотной игре (разброс 3 мс) около 31 близнеца и 46 соседей на
+  // 200 попыток. Столько на голову не влезет — за это отвечает thin().
+  hairTw:   {lo:0,   hi:32,  good:"hi"},           // близнецы, количество
+  hairNb:   {lo:0,   hi:46,  good:"hi"},           // соседи, количество
   hairBlue: {lo:0,   hi:1,   good:"lo", rest:0},   // близнецы, удалённость
   hairRed:  {lo:0,   hi:1,   good:"lo", rest:0},   // соседи, удалённость
 };
@@ -135,6 +142,7 @@ const F = {
 // половина шкалы подмешивает красный и волосы выходят фиолетовыми, хотя
 // соседи тут вообще ни при чём.
 const restOf = k => (F[k].rest !== undefined ? F[k].rest : 0.5);
+let hairCount = {tw:0, nb:0, shown:0, thinned:false};
 const t05 = {};
 Object.keys(F).forEach(k => t05[k] = restOf(k));
 const val = k => F[k].lo + (F[k].hi - F[k].lo) * t05[k];
@@ -167,10 +175,10 @@ function strandColor(kind, d){
   const l = kind === "twin" ? 42 - 4*d : 44 - 6*d;
   return `hsl(${h.toFixed(0)}, 68%, ${l.toFixed(0)}%)`;
 }
-// Разброс внутри сорта. У живого игрока пары не стоят на одной удалённости,
-// поэтому в прототипе он подмешан детерминированно: без него шевелюра
-// выходит гребёнкой из одинаковых волосков и врёт про то, как это выглядит
-// на настоящих данных.
+// Разброс внутри сорта. У живого игрока пары не стоят на одной
+// удалённости, поэтому в прототипе он подмешан детерминированно: без него
+// шевелюра выходит гребёнкой из одинаковых волосков и врёт про то, как это
+// выглядит на настоящих данных.
 function strandsOf(kind, n, base){
   const out = [];
   for (let i = 0; i < n; i++){
@@ -178,6 +186,32 @@ function strandsOf(kind, n, base){
     const d = Math.max(0, Math.min(1, base + j));
     out.push({kind, d, col: strandColor(kind, d), len: 6 + 30*d});
   }
+  return out;
+}
+
+// Сколько волосков физически влезает на макушку, не сливаясь в гребёнку.
+const MAX_STRANDS = 26;
+
+// Прореживание. Считано на модели (scratchpad/pairs.py): при разбросе
+// ошибки 8 мс на 200 попытках уровня 3 набирается около 13 близнецов и 24
+// соседей, при разбросе 3 мс — 31 и 46. То есть за неделю игры пар втрое
+// больше, чем влезает на голову, и чем ЛУЧШЕ игрок, тем их больше.
+//
+// Режем так, чтобы уцелела форма распределения, а не его начало:
+// сортируем по удалённости и берём равномерно по списку. Тогда и самые
+// точные пары, и самые дальние остаются видны, а исчезают только
+// повторы середины. Пропорция между сортами сохраняется — иначе на
+// прореженной голове синих и красных стало бы поровну независимо от
+// того, чего сколько на самом деле.
+//
+// Цена решения: выше потолка «сколько именно» больше не читается, 40 пар
+// и 77 выглядят одинаково. Принято сознательно: разница между нулём и
+// десятком важна, между сороковкой и семьюдесятью — нет.
+function thin(list, keep){
+  if (list.length <= keep) return list;
+  const sorted = list.slice().sort((a, b) => a.d - b.d);
+  const out = [];
+  for (let i = 0; i < keep; i++) out.push(sorted[Math.round(i * (sorted.length - 1) / (keep - 1))]);
   return out;
 }
 
@@ -202,13 +236,30 @@ function draw(){
   // Близнецы и соседи вперемешку, а не двумя кучками слева и справа: лево
   // и право на этом лице уже значат «раннее против позднего», и вводить
   // вторую, другую левизну нельзя.
-  const tws = strandsOf("twin", nTw, t05.hairBlue);
-  const nbs = strandsOf("nb",   nNb, t05.hairRed);
+  let tws = strandsOf("twin", nTw, t05.hairBlue);
+  let nbs = strandsOf("nb",   nNb, t05.hairRed);
+  const total = tws.length + nbs.length;
+  const thinned = total > MAX_STRANDS;
+  if (thinned){
+    const keepTw = Math.max(1, Math.round(MAX_STRANDS * tws.length / total));
+    tws = thin(tws, keepTw);
+    nbs = thin(nbs, MAX_STRANDS - keepTw);
+  }
+  hairCount = {tw: nTw, nb: nNb, shown: tws.length + nbs.length, thinned};
   const strands = [];
   while (tws.length || nbs.length){
     if (tws.length && (!nbs.length || strands.length % 2 === 0)) strands.push(tws.pop());
     else if (nbs.length) strands.push(nbs.pop());
   }
+  // Раскладываем по макушке в перемешанном, но всегда ОДНОМ И ТОМ ЖЕ
+  // порядке. Без этого прореженная голова выходила причёсанной (thin()
+  // отдаёт список отсортированным по удалённости), а непрореженная —
+  // лохматой: одна и та же шевелюра выглядела по-разному в зависимости от
+  // того, сработал потолок или нет. И, что важнее, отсортированные волоски
+  // начинали намекать, будто левая половина головы лучше правой. Позиция
+  // волоска не значит ничего — значат цвет и длина.
+  strands.forEach((st, i) => { st.slot = (i*7919) % 101; });
+  strands.sort((a, b) => a.slot - b.slot);
   let hair = "";
   strands.forEach((st, i) => {
     const n = strands.length;
@@ -227,6 +278,14 @@ function draw(){
     Q ${CX} ${(mouthY+smile+mOpen*1.9).toFixed(1)} ${(CX+mLen/2).toFixed(1)} ${mouthY.toFixed(1)}"
     fill="none" stroke="${ink('mouthOpen')}" stroke-width="3" stroke-linecap="round"/>`;
 
+  const hcEl = document.getElementById("hairCount");
+  if (hcEl){
+    const c = hairCount;
+    hcEl.innerHTML = (c.tw + c.nb === 0)
+      ? "повторов за период нет — голова лысая"
+      : `близнецов <b>${c.tw}</b>, соседей <b>${c.nb}</b>` +
+        (c.thinned ? ` · на голову влезает ${MAX_STRANDS}, показано ${c.shown}` : "");
+  }
   document.getElementById("face").innerHTML = `
     ${hair}
     <circle cx="${(CX-HEAD_W).toFixed(1)}" cy="${eyeY.toFixed(1)}" r="${earL.toFixed(1)}"
