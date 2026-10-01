@@ -9,6 +9,10 @@
 
 ## 1 октября 2026
 
+### Записка про research_raw_attempts.php в журнал
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f953d33582be4bcd179f88aefb1fa2b0f5962afc)
+
 ### research_raw_attempts.php — сырые попытки для поиска поведенческих черт
 
 Read-only, GET-only, без free-form SQL — фиксированный набор колонок,
@@ -1741,4 +1745,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 71.
+Всего записей: 72.
