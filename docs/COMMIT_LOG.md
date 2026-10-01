@@ -9,6 +9,14 @@
 
 ## 1 октября 2026
 
+### research_raw_attempts.php: добавить epoch/current_epoch
+
+Без этого история игрока после 'Erase all data & start over' молча
+склеивалась в одну последовательность с его жизнью до сброса — неверно
+и для анализа черт, и для отпечатка личности, который просит Алекс.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/399990961ae08b3019f1020c39fbc4052e5d81bf)
+
 ### Записка про research_raw_attempts.php в журнал
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f953d33582be4bcd179f88aefb1fa2b0f5962afc)
@@ -1745,4 +1753,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 72.
+Всего записей: 73.
