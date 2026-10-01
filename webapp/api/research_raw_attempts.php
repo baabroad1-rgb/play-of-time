@@ -6,6 +6,16 @@
 // the raw attempt sequence, not an aggregate — unlike research_streak_pressure.php,
 // which only ever returns summary numbers.
 //
+// `epoch`/`current_epoch` included (01.10.2026) — a player who used
+// "Erase all data & start over" keeps their old rows forever under a lower
+// epoch number, but only their current epoch counts toward live progress
+// anywhere else in the app (sync.php, leaderboard.php, report_data.php all
+// filter on it). Mixing epochs into one sequence would blend two different
+// "lives" of the same player_id into one trajectory — wrong for trait and
+// fingerprint analysis alike. Callers should filter to `epoch == current_epoch`
+// (join attempts.epoch against the matching players row's current_epoch)
+// unless deliberately comparing a player across their own epochs.
+//
 // No PII: only the columns below, never display_name or sync_token.
 // player_id is the same opaque client-generated UUID already public on the
 // leaderboard — this endpoint adds no new exposure of who a player is, only
@@ -42,7 +52,7 @@ $kind = $_GET["kind"] ?? "attempts";
 if ($kind === "players") {
     $stmt = $pdo->query(
         "SELECT id AS player_id, level_id, task_id, sc_total, attempts_total,
-                wins_total, app_version, created_at, updated_at
+                wins_total, app_version, current_epoch, created_at, updated_at
          FROM players
          ORDER BY created_at"
     );
@@ -69,7 +79,7 @@ $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
 $stmt = $pdo->prepare(
     "SELECT player_id, session_id, local_id, level_id, task_id, accuracy,
-            duration_ms, error_ms, is_win, tolerance_ms, sc, recorded_at, recorded_ms
+            duration_ms, error_ms, is_win, tolerance_ms, sc, epoch, recorded_at, recorded_ms
      FROM attempts
      $whereSql
      ORDER BY player_id, session_id, local_id
