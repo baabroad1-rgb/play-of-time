@@ -93,21 +93,22 @@ def is_true_three(accuracy, error_ms, tolerance_ms):
 KNOWN_MERGE = {"4114851c": "1dd5c9c3"}
 
 
+def canon(pid, players):
+    for newp, canp in KNOWN_MERGE.items():
+        if pid.startswith(newp):
+            for p2 in players:
+                if p2.startswith(canp): return p2
+    return pid
+
+
 def load_data():
     players_raw = json.load(open(PLY_PATH, encoding="utf-8"))["rows"]
     attempts_raw = json.load(open(ATT_PATH, encoding="utf-8"))["rows"]
     players = {p["player_id"]: p for p in players_raw}
 
-    def canon(pid):
-        for newp, canp in KNOWN_MERGE.items():
-            if pid.startswith(newp):
-                for p2 in players:
-                    if p2.startswith(canp): return p2
-        return pid
-
     seen, merged = set(), []
     for a in attempts_raw:
-        pid = canon(a["player_id"])
+        pid = canon(a["player_id"], players)
         sig = (pid, a["session_id"], a["local_id"], a["recorded_at"], a["error_ms"])
         if sig in seen: continue
         seen.add(sig)
@@ -120,6 +121,7 @@ def qualifying_rows(players, attempts, player_id_prefix, min_level_task=(2,2), c
     pid = next((k for k in players if k.startswith(player_id_prefix)), None)
     if pid is None:
         raise SystemExit(f"player_id starting with '{player_id_prefix}' not found")
+    pid = canon(pid, players)
     cur_epoch = players[pid]["current_epoch"]
     rows = [a for a in attempts if a["player_id"] == pid
             and (a["level_id"], a["task_id"]) >= min_level_task

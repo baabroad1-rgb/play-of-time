@@ -40,3 +40,5 @@ _scratch_debug/
 *.log
 .DS_Store
 Thumbs.db
+docs/behavioral_trajectory_tools/attempts.json
+docs/behavioral_trajectory_tools/players.json
