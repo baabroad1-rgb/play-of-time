@@ -23,10 +23,12 @@ behavioral_profile.py — печатает готовый психологиче
 посмотреть, что именно решило статус, можно в __main__ (--raw печатает
 сырые числа без текста).
 
-Ограничение: №4 (хрупкость на подступах к победе) детектора не имеет —
-наш способ измерения реакции на победу смотрит на попытку ПОСЛЕ неё, не
-на поведение непосредственно перед достижением цели. Здесь честно
-печатается как "не проверено", а не подделывается.
+№4 (хрупкость на подступах к победе) считается с 02.10.2026: смотрит
+попытку непосредственно ПЕРЕД победой, тогда как №5 — сразу ПОСЛЕ неё.
+Раньше №4 печаталась как "не проверено" — это была отговорка, лог даёт
+упорядоченную последовательность, и шаг назад от победы ничем не сложнее
+шага вперёд. Черты реально независимы: есть игроки с просадкой только до
+победы и только после (примеры в BEHAVIORAL_TRAJECTORY_DESIGN.md).
 """
 import json, math, datetime, sys, os
 from collections import defaultdict, Counter
@@ -201,14 +203,26 @@ def detect_all(rows):
     else:
         out["t3_structured_ignorance"] = {"status": "not_enough_data"}
 
-    # 4. clutch (proxy only — this is AFTER a win, not approaching one — see #5)
+    # 4. clutch approach: the attempt(s) immediately BEFORE a win, not after
+    # (fixed 02.10.2026 — the log is a full ordered sequence, nothing stops
+    # looking backward from a win the same way #5 looks forward from one)
+    before1 = [abse[k-1] for k in range(1, n) if win3[k]]
+    before2 = [abse[k-2] for k in range(2, n) if win3[k]]
+    if len(before1) >= 10:
+        medb1 = median(before1); medb2 = median(before2) if len(before2) >= 5 else None
+        worse = medb1 > baseline_med * 1.05
+        out["t4_clutch_approach"] = {"n_before1": len(before1), "med_before1": medb1,
+                                      "n_before2": len(before2), "med_before2": medb2, "baseline": baseline_med,
+                                      "status": "found" if worse else "absent"}
+    else:
+        out["t4_clutch_approach"] = {"status": "not_enough_data"}
+
+    # 5. clutch recoil: the attempt(s) AFTER a win (was the only #4 proxy before the fix above)
     after1, after2 = [], []
     for k in range(1, n):
         if win3[k-1]:
             after1.append(abse[k])
             if k >= 2 and win3[k-2]: after2.append(abse[k])
-    out["t4_clutch_approach"] = {"status": "not_tested",
-                                  "note": "no detector distinguishes the moment BEFORE a win from after it"}
 
     # 5. relaxation after relief
     if len(after1) >= 10:
@@ -338,7 +352,9 @@ PHRASES = {
         "not_enough_data": "Истории на этом уровне пока меньше четырёх полных недель — для разделения «постепенное привыкание» и «разовый скачок» нужно больше данных.",
     },
     "t4_clutch_approach": {
-        "not_tested": "Эта черта описывает поведение в момент непосредственно перед победой, пока цель ещё не достигнута. Текущий детектор измеряет только попытку сразу после победы (это черта №5) — для момента перед ней нужен отдельный детектор, он ещё не написан.",
+        "found": "Попытка непосредственно перед победой у него заметно менее точная, чем обычно: на подходе к цели собранность проседает, и победа приходит вопреки этому, а не благодаря концентрации в решающий момент.",
+        "absent": "Попытка непосредственно перед победой у него такая же точная, как обычно, или точнее: на подходе к цели он сохраняет собранность и доводит дело до результата спокойно.",
+        "not_enough_data": "Побед в выборке пока мало, чтобы оценить, как меняется точность прямо перед ними.",
     },
     "t5_relaxation_after_relief": {
         "found": "Сразу после достижения цели точность следующих попыток заметно снижается, и возвращается к обычному уровню только через несколько попыток. Успех на короткое время снижает собранность.",
