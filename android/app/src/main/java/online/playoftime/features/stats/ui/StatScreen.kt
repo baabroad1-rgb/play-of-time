@@ -852,28 +852,21 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                     )
                 }
             )
-            pair(
-                "Practice", {
+            // Practice — одна в строке: «Playing since» убрана (Alex 2026-10-05).
+            // Пустая правая половина держит ту же ширину колонки, что у пар выше.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                SummaryStat("Practice", Modifier.weight(1f)) {
                     SummaryValue(
                         if (data.practiceDensityMinPerDay > 0)
                             groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay))
                         else "—"
                     )
-                },
-                // Дата первой попытки (Alex 2026-09-27: «дополнить карточку
-                // датой начала игры»). Единственное значение в карточке,
-                // которое НЕ подчиняется фильтру периода: «играю с такого-то»
-                // по смыслу всегда за всю историю, иначе при выборе «сегодня»
-                // оно показывало бы сегодняшнее число и теряло смысл.
-                "Playing since", {
-                    SummaryValue(
-                        if (data.firstPlayedMs > 0)
-                            SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
-                                .format(Date(data.firstPlayedMs))
-                        else "—"
-                    )
                 }
-            )
+                Spacer(Modifier.weight(1f))
+            }
         }
 
         ReportFaceCard(

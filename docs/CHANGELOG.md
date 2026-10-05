@@ -2591,3 +2591,11 @@ Wins/precise — зелёное. Пояснения мелким шрифтом 
 
 Отрисовано локально в Chromium (Playwright) на синтетических данных:
 Analytics и диалог отчёта.
+
+### Analytics: убрана «Playing since» (05.10)
+
+Алекс: «убери played since из аналитика». Убрана из верхней карточки и в
+нативе, и в вебе (`app.20261005b.js`). Practice осталась одна в последней
+строке, слева, в той же колонке. В нативе удалена и вся обвязка, ставшая
+мёртвой: поле `AnalyticsData.firstPlayedMs`, его заполнение в
+`AnalyticsUseCase`, запрос `TryDao.getFirstAttemptTime()`.
