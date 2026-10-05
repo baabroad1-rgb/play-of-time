@@ -90,18 +90,43 @@ import kotlin.math.roundToInt
 //  Типографика: Inter с letter-spacing как Helvetica Now Display
 // ──────────────────────────────────────────────────────────────────────────────
 
-private val interProvider = GoogleFont.Provider(
+private val googleFontsProvider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
     providerPackage   = "com.google.android.gms",
     certificates      = R.array.com_google_android_gms_fonts_certs
 )
 
 private val InterFamily = FontFamily(
-    Font(GoogleFont("Inter"), interProvider, FontWeight.Normal),
-    Font(GoogleFont("Inter"), interProvider, FontWeight.Medium),
-    Font(GoogleFont("Inter"), interProvider, FontWeight.SemiBold),
-    Font(GoogleFont("Inter"), interProvider, FontWeight.Bold),
+    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.Normal),
+    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.Medium),
+    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.SemiBold),
+    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.Bold),
 )
+
+// Roboto грузится явно, а не берётся системным по умолчанию: на Samsung и
+// других оболочках системный шрифт свой, и спецификация дизайнера бы не совпала.
+private val RobotoFamily = FontFamily(
+    Font(GoogleFont("Roboto"), googleFontsProvider, FontWeight.Medium),
+    Font(GoogleFont("Roboto"), googleFontsProvider, FontWeight.SemiBold),
+)
+
+// Спецификация дизайнера для карточек Analytics (Alex 2026-10-05).
+private val metricLabelGray = Color(0xFF7F7F7F)
+private val metricValueWhite = Color(0xFFFFFFFF)
+
+/** Название показателя (Play time, Hit rate, …): Roboto Medium 11, #7F7F7F. */
+private fun metricLabelStyle(
+    size: androidx.compose.ui.unit.TextUnit = 11.sp,
+    color: Color = metricLabelGray
+) = TextStyle(fontFamily = RobotoFamily, fontWeight = FontWeight.Medium, fontSize = size, color = color)
+
+/** Значение показателя: Roboto Medium 12, #FFFFFF. */
+private fun metricValueStyle(color: Color = metricValueWhite) =
+    TextStyle(fontFamily = RobotoFamily, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = color)
+
+/** Заголовок блока (Chance of Win, …) над карточкой: Roboto SemiBold 12, #7F7F7F. */
+private val blockTitleStyle =
+    TextStyle(fontFamily = RobotoFamily, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = metricLabelGray)
 
 /** Большие цифры-метрики: tight letter-spacing (-0.02em) */
 private fun metricStyle(
@@ -473,7 +498,7 @@ private fun AnalyticsContent(
         // ── CHANCE OF WIN ────────────────────────────────────────────────
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_CHANCE)) {
-            StatCard("CHANCE OF WIN", pl) {
+            StatCard("Chance of Win", pl) {
                 CardMetricRow(
                     label = "Hit rate",
                     value = "%.1f%%".format(data.trueThreeHitRatePct)
@@ -496,12 +521,13 @@ private fun AnalyticsContent(
         // ── GEOMETRIC MEAN + VARIABILITY ─────────────────────────────────
         // (moved above RANGE OF DEVIATIONS per design)
         item {
-            val textColor = MaterialTheme.colorScheme.baseTextColor
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_GEOM)) {
-            StatCard("GEOMETRIC MEAN ÷ SPREAD", pl) {
-                DeviationRow("Early",    data.deviationEarly, resultRedColor,  textColor, negated = true)
-                DeviationRow("Absolute", data.deviationAll,   textColor,       textColor)
-                DeviationRow("Late",     data.deviationLate,  resultBlueColor, textColor)
+            StatCard("Geometric Mean ÷ Spread", pl) {
+                // Early/Late остаются в своих цветах — цвет здесь несёт смысл
+                // (красный = рано, синий = поздно), как и на макете.
+                DeviationRow("Early",    data.deviationEarly, resultRedColor,  negated = true)
+                DeviationRow("Absolute", data.deviationAll,   metricLabelGray)
+                DeviationRow("Late",     data.deviationLate,  resultBlueColor)
             }
             }
         }
@@ -509,7 +535,7 @@ private fun AnalyticsContent(
         // ── RANGE OF DEVIATIONS (со встроенными MODES OF DEVIATION) ──────
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_RANGE)) {
-            StatCard("RANGE OF DEVIATIONS", pl) {
+            StatCard("Range of deviations", pl) {
                 RangeBar(
                     earlyMs    = data.rangeEarlyMs,
                     lateMs     = data.rangeLateMs,
@@ -532,7 +558,7 @@ private fun AnalyticsContent(
         // ── PACE OF LEARNING ─────────────────────────────────────────────
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_PACE)) {
-            StatCard("PACE OF LEARNING", pl) {
+            StatCard("Pace of learning", pl) {
                 if (data.paceChartValues.size >= 2) {
                     PaceSparklineChart(data.paceChartValues, accent.copy(alpha = 0.65f), data.paceChartLabels)
                     Spacer(Modifier.height(6.dp))
@@ -557,9 +583,8 @@ private fun AnalyticsContent(
             ) {
                 BasicText(
                     modifier = Modifier.weight(1f),
-                    text  = "SESSIONS LOG",
-                    style = labelStyle(size = 10.sp, weight = FontWeight.SemiBold,
-                        color = baseColor.copy(alpha = subtleText))
+                    text  = "Sessions log",
+                    style = blockTitleStyle
                 )
                 // Column header — lucky index (per-row) — centered in its column
                 BasicText(
@@ -737,8 +762,6 @@ private fun AnalyticsContent(
 
 @Composable
 private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
-    val textColor = MaterialTheme.colorScheme.baseTextColor
-
     // Две карточки в ряд: слева цифры (2/3 ширины), справа — кнопка отчёта
     // с мордочкой (1/3). Равной высоты (IntrinsicSize.Max).
     Row(
@@ -778,7 +801,7 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 // одного размера и на одной линии. Шаг 0.5sp, ниже 7sp не
                 // опускаемся; уменьшение только вниз, поэтому процесс
                 // сходится за пару кадров и не зацикливается.
-                var labelSp by remember { mutableStateOf(9.sp) }
+                var labelSp by remember { mutableStateOf(11.sp) }
                 val shrink = {
                     if (labelSp.value > 7f) labelSp = (labelSp.value - 0.5f).sp
                 }
@@ -787,8 +810,8 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    SummaryStat(labelL, textColor, Modifier.weight(1f), labelSp, shrink, valueL)
-                    SummaryStat(labelR, textColor, Modifier.weight(1f), labelSp, shrink, valueR)
+                    SummaryStat(labelL, Modifier.weight(1f), labelSp, shrink, valueL)
+                    SummaryStat(labelR, Modifier.weight(1f), labelSp, shrink, valueR)
                 }
             }
 
@@ -796,12 +819,12 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
             // 2026-09-27: «поставим количество попыток рядом со временем»):
             // оба отвечают на один вопрос — сколько было игры.
             pair(
-                "PLAY TIME", { SummaryValue(formatDuration(data.periodPlayTimeMs), textColor) },
-                "ATTEMPTS",  { SummaryValue(formatNumber(data.periodAttempts.toString()), textColor) }
+                "Play time", { SummaryValue(formatDuration(data.periodPlayTimeMs)) },
+                "Attempts",  { SummaryValue(formatNumber(data.periodAttempts.toString())) }
             )
             pair(
-                "SESSIONS", { SummaryValue(formatNumber(data.periodSessionsCount.toString()), textColor) },
-                "SERENITY COINS", {
+                "Sessions", { SummaryValue(formatNumber(data.periodSessionsCount.toString())) },
+                "Serenity coins", {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         online.playoftime.ui_lib.CoinIcon(Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
@@ -809,35 +832,32 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                         // после иконки, по нему оно и подгоняет шрифт.
                         SummaryValue(
                             groupDigits("%.2f".format(data.periodScm)),
-                            textColor,
-                            Modifier.weight(1f)
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
             )
             pair(
-                "WINS/PRECISE", {
+                "Wins/precise", {
                     SummaryValue(
                         "${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}",
-                        resultGreenColor
+                        color = resultGreenColor
                     )
                 },
-                "PACE OF PLAY", {
+                "Pace of play", {
                     SummaryValue(
                         if (data.paceOfPlayPerMin > 0)
                             groupDigits("%.1f att/min".format(data.paceOfPlayPerMin))
-                        else "—",
-                        textColor
+                        else "—"
                     )
                 }
             )
             pair(
-                "PRACTICE", {
+                "Practice", {
                     SummaryValue(
                         if (data.practiceDensityMinPerDay > 0)
                             groupDigits("%.1f min/day".format(data.practiceDensityMinPerDay))
-                        else "—",
-                        textColor
+                        else "—"
                     )
                 },
                 // Дата первой попытки (Alex 2026-09-27: «дополнить карточку
@@ -845,13 +865,12 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
                 // которое НЕ подчиняется фильтру периода: «играю с такого-то»
                 // по смыслу всегда за всю историю, иначе при выборе «сегодня»
                 // оно показывало бы сегодняшнее число и теряло смысл.
-                "PLAYING SINCE", {
+                "Playing since", {
                     SummaryValue(
                         if (data.firstPlayedMs > 0)
                             SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
                                 .format(Date(data.firstPlayedMs))
-                        else "—",
-                        textColor
+                        else "—"
                     )
                 }
             )
@@ -868,7 +887,6 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
 @Composable
 private fun SummaryStat(
     label: String,
-    textColor: Color,
     modifier: Modifier = Modifier,
     // Кегль подписи ОБЩИЙ на всю строку карточки, а не свой у каждой ячейки.
     // Раньше подпись ужималась сама по себе: длинная «SERENITY COINS»
@@ -876,14 +894,14 @@ private fun SummaryStat(
     // разная базовая линия, и пара смотрелась вразнобой (Alex 2026-09-27:
     // «надписи в карточке выравнять забыл»). Теперь ячейка только СООБЩАЕТ,
     // что не помещается, а решение принимает строка — и уменьшает обе сразу.
-    labelSize: androidx.compose.ui.unit.TextUnit = 9.sp,
+    labelSize: androidx.compose.ui.unit.TextUnit = 11.sp,
     onLabelOverflow: () -> Unit = {},
     value: @Composable () -> Unit
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BasicText(
             text     = label,
-            style    = labelStyle(labelSize, color = textColor.copy(alpha = subtleText)),
+            style    = metricLabelStyle(labelSize),
             maxLines = 1,
             softWrap = false,
             onTextLayout = { if (it.didOverflowWidth) onLabelOverflow() }
@@ -893,13 +911,12 @@ private fun SummaryStat(
 }
 
 @Composable
-private fun SummaryValue(text: String, color: Color, modifier: Modifier = Modifier) {
-    // 12sp Medium — тот же размер, что у значений в следующей карточке
-    // (CardMetricRow), чтобы верхняя карточка не выбивалась из ряда
-    // (Alex 2026-09-27). Раньше было 14sp SemiBold.
+private fun SummaryValue(text: String, modifier: Modifier = Modifier, color: Color = metricValueWhite) {
+    // Тот же стиль, что у значений во всех остальных карточках — верхняя
+    // карточка не выбивается из ряда (Alex 2026-09-27, спецификация 2026-10-05).
     FitValueText(
         text     = text,
-        style    = metricStyle(12.sp, FontWeight.Medium, color),
+        style    = metricValueStyle(color),
         modifier = modifier
     )
 }
@@ -1549,32 +1566,32 @@ private fun StatCard(
     period  : String = "",
     content : @Composable () -> Unit
 ) {
-    val textColor = MaterialTheme.colorScheme.baseTextColor
+    // Заголовок блока — над карточкой, а не внутри неё (Alex 2026-10-05,
+    // по макету дизайнера).
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(cardBg)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier            = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth(),
+            modifier              = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            BasicText(
-                text  = title,
-                style = labelStyle(10.sp, FontWeight.SemiBold, textColor.copy(alpha = subtleText))
-            )
+            BasicText(text = title, style = blockTitleStyle)
             if (period.isNotEmpty()) {
-                BasicText(
-                    text  = period,
-                    style = labelStyle(10.sp, color = textColor.copy(alpha = subtleText))
-                )
+                BasicText(text = period, style = blockTitleStyle)
             }
         }
-        content()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(cardBg)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            content()
+        }
     }
 }
 
@@ -1597,7 +1614,7 @@ private fun CardMetricRow(
         Column(modifier = Modifier.weight(1f)) {
             BasicText(
                 text  = label,
-                style = labelStyle(11.sp, FontWeight.Medium, color = textColor.copy(alpha = 0.73f))
+                style = metricLabelStyle()
             )
             if (note != null) BasicText(
                 text  = note,
@@ -1607,8 +1624,7 @@ private fun CardMetricRow(
         Spacer(Modifier.width(8.dp))
         FitValueText(
             text  = groupDigits(value),
-            style = metricStyle(12.sp, FontWeight.Medium,
-                if (valueColor == Color.Unspecified) textColor else valueColor)
+            style = metricValueStyle(if (valueColor == Color.Unspecified) metricValueWhite else valueColor)
         )
     }
 }
@@ -2285,7 +2301,6 @@ private fun DeviationRow(
     label      : String,
     profile    : DeviationProfile,
     labelColor : Color,
-    textColor  : Color,
     negated    : Boolean = false
 ) {
     Row(
@@ -2296,7 +2311,7 @@ private fun DeviationRow(
         BasicText(
             modifier = Modifier.weight(1f),
             text  = label,
-            style = labelStyle(11.sp, FontWeight.Medium, labelColor)
+            style = metricLabelStyle(color = labelColor)
         )
         val displayMs = if (negated) -profile.medianMs else profile.medianMs
         FitValueText(
@@ -2305,7 +2320,7 @@ private fun DeviationRow(
                 // «−18ms  ×/÷1.4».
                 groupDigits("%s  %s".format(formatMs(displayMs), fmtFold(profile.stdPct)))
             else "—",
-            style = metricStyle(12.sp, FontWeight.Medium, textColor.copy(alpha = 0.88f))
+            style = metricValueStyle()
         )
     }
 }
