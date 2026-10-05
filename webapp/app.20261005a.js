@@ -3867,9 +3867,16 @@
       return db.attempts.filter((a) => ids.has(a.sessionId));
     };
     const sorted = [...sessions].sort((a, b) => b.startTime - a.startTime);
-    // Global sequential session number (oldest across ALL sessions = #1), native "Session #5".
-    const allSorted = [...db.sessions].sort((a, b) => a.startTime - b.startTime);
-    const sessNum = new Map(allSorted.map((s, i) => [s.id, i + 1]));
+    // Session number WITHIN its calendar day, restarting at #1 each day — same
+    // as native perDaySessionNumbers() (Utils.kt, 2026-09-22) and the attempt
+    // log above. A lifetime count showed "Session #130" on a 15-session day.
+    const sessNum = new Map();
+    const perDayCount = {};
+    [...db.sessions].sort((a, b) => a.startTime - b.startTime).forEach((s) => {
+      const dayKey = new Date(s.startTime).toDateString();
+      perDayCount[dayKey] = (perDayCount[dayKey] || 0) + 1;
+      sessNum.set(s.id, perDayCount[dayKey]);
+    });
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const years = new Map();
     sorted.forEach((s) => {
@@ -4385,12 +4392,10 @@
   function reportDialogHtml() {
     return `<div class="overlay report-overlay">
       <div class="dialog report-dialog">
-        <div class="report-dialog-head">
-          <button id="lbReportClose" class="report-dialog-x" type="button">×</button>
-        </div>
         <div class="report-dialog-body">
           ${leaderboardReportLoading ? `<div class="report-spinner" id="lbReportSpinner"></div>` : ""}
           <iframe id="lbReportFrame" src="${leaderboardReportUrl}"></iframe>
+          <button id="lbReportClose" class="report-dialog-x" type="button" aria-label="Close">✕</button>
         </div>
       </div>
     </div>`;

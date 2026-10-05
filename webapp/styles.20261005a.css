@@ -4559,3 +4559,25 @@ body.game-open .page iframe {
 .tree-head .block-title { margin: 0; display: block; }
 .sh-grid .sh-stat b { display: flex; align-items: center; }
 .sh-grid .sh-stat b .coin-ico { flex: none; }
+
+/* Report close cross inside the page (native ReportDialog, Alex 2026-09-27):
+   top-right of the cream sheet, level with the page title, large and thin,
+   in the page's own ink colour. The dark strip above the page is gone. */
+.report-dialog-head { display: none; }
+.report-dialog-body .report-dialog-x {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2A1E00;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 1;
+}

@@ -8,7 +8,7 @@
 # fix for that; app.js's own periodic re-check is the belt-and-suspenders
 # layer for tabs that were already open before this header existed.
 <IfModule mod_headers.c>
-  <FilesMatch "^index\.html$">
+  <FilesMatch "^(index|report)\.html$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
   <FilesMatch "\.(js|css)$">
