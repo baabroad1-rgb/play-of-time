@@ -67,82 +67,126 @@ enum class HelpTopic {
     RANKS_NAME, RANKS_TABLE
 }
 
+// Тексты справки переписаны 2026-10-06 после смысловой сверки с кодом (что
+// реально показывает и как считается каждая зона) — см. docs/CHANGELOG.md.
+// Правило: справка говорит ровно то, что считает программа; если они
+// расходятся, чинится программа, а не текст.
 fun helpText(topic: HelpTopic): String = when (topic) {
     HelpTopic.QUEST_PANEL ->
-        "Quest. One target per hit the quest requires; a check = landed. " +
-        "Targets standing apart — hits may come anywhere in the series; " +
-        "overlapping — they must come in a row. Arrows are attempts left. " +
-        "This is your current mission: land the threes before the arrows " +
-        "run out."
+        "Quest — your mission for this session. The targets show how many " +
+        "hits it needs; a target you hit turns into the spinning logo. " +
+        "Overlapping targets mean the hits must come in a row, and a miss " +
+        "resets the streak; targets standing apart may be hit anywhere in " +
+        "the session. The circles are your attempts: green = hit, red = " +
+        "early, blue = late; empty circles are the attempts you have left. " +
+        "The goal (3.00) is the precision of the level; after a struggle the " +
+        "quest is eased and a tolerance appears (3.00 ± 0.01). A check mark " +
+        "means the quest is taken."
     HelpTopic.STOPWATCH ->
-        "Stopwatch. Tap RUN, feel the aim time pass, tap STOP. Green result " +
-        "= hit, red = stopped early, blue = late; a win shows HOORAY!, then " +
-        "RESET arms the next attempt. The bar above the digits zooms on the " +
-        "aim (scale set in Settings). The face smiles when the attempt was no " +
-        "worse than the previous one."
+        "Stopwatch. Tap RUN, feel three seconds pass, tap STOP — the button " +
+        "reacts to the touch, not the release. The result turns green when it " +
+        "lands on the goal (in an eased quest, within the tolerance), red when " +
+        "you stopped early, blue when late. The bar above the digits is a " +
+        "magnifying glass around 3.0: red edge early, blue edge late, green " +
+        "zone the tolerance; on auto scale it zooms in as you get closer. The " +
+        "face smiles when the attempt was no worse than the previous one. " +
+        "HOORAY! means the quest is taken. RESET arms the next attempt."
     HelpTopic.LOG ->
-        "Attempt log. One row per attempt: number, stopped time, an error " +
-        "bar — side shows the direction, length the size — and the coins " +
-        "earned. A green hand-drawn oval rings two attempts with the same " +
-        "miss (twins); a yellow one, misses one step apart. Read it like a " +
-        "diary: watch your errors shrink and change side attempt by attempt."
+        "Attempt log — today's attempts, grouped by session. Each row: the " +
+        "attempt number, the stopped time and an error bar — its side is the " +
+        "direction (red early, blue late), its length the size; a hit shows a " +
+        "green dot instead. The last column is the Serenity the attempt " +
+        "earned; the newest row shows «SC» because its coins are counted when " +
+        "the next attempt lands. Ovals mark repeats: green — the same miss " +
+        "twice in a row, on either side; yellow — misses one step of " +
+        "precision apart (switch them off in Settings). A thumb up on a " +
+        "session means its quest was taken."
     HelpTopic.DISTRIBUTION ->
-        "Distribution. Columns pile up your errors: red left = early stops, " +
-        "blue right = late. The single green center column is your clean " +
-        "threes — only exactly 3.000, even in eased subquests. Σtries counts " +
-        "the attempts shown and the coin total sums their Serenity. A tall " +
-        "green center with a narrow pile means mastery."
+        "Distribution — where today's errors pile up. Each column counts the " +
+        "attempts with that error: red to the left = early, blue to the right " +
+        "= late, and the further from the centre, the bigger the miss. The " +
+        "green centre column is the exact aim at this level's precision: " +
+        "3.0, 3.00 or 3.000. The dashed lines are your typical early and late " +
+        "misses. Total tries counts today's attempts; the coin sums the " +
+        "Serenity they earned. A narrow pile around a tall centre means " +
+        "control; a pile shifted to one side shows your lean."
     HelpTopic.GEOM_MEAN ->
-        "Geom. mean. Three markers on the scale: your typical early error " +
-        "(red, left), typical late error (blue, right), and the overall bias " +
-        "(white) — left of centre = leaning early, right = late. The bias " +
-        "near zero means you have found the serenity point."
+        "Geom. Mean — your typical miss today. Red is the typical early " +
+        "error, blue the typical late one, and the middle number your overall " +
+        "lean: minus = you tend to stop early, plus = late. It is a geometric " +
+        "mean, so a few wild misses sway it less than an ordinary average. " +
+        "The same three lines run through the distribution and the attempt " +
+        "log. Red and blue close to the centre mean a tight hand; the middle " +
+        "number near zero means you have found the serenity point."
     HelpTopic.STAT_PERIOD ->
-        "Period. Sets what every card below covers: the current session, " +
-        "today, this month, or all time. Switch periods to compare today's " +
-        "form with your whole journey."
+        "Period — what the cards below are counted for: the current Session, " +
+        "a Day, a calendar Week, a Month or All time. The line under the " +
+        "buttons names it, and the ‹ › arrows step to the previous or next " +
+        "one. A session that crossed midnight counts whole. The gauge on the " +
+        "left shows today's balance of early and late stops. The sessions " +
+        "log at the bottom always shows your whole history, and Practice in " +
+        "the top card is counted over all time."
     HelpTopic.STAT_SUMMARY ->
-        "Totals. Your whole journey in one card: Serenity coins earned, pure " +
-        "play time, sessions, attempts and clean-three wins, plus your pace " +
-        "of play and daily practice."
+        "Totals for the selected period. Play time — time spent on the Play " +
+        "screen. Attempts and Sessions — how many. Serenity coins — earned in " +
+        "the period. Wins/precise — wins, eased quests included, and after " +
+        "the slash the exact hits with no tolerance. Pace of play — attempts " +
+        "per minute of play. Practice — your average play time per day you " +
+        "played, over all time. The face on the right sums up the period; tap " +
+        "it for the full report (it needs at least 30 attempts)."
     HelpTopic.STAT_CHANCE ->
-        "Chance of win. Hit rate is the share of attempts that landed a " +
-        "clean three; attempts per win says how many tries one three costs " +
-        "you. Lucky Index compares your hits with pure chance — above 1 " +
-        "means it is skill, not luck."
+        "Chance of win for the period. Hit rate — the share of attempts that " +
+        "won, eased quests included. Attempts per win — what one win costs " +
+        "you on average. Lucky Index — how much more often you hit exactly " +
+        "3.000 than blind chance would, where chance is one millisecond out " +
+        "of the spread of your results. 1 means no better than chance; above " +
+        "1 means skill. It appears after your first exact 3.000."
     HelpTopic.STAT_GEOM ->
-        "Geometric mean of your timing errors, with the extreme 3% trimmed on " +
-        "each side. Early = your typical early miss, Late = typical late miss, " +
-        "Absolute = the overall bias (negative = leaning early, positive = " +
-        "late). The spread factor works both ways: a typical attempt lands " +
-        "between mean ÷ factor and mean × factor — the smaller the factor, the " +
-        "steadier your hand."
+        "Geometric mean ÷ spread, with the extreme 3% of results cut off at " +
+        "each end. Early — your typical early miss, Late — your typical late " +
+        "miss, Absolute — your overall lean: minus = early, plus = late. A " +
+        "geometric mean is swayed less by a few wild misses than an ordinary " +
+        "average. The factor after ÷ is your spread: a typical attempt lands " +
+        "between the mean ÷ factor and the mean × factor. The closer it is to " +
+        "1, the steadier your hand."
     HelpTopic.STAT_RANGE ->
-        "Range of deviations. The strip spans where 97% of your results " +
-        "fall: red = early side, blue = late. The counters split your " +
-        "attempts into early / clean / late, and Top-frequency error shows " +
-        "your most repeated miss on each side."
+        "Range of deviations. The top strip splits the period's attempts " +
+        "into early (red), wins (green) and late (blue); the beak marks the " +
+        "serenity point, exactly 3.0. The lower strip spans your results, 97% " +
+        "on both sides — the extreme 3% cut off at each end. Its ends are your " +
+        "furthest usual misses, and the colour boundary shows how the range " +
+        "divides between early and late. White ticks mark your most frequent " +
+        "miss on each side, written below as «0.020 × 6»: that miss, repeated " +
+        "6 times (only misses repeated at least twice count)."
     HelpTopic.STAT_PACE ->
-        "Pace of learning. How fast your Serenity income grows per attempt. " +
-        "A positive number means every next attempt earns you more than the " +
-        "last — you are learning."
+        "Pace of learning. The chart shows how good your attempts were over " +
+        "the period: each point is the average share of the maximum Serenity " +
+        "an attempt can earn at its level, so different levels compare " +
+        "fairly. A point is an hour, a day or a month, depending on the " +
+        "period. A rising line means your attempts are getting better. SC/att " +
+        "is the average Serenity per attempt in the period."
     HelpTopic.STAT_SESSIONS ->
-        "Sessions. Your history as a tree: year, month, day, session — tap " +
-        "any row to unfold it. Columns: lucky (skill vs chance, «no luck» if " +
-        "no clean three yet), mean (typical early / late error, ms), att4win " +
-        "(attempts per clean three). A thumb marks success: on a session — " +
-        "the quest was taken (even an eased one); on a day — most sessions " +
-        "that day succeeded."
+        "Sessions log — your whole history, whatever period is selected: " +
+        "year, month, week, day, session. Tap a row to unfold it. Columns: " +
+        "lucky — the Lucky Index of that row («no luck» = no exact 3.000 in " +
+        "the session), mean — typical early / late miss in ms, att4win — " +
+        "attempts per win. Under each row: play time · win %. Thumb up: on a " +
+        "session — the quest was taken (eased too); on a day — at least one " +
+        "quest was taken; on a week, month or year — at least half of the " +
+        "days played are up. Above the day, time and % are averages over the " +
+        "days you played. 👑 marks a session whose quest was taken."
     HelpTopic.RANKS_NAME ->
-        "Your name. Shown next to your rank in the table below. Leave it " +
-        "blank and keep the auto-assigned name, or type your own and tap " +
-        "Save."
+        "Your name in the leaderboard. Type a name (up to 24 characters) and " +
+        "tap Save. Until you save, the name assigned automatically is used; " +
+        "saving an empty field gives you a new automatic name."
     HelpTopic.RANKS_TABLE ->
-        "Leaderboard. Every player, ranked. Tap a column header to sort by " +
-        "it — Lvl (quest progress), the coin (Serenity Coins), Acc% (hit " +
-        "rate), or Luck (your hits compared with pure chance — above 1 " +
-        "means it's skill, not luck). The highlighted column is the current " +
-        "sort; your own row is picked out in orange."
+        "Leaderboard — every player who has played. Lvl is the quest reached " +
+        "(level.task), the coin is all Serenity earned, Acc% the share of " +
+        "winning attempts, Luck how much more often than chance they hit " +
+        "exactly 3.000 (above 1 = skill). Tap a column header to sort by it, " +
+        "best first; tap it again to reverse. The highlighted column is the " +
+        "current sort, and your own row is orange. Tap another player's row " +
+        "to compare yourself with them."
 }
 
 /** Регистрирует layout-границы элемента как тап-зону справки. */

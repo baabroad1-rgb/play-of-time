@@ -34,17 +34,10 @@ enum class PeriodFilter {
             cal.set(Calendar.MILLISECOND, 0)
             cal.timeInMillis
         }
-        // Скользящее окно 7 календарных дней, включая сегодня (полночь минус 6 суток) —
-        // не «эта календарная неделя с понедельника», а именно последние 7 дней.
-        WEEK -> {
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            cal.add(Calendar.DAY_OF_YEAR, -6)
-            cal.timeInMillis
-        }
+        // Календарная неделя с первого дня недели по локали (Alex 2026-10-06):
+        // та же неделя, что в дереве сессий. Раньше было скользящее окно
+        // «последние 7 дней» — и неделя в фильтре не совпадала с неделей в дереве.
+        WEEK -> weekStart().timeInMillis
         MONTH -> {
             val cal = Calendar.getInstance()
             cal.set(Calendar.DAY_OF_MONTH, 1)
@@ -82,18 +75,11 @@ enum class PeriodFilter {
             start to cal.timeInMillis
         }
         WEEK -> {
-            // Тот же паттерн скользящего окна в 7 суток, что и startTimeMs(),
-            // просто целиком сдвинутый на 7×offset суток назад.
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            cal.add(Calendar.DAY_OF_YEAR, 1 - 7 * offset)
-            val end = cal.timeInMillis
-            cal.add(Calendar.DAY_OF_YEAR, -7)
+            val cal = weekStart()
+            cal.add(Calendar.DAY_OF_YEAR, -7 * offset)
             val start = cal.timeInMillis
-            start to end
+            cal.add(Calendar.DAY_OF_YEAR, 7)
+            start to cal.timeInMillis
         }
         MONTH -> {
             val cal = Calendar.getInstance()
@@ -108,5 +94,16 @@ enum class PeriodFilter {
             start to cal.timeInMillis
         }
         SESSION, ALL_TIME -> 0L to Long.MAX_VALUE // не используется для этих типов
+    }
+
+    /** Полночь первого дня текущей недели — firstDayOfWeek локали, как WEEK_OF_YEAR в дереве. */
+    private fun weekStart(): Calendar {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        while (cal.get(Calendar.DAY_OF_WEEK) != cal.firstDayOfWeek) cal.add(Calendar.DAY_OF_YEAR, -1)
+        return cal
     }
 }

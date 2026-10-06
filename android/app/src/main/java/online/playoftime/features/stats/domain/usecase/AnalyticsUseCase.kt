@@ -466,9 +466,16 @@ class AnalyticsUseCase(
             periodToMs               = periodAttempts.maxOfOrNull { it.startTime } ?: 0L,
             periodSessionsCount      = periodSessions.size.toLong(),
             // Счётчики attempts ratio — по ПОЛНОЙ популяции (трим 3–97% касается
-            // только профилей геом. среднего, не количества попыток).
-            earlyCount               = errorsMs.count { it < 0 }.toLong(),
-            lateCount                = errorsMs.count { it > 0 }.toLong(),
+            // только профилей геом. среднего, не количества попыток). Победа
+            // (в т.ч. облегчённая, 2.999 при допуске) считается только зелёной
+            // и в красный/синий не попадает (Alex 2026-10-06) — иначе сумма
+            // трёх счётчиков была больше числа попыток.
+            earlyCount               = periodAttempts.count { att ->
+                (att.endTime - att.startTime - aimTime) < 0 && countTrueThree(listOf(att), aimTime) == 0
+            }.toLong(),
+            lateCount                = periodAttempts.count { att ->
+                (att.endTime - att.startTime - aimTime) > 0 && countTrueThree(listOf(att), aimTime) == 0
+            }.toLong(),
             paceOfPlayPerMin         = paceOfPlay,
             paceOfLearning           = paceOfLearning,
             practiceDensityMinPerDay     = practiceDensity,

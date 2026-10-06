@@ -548,7 +548,7 @@ private fun AnalyticsContent(
                 Spacer(Modifier.height(4.dp))
                 val textColor = MaterialTheme.colorScheme.baseTextColor
                 BasicText(
-                    text  = "The range where 97% of your results fall, with extreme outliers removed.",
+                    text  = "The range of your results, 97% on both sides: the extreme 3% is cut off at each end.",
                     style = labelStyle(11.sp, color = textColor.copy(alpha = 0.48f))
                 )
             }
@@ -566,7 +566,7 @@ private fun AnalyticsContent(
                 CardMetricRow(
                     label = "SC/att",
                     value = "%+.1f".format(data.paceOfLearning),
-                    note  = "Growth in Serenity Index per attempt"
+                    note  = "Average Serenity per attempt"
                 )
             }
             }
@@ -622,7 +622,7 @@ private fun AnalyticsContent(
                     attempts      = yearNode.totalAttempts,
                     geomEarlyMs   = yearNode.geomEarlyMs,
                     geomLateMs    = yearNode.geomLateMs,
-                    trueThreeWins = yearNode.trueThreeWins,
+                    wins          = yearNode.totalWins,
                     luckyIndex    = yearNode.luckyIndex,
                     expanded      = yearNode.year in expandedYears,
                     summary       = yearNode.summary,
@@ -645,7 +645,7 @@ private fun AnalyticsContent(
                             attempts      = monthNode.totalAttempts,
                             geomEarlyMs   = monthNode.geomEarlyMs,
                             geomLateMs    = monthNode.geomLateMs,
-                            trueThreeWins = monthNode.trueThreeWins,
+                            wins          = monthNode.totalWins,
                             luckyIndex    = monthNode.luckyIndex,
                             expanded      = monthKey in expandedMonths,
                             summary       = monthNode.summary,
@@ -668,7 +668,7 @@ private fun AnalyticsContent(
                                     attempts      = weekNode.totalAttempts,
                                     geomEarlyMs   = weekNode.geomEarlyMs,
                                     geomLateMs    = weekNode.geomLateMs,
-                                    trueThreeWins = weekNode.trueThreeWins,
+                                    wins          = weekNode.totalWins,
                                     luckyIndex    = weekNode.luckyIndex,
                                     expanded      = weekKey in expandedWeeks,
                                     summary       = weekNode.summary,
@@ -691,7 +691,7 @@ private fun AnalyticsContent(
                                             attempts      = dayNode.totalAttempts,
                                             geomEarlyMs   = dayNode.geomEarlyMs,
                                             geomLateMs    = dayNode.geomLateMs,
-                                            trueThreeWins = dayNode.trueThreeWins,
+                                            wins          = dayNode.totalWins,
                                             luckyIndex    = dayNode.luckyIndex,
                                             expanded      = dayKey in expandedDays,
                                             summary       = dayNode.summary,
@@ -1630,10 +1630,10 @@ private fun CardMetricRow(
 private fun formatGeomMs(ms: Double, early: Boolean): String =
     if (ms <= 0.0) "—" else groupDigits(ms.roundToInt().toString())
 
-/** attempts ÷ clean true-three wins, "—" if no true-three win in this node. */
-private fun formatAttemptsPerWin(attempts: Int, trueThreeWins: Int): String {
-    if (trueThreeWins <= 0) return "—"
-    val ratio = attempts.toDouble() / trueThreeWins
+/** attempts ÷ wins (с допуском, как Attempts per win на карточке), "—" если побед нет. */
+private fun formatAttemptsPerWin(attempts: Int, wins: Int): String {
+    if (wins <= 0) return "—"
+    val ratio = attempts.toDouble() / wins
     return groupDigits("%.1f".format(ratio))
 }
 
@@ -1642,26 +1642,26 @@ private fun formatLucky(l: Double): String =
     if (l <= 0.0) "—" else "%.2f".format(l)
 
 @Composable
-private fun TreeYearRow(year: Int, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
-    TreeRow(0.dp, year.toString(), attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
+private fun TreeYearRow(year: Int, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, wins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
+    TreeRow(0.dp, year.toString(), attempts, geomEarlyMs, geomLateMs, wins, luckyIndex, expanded,
         metricStyle(14.sp, FontWeight.Bold, MaterialTheme.colorScheme.baseTextColor), onClick,
         summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeMonthRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
-    TreeRow(12.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
+private fun TreeMonthRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, wins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
+    TreeRow(12.dp, label, attempts, geomEarlyMs, geomLateMs, wins, luckyIndex, expanded,
         metricStyle(13.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.90f)), onClick,
         summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeWeekRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
-    TreeRow(18.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
+private fun TreeWeekRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, wins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
+    TreeRow(18.dp, label, attempts, geomEarlyMs, geomLateMs, wins, luckyIndex, expanded,
         metricStyle(12.5.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.84f)), onClick,
         summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeDayRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
-    TreeRow(24.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
+private fun TreeDayRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, wins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
+    TreeRow(24.dp, label, attempts, geomEarlyMs, geomLateMs, wins, luckyIndex, expanded,
         labelStyle(12.sp, color = MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.78f)), onClick,
         summary = summary, helpMode = helpMode)
 
@@ -1672,7 +1672,7 @@ private fun TreeRow(
     attempts      : Int,
     geomEarlyMs   : Double,
     geomLateMs    : Double,
-    trueThreeWins : Int,
+    wins          : Int,
     luckyIndex    : Double,
     expanded      : Boolean,
     labelStyle2   : TextStyle,
@@ -1738,7 +1738,7 @@ private fun TreeRow(
         // att4win — attempts per one clean-three win; центрирован по столбцу
         FitValueText(
             modifier = Modifier.width(TREE_COL_ATT4WIN),
-            text  = formatAttemptsPerWin(attempts, trueThreeWins),
+            text  = formatAttemptsPerWin(attempts, wins),
             style = metricStyle(11.sp, FontWeight.Normal, textColor.copy(alpha = 0.58f))
                 .copy(textAlign = TextAlign.Center)
         )
@@ -1845,7 +1845,7 @@ private fun TreeSessionRow(
             // att4win — attempts per one clean-three win; центрирован по столбцу
             FitValueText(
                 modifier = Modifier.width(TREE_COL_ATT4WIN),
-                text  = formatAttemptsPerWin(session.attempts, session.trueThreeWins()),
+                text  = formatAttemptsPerWin(session.attempts, session.wins),
                 style = labelStyle(11.sp, color = textColor.copy(alpha = 0.58f))
                     .copy(textAlign = TextAlign.Center)
             )
@@ -1878,7 +1878,7 @@ private fun TreeSessionRow(
         // ── Crown marker ─────────────────────────────────────────────────
         if (session.isQuestComplete) {
             BasicText(
-                text  = "👑 Done! Level up",
+                text  = "👑 Quest done",
                 style = labelStyle(10.sp, FontWeight.SemiBold, Color(0xFFFFD700))
             )
         }
@@ -2402,7 +2402,7 @@ private fun averageOfDays(days: List<NodeSummary>): NodeSummary {
 
 private data class SessionDayNode(val day: Int, val label: String,
     val sessions: List<SessionTreeData>, val totalAttempts: Int, val totalWins: Int,
-    val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
+    val geomEarlyMs: Double, val geomLateMs: Double,
     val luckyIndex: Double, val summary: NodeSummary)
 // Неделя как отдельная сущность дерева (Alex 2026-09-09: "сделай неделю как
 // сущность и фильтр на экране аналитикс, не забудь отразить в дереве попыток")
@@ -2414,15 +2414,15 @@ private data class SessionDayNode(val day: Int, val label: String,
 // а не побочный продукт фильтра "последние 7 дней".
 private data class SessionWeekNode(val weekOfYear: Int, val label: String,
     val days: List<SessionDayNode>, val totalAttempts: Int, val totalWins: Int,
-    val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
+    val geomEarlyMs: Double, val geomLateMs: Double,
     val luckyIndex: Double, val summary: NodeSummary)
 private data class SessionMonthNode(val month: Int, val label: String,
     val weeks: List<SessionWeekNode>, val totalAttempts: Int, val totalWins: Int,
-    val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
+    val geomEarlyMs: Double, val geomLateMs: Double,
     val luckyIndex: Double, val summary: NodeSummary)
 private data class SessionYearNode(val year: Int, val months: List<SessionMonthNode>,
     val totalAttempts: Int, val totalWins: Int,
-    val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
+    val geomEarlyMs: Double, val geomLateMs: Double,
     val luckyIndex: Double, val summary: NodeSummary)
 
 /** exp(mean(ln(x))) over positive values — 0.0 if the list is empty. */
@@ -2441,26 +2441,13 @@ private fun geomLateMsOf(bars: List<online.playoftime.features.stats.domain.enti
     geometricMean(bars.filter { !it.isWin && it.errorMs > 0.0 }.map { it.errorMs })
 
 /**
- * Count of «чистых троек» — попадание в нулевой слот В ТОЧНОСТИ СВОЕЙ попытки
- * (та же логика, что countTrueThree в AnalyticsUseCase): L1 — окно ~100 мс
- * (округляется до 3.0), L2 — 10 мс, L3 — 1 мс. Tolerance-победы не считаются.
- * Раньше здесь было мс-точное |error| < 0.5 — из-за этого L1-строки дерева
- * показывали нули троек и lucky, хотя игрок бил чистые 3.0.
- */
-private fun trueThreeWinsOf(bars: List<online.playoftime.features.stats.domain.entity.AttemptBarData>): Int =
-    bars.count { bar ->
-        val slot = when (bar.accuracy) { 3 -> 1.0; 2 -> 10.0; else -> 100.0 }
-        abs(bar.errorMs) < slot / 2
-    }
-
-/**
  * Lucky index для набора попыток: отношение эмпирической вероятности победы
  * к теоретической (дисперсионной). Чем больше — тем лучше игрок.
  *   slotMs = 100 / 10 / 1 (по большинству попыток в наборе) — ширина слота
  *            совпадает с шириной окна «чистой тройки» числителя (Alex 2026-07-10)
  *   outcomeSlots = (range / slotMs) + 1
  *   dispersion = 1 / outcomeSlots     — теоретическая вероятность попасть в 0 наугад
- *   empirical  = trueThreeWins / bars.size
+ *   empirical  = luckyWins / bars.size
  *   lucky      = empirical / dispersion
  * 0.0, если чистых побед не было.
  */
@@ -2478,7 +2465,7 @@ private fun luckyIndexOf(bars: List<online.playoftime.features.stats.domain.enti
     val range = abs(errs[loIdx]) + abs(errs[hiIdx])
     // Lucky ВСЕГДА в тысячных (Alex 2026-07-30): слот = 1 мс, «чистая тройка» =
     // ровно 3.000 (±0.5 мс) на всех уровнях. Внутренняя нормировка, не влияет на
-    // отображаемые wins (trueThreeWinsOf там считается в точности уровня).
+    // att4win в дереве (там победы сессий — с допуском, как Attempts per win).
     val slotMs = 1.0
     val outcomeSlots = (range / slotMs).toLong().coerceAtLeast(1L) + 1L
     val dispersion = 1.0 / outcomeSlots
@@ -2489,7 +2476,6 @@ private fun luckyIndexOf(bars: List<online.playoftime.features.stats.domain.enti
 
 private fun SessionTreeData.geomEarlyMs(): Double = geomEarlyMsOf(attemptBars)
 private fun SessionTreeData.geomLateMs(): Double  = geomLateMsOf(attemptBars)
-private fun SessionTreeData.trueThreeWins(): Int  = trueThreeWinsOf(attemptBars)
 private fun SessionTreeData.luckyIndex(): Double  = luckyIndexOf(attemptBars)
 
 private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
@@ -2513,8 +2499,7 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                                 dSessions.sumOf { it.wins },
                                 geomEarlyMsOf(dBars),
                                 geomLateMsOf(dBars),
-                                trueThreeWinsOf(dBars),
-                                luckyIndexOf(dBars),
+                                                                luckyIndexOf(dBars),
                                 daySummary(dSessions))
                         }
                         .sortedByDescending { it.day }
@@ -2539,8 +2524,7 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                                 wDays.sumOf { it.totalWins },
                                 geomEarlyMsOf(wBars),
                                 geomLateMsOf(wBars),
-                                trueThreeWinsOf(wBars),
-                                luckyIndexOf(wBars),
+                                                                luckyIndexOf(wBars),
                                 averageOfDays(wDays.map { it.summary }))
                         }
                         .sortedByDescending { it.weekOfYear }
@@ -2549,8 +2533,7 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                         days.sumOf { it.totalWins },
                         geomEarlyMsOf(mBars),
                         geomLateMsOf(mBars),
-                        trueThreeWinsOf(mBars),
-                        luckyIndexOf(mBars),
+                                                luckyIndexOf(mBars),
                         averageOfDays(days.map { it.summary }))
                 }
                 .sortedByDescending { it.month }
@@ -2560,8 +2543,7 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                 months.sumOf { it.totalWins },
                 geomEarlyMsOf(yBars),
                 geomLateMsOf(yBars),
-                trueThreeWinsOf(yBars),
-                luckyIndexOf(yBars),
+                                luckyIndexOf(yBars),
                 averageOfDays(months.flatMap { m -> m.weeks.flatMap { w -> w.days.map { it.summary } } }))
         }
         .sortedByDescending { it.year }
