@@ -890,14 +890,12 @@ fun MainScreen(
                             )
                         }
                     }
-                    // Итоги Σtries / ΣSC — оверлей в боковых полях, вертикально по центру
-                    // гистограммы (~14 dp от её верхнего края при высоте бара 50 dp).
+                    // Итоги Σtries / ΣSC — оверлей в боковых полях: подпись над осью
+                    // гистограммы, число под ней (вертикаль — внутри DiagramTotalsRow).
                     DiagramTotalsRow(
                         totalCount = attemptsOnly.size,
                         totalScm   = attemptsOnly.sumOf { it.scm ?: 0.0 },
-                        modifier   = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 8.dp)   // подтянуто к меньшей 48dp-высоте гистограммы
+                        modifier   = Modifier.align(Alignment.TopCenter)
                     )
                 }
             }
@@ -1065,23 +1063,48 @@ private fun DiagramTotalsRow(
         textAlign  = TextAlign.Center
     )
     val scmText = if (totalScm >= 100) "%.0f".format(totalScm) else "%.2f".format(totalScm)
+    // Подпись над осью гистограммы, число под ней (Alex 2026-10-06, по
+    // скриншоту: «разделение примерно на уровне оси гистограммы»). Ось —
+    // в 46dp от верха канваса DistribChart (topPad 6dp + бары 40dp), канвас
+    // начинается от верха этого же Box. Слот подписи одинаковой высоты в
+    // обеих колонках: раньше монетка была ниже строки «Total tries», и число
+    // справа стояло выше числа слева.
+    val axisFromTop  = 46.dp
+    val labelSlot    = 15.dp
+    val halfGap      = 3.dp
+    // По горизонтали каждая колонка — по центру своего чёрного поля сбоку
+    // от гистограммы: слева поле до начала графика (12dp отступа DistribChart
+    // + CHART_LABEL_WIDTH), справа — от конца графика до края (12dp +
+    // CHART_SC_PAD). Раньше блоки прижимались к краям экрана.
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 4.dp),
+            .padding(top = axisFromTop - halfGap - labelSlot),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment     = Alignment.Top
     ) {
         // Total tries — centred over total count, sits under the # column area.
         // Was "Σtries" (Alex 2026-08-22: clearer spelled out).
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BasicText(text = "Total tries", style = labelStyle)
+        Column(
+            modifier            = Modifier.width(12.dp + CHART_LABEL_WIDTH),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(halfGap * 2)
+        ) {
+            Box(Modifier.height(labelSlot), contentAlignment = Alignment.Center) {
+                BasicText(text = "Total tries", style = labelStyle)
+            }
             BasicText(text = totalCount.toString(), style = valueStyle)
         }
-        // Σ Serenity coins — вместо подписи «ΣSC» пиктограмма-монетка (Alex 2026-07-26).
-        // CoinIcon вынесена в ui_lib (Alex 2026-09-10) — переиспользуется на Ranks.
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            online.playoftime.ui_lib.CoinIcon(modifier = Modifier.size(9.dp))
+        // Σ Serenity coins — вместо подписи «ΣSC» пиктограмма-монетка (Alex 2026-07-26),
+        // по центру над своим числом и вровень с подписью «Total tries».
+        Column(
+            modifier            = Modifier.width(12.dp + CHART_SC_PAD),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(halfGap * 2)
+        ) {
+            Box(Modifier.height(labelSlot), contentAlignment = Alignment.Center) {
+                online.playoftime.ui_lib.CoinIcon(modifier = Modifier.size(9.dp))
+            }
             BasicText(text = scmText, style = valueStyle)
         }
     }
