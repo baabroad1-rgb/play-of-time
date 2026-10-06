@@ -421,14 +421,69 @@ def narrate(results):
     return "\n\n".join(lines)
 
 
+# Ключевая величина каждой черты — то, по чему игрока сравнивают с остальными.
+# Статус детектора не говорит, хорош ли результат относительно других (у №7
+# статус found у всех, а скорость отличается в разы), поэтому интерпретация
+# опирается на место игрока среди всех, у кого хватает данных.
+KEY_METRIC = {
+    "t1_feedback_blindness":     ("run",                   "самая длинная серия промахов в одну сторону, попыток"),
+    "t2_unstable_peak":          ("max_run",               "самая длинная полоса почти идеальных попыток подряд"),
+    "t3_structured_ignorance":   ("max_step_share_of_net", "доля улучшения, пришедшаяся на одну неделю"),
+    "t4_clutch_approach":        ("_before_ratio",         "ошибка перед победой / обычная ошибка"),
+    "t5_relaxation_after_relief":("_after_ratio",          "ошибка после победы / обычная ошибка"),
+    "t6_standard_drift":         ("ratio",                 "ошибка при смягчении / при строгих требованиях"),
+    "t7_recovery":               ("mean_len",              "попыток на возврат к норме после грубого промаха"),
+    "t8_pendulum":               ("grew_pct",              "% разворотов, где промах в другую сторону сильнее"),
+    "t9_asymmetric":             ("_abs_gap",              "разница исправления после недолёта и перелёта, п.п."),
+    "t10_deliberation":          ("gap",                   "выигрыш короткой паузы перед долгой, п.п."),
+    "t11_warmup_burnout":        ("corr",                  "связь номера попытки в заходе с ошибкой (минус = точнее к концу)"),
+    "t12_macro_curve":           ("slope_per_week",        "изменение недельной ошибки, мс/нед (минус = прогресс)"),
+}
+
+def key_value(results, key):
+    r = results.get(key, {}); field = KEY_METRIC[key][0]; b = results.get("baseline_med_abs")
+    if field == "_before_ratio": v = r.get("med_before1"); return v / b if v and b else None
+    if field == "_after_ratio":  v = r.get("med_after1");  return v / b if v and b else None
+    if field == "_abs_gap":      v = r.get("gap");         return abs(v) if v is not None else None
+    return r.get(field)
+
+def compare(players, attempts, pid):
+    """Место игрока по каждой черте среди всех, у кого ≥20 качественных попыток."""
+    pool = {}
+    for other in sorted({a["player_id"] for a in attempts}):
+        try:
+            p2, _, rows2 = qualifying_rows(players, attempts, other)
+        except SystemExit:
+            continue
+        r2 = detect_all(rows2)
+        if "error" not in r2: pool[p2] = r2
+    if pid not in pool:
+        return "мало данных для сравнения"
+    out = [f"Сравнение с игроками, у кого хватает данных: {len(pool)} человек\n"]
+    for key in ORDER:
+        mine = key_value(pool[pid], key)
+        vals = sorted(v for v in (key_value(r, key) for r in pool.values()) if v is not None)
+        name = TITLES[key]
+        if mine is None or not vals:
+            out.append(f"{name}: нет данных ({pool[pid].get(key, {}).get('status')})"); continue
+        below = sum(1 for v in vals if v < mine)
+        med = vals[len(vals) // 2]
+        out.append(f"{name}: {mine:.2f} — {KEY_METRIC[key][1]}; "
+                   f"по всем {len(vals)}: {vals[0]:.2f}…{vals[-1]:.2f}, медиана {med:.2f}; "
+                   f"меньше, чем у него, — у {below} из {len(vals)}; статус {pool[pid][key]['status']}")
+    return "\n".join(out)
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if "--fetch" in args:
         args.remove("--fetch"); fetch_fresh()
     if not args:
-        raise SystemExit("usage: python behavioral_profile.py [--fetch] <player_id_prefix> [--raw]")
+        raise SystemExit("usage: python behavioral_profile.py [--fetch] <player_id_prefix> [--raw | --compare]")
     raw_only = "--raw" in args
     if raw_only: args.remove("--raw")
+    compare_only = "--compare" in args
+    if compare_only: args.remove("--compare")
     prefix = args[0]
 
     players, attempts = load_data()
@@ -437,5 +492,7 @@ if __name__ == "__main__":
     print(f"=== {pid} (L{pinfo['level_id']}.{pinfo['task_id']}) — {len(rows)} качественных попыток ===\n")
     if raw_only:
         print(json.dumps(results, indent=2, ensure_ascii=False, default=str))
+    elif compare_only:
+        print(compare(players, attempts, pid))
     else:
         print(narrate(results))
