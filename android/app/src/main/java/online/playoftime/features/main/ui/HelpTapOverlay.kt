@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -67,126 +72,69 @@ enum class HelpTopic {
     RANKS_NAME, RANKS_TABLE
 }
 
-// Тексты справки переписаны 2026-10-06 после смысловой сверки с кодом (что
-// реально показывает и как считается каждая зона) — см. docs/CHANGELOG.md.
-// Правило: справка говорит ровно то, что считает программа; если они
-// расходятся, чинится программа, а не текст.
-fun helpText(topic: HelpTopic): String = when (topic) {
-    HelpTopic.QUEST_PANEL ->
-        "Quest — your mission for this session. The targets show how many " +
-        "hits it needs; a target you hit turns into the spinning logo. " +
-        "Overlapping targets mean the hits must come in a row, and a miss " +
-        "resets the streak; targets standing apart may be hit anywhere in " +
-        "the session. The circles are your attempts: green = hit, red = " +
-        "early, blue = late; empty circles are the attempts you have left. " +
-        "The goal (3.00) is the precision of the level; after a struggle the " +
-        "quest is eased and a tolerance appears (3.00 ± 0.01). A check mark " +
-        "means the quest is taken."
-    HelpTopic.STOPWATCH ->
-        "Stopwatch. Tap RUN, feel three seconds pass, tap STOP — the button " +
-        "reacts to the touch, not the release. The result turns green when it " +
-        "lands on the goal (in an eased quest, within the tolerance), red when " +
-        "you stopped early, blue when late. The bar above the digits is a " +
-        "magnifying glass around 3.0: red edge early, blue edge late, green " +
-        "zone the tolerance; on auto scale it zooms in as you get closer. The " +
-        "face smiles when the attempt was no worse than the previous one. " +
-        "HOORAY! means the quest is taken. RESET arms the next attempt."
-    HelpTopic.LOG ->
-        "Attempt log — today's attempts, grouped by session. Each row: the " +
-        "attempt number, the stopped time and an error bar — its side is the " +
-        "direction (red early, blue late), its length the size; a hit shows a " +
-        "green dot instead. The last column is the Serenity the attempt " +
-        "earned; the newest row shows «SC» because its coins are counted when " +
-        "the next attempt lands. Ovals mark repeats: green — the same miss " +
-        "twice in a row, on either side; yellow — misses one step of " +
-        "precision apart (switch them off in Settings). A thumb up on a " +
-        "session means its quest was taken."
-    HelpTopic.DISTRIBUTION ->
-        "Distribution — where today's errors pile up. Each column counts the " +
-        "attempts with that error: red to the left = early, blue to the right " +
-        "= late, and the further from the centre, the bigger the miss. The " +
-        "green centre column is the exact aim at this level's precision: " +
-        "3.0, 3.00 or 3.000. The dashed lines are your typical early and late " +
-        "misses. Total tries counts today's attempts; the coin sums the " +
-        "Serenity they earned. A narrow pile around a tall centre means " +
-        "control; a pile shifted to one side shows your lean."
-    HelpTopic.GEOM_MEAN ->
-        "Geom. Mean — your typical miss today. Red is the typical early " +
-        "error, blue the typical late one, and the middle number your overall " +
-        "lean: minus = you tend to stop early, plus = late. It is a geometric " +
-        "mean, so a few wild misses sway it less than an ordinary average. " +
-        "The same three lines run through the distribution and the attempt " +
-        "log. Red and blue close to the centre mean a tight hand; the middle " +
-        "number near zero means you have found the serenity point."
-    HelpTopic.STAT_PERIOD ->
-        "Period — what the cards below are counted for: the current Session, " +
-        "a Day, a calendar Week, a Month or All time. The line under the " +
-        "buttons names it, and the ‹ › arrows step to the previous or next " +
-        "one. A session that crossed midnight counts whole. The gauge on the " +
-        "left shows today's balance of early and late stops. The sessions " +
-        "log at the bottom always shows your whole history, and Practice in " +
-        "the top card is counted over all time."
-    HelpTopic.STAT_SUMMARY ->
-        "Totals for the selected period. Play time — time spent on the Play " +
-        "screen. Attempts and Sessions — how many. Serenity coins — earned in " +
-        "the period. Wins/precise — wins, eased quests included, and after " +
-        "the slash the exact hits with no tolerance. Pace of play — attempts " +
-        "per minute of play. Practice — your average play time per day you " +
-        "played, over all time. The face on the right sums up the period; tap " +
-        "it for the full report (it needs at least 30 attempts)."
-    HelpTopic.STAT_CHANCE ->
-        "Chance of win for the period. Hit rate — the share of attempts that " +
-        "won, eased quests included. Attempts per win — what one win costs " +
-        "you on average. Lucky Index — how much more often you hit exactly " +
-        "3.000 than blind chance would, where chance is one millisecond out " +
-        "of the spread of your results. 1 means no better than chance; above " +
-        "1 means skill. It appears after your first exact 3.000."
-    HelpTopic.STAT_GEOM ->
-        "Geometric mean ÷ spread, with the extreme 3% of results cut off at " +
-        "each end. Early — your typical early miss, Late — your typical late " +
-        "miss, Absolute — your overall lean: minus = early, plus = late. A " +
-        "geometric mean is swayed less by a few wild misses than an ordinary " +
-        "average. The factor after ÷ is your spread: a typical attempt lands " +
-        "between the mean ÷ factor and the mean × factor. The closer it is to " +
-        "1, the steadier your hand."
-    HelpTopic.STAT_RANGE ->
-        "Range of deviations. The top strip splits the period's attempts " +
-        "into early (red), wins (green) and late (blue); the beak marks the " +
-        "serenity point, exactly 3.0. The lower strip spans your results, 97% " +
-        "on both sides — the extreme 3% cut off at each end. Its ends are your " +
-        "furthest usual misses, and the colour boundary shows how the range " +
-        "divides between early and late. White ticks mark your most frequent " +
-        "miss on each side, written below as «0.020 × 6»: that miss, repeated " +
-        "6 times (only misses repeated at least twice count)."
-    HelpTopic.STAT_PACE ->
-        "Pace of learning. The chart shows how good your attempts were over " +
-        "the period: each point is the average share of the maximum Serenity " +
-        "an attempt can earn at its level, so different levels compare " +
-        "fairly. A point is an hour, a day or a month, depending on the " +
-        "period. A rising line means your attempts are getting better. SC/att " +
-        "is the average Serenity per attempt in the period."
-    HelpTopic.STAT_SESSIONS ->
-        "Sessions log — your whole history, whatever period is selected: " +
-        "year, month, week, day, session. Tap a row to unfold it. Columns: " +
-        "lucky — the Lucky Index of that row («no luck» = no exact 3.000 in " +
-        "the session), mean — typical early / late miss in ms, att4win — " +
-        "attempts per win. Under each row: play time · win %. Thumb up: on a " +
-        "session — the quest was taken (eased too); on a day — at least one " +
-        "quest was taken; on a week, month or year — at least half of the " +
-        "days played are up. Above the day, time and % are averages over the " +
-        "days you played. 👑 marks a session whose quest was taken."
-    HelpTopic.RANKS_NAME ->
-        "Your name in the leaderboard. Type a name (up to 24 characters) and " +
-        "tap Save. Until you save, the name assigned automatically is used; " +
-        "saving an empty field gives you a new automatic name."
-    HelpTopic.RANKS_TABLE ->
-        "Leaderboard — every player who has played. Lvl is the quest reached " +
-        "(level.task), the coin is all Serenity earned, Acc% the share of " +
-        "winning attempts, Luck how much more often than chance they hit " +
-        "exactly 3.000 (above 1 = skill). Tap a column header to sort by it, " +
-        "best first; tap it again to reverse. The highlighted column is the " +
-        "current sort, and your own row is orange. Tap another player's row " +
-        "to compare yourself with them."
+// Тексты справки (Alex 2026-10-06): сначала смысловая сверка с кодом — что
+// реально показывает и как считается каждая зона, — потом текст. Правило:
+// справка говорит то, что считает программа; если расходятся, чинится
+// программа. Разметка: каждая строка списка — страница бабла (листается
+// «‹ 1/2 ›»), \n — новый абзац, **…** — жирное название элемента.
+fun helpPages(topic: HelpTopic): List<String> = when (topic) {
+    HelpTopic.QUEST_PANEL -> listOf(
+        "**Quest** — your mission for this session.\n**Targets** — how many hits it needs. A target you hit turns into the spinning logo.\n**Overlapping targets** — the hits must come in a row, and a miss resets the streak. **Targets apart** — the hits may come anywhere in the session.",
+        "**Circles** — your attempts: green = hit, red = early, blue = late. Empty circles are the attempts you have left.\n**Goal** (3.00) — the precision of the level. After a struggle the quest is eased and a tolerance appears: 3.00 ± 0.01.\n**Check mark** — the quest is taken."
+    )
+    HelpTopic.STOPWATCH -> listOf(
+        "**Stopwatch.** Tap RUN, feel three seconds pass, tap STOP. The button reacts to the touch, not the release.\n**Result colour:** green — on the goal (in an eased quest, within the tolerance), red — stopped early, blue — late.",
+        "**Bar above the digits** — a magnifying glass around 3.0: red edge early, blue edge late, green zone the tolerance. On auto scale it zooms in as you get closer.\n**Face** — smiles when the attempt was no worse than the previous one.",
+        "**HOORAY!** — the quest is taken. **RESET** arms the next attempt.\n**Hint line** under the stopwatch names a pattern in your recent attempts — for example, stopping early again and again — and suggests what to adjust."
+    )
+    HelpTopic.LOG -> listOf(
+        "**Attempt log** — today's attempts, grouped by session.\nEach row: the **number**, the **stopped time** and the **error bar** — its side is the direction (red early, blue late), its length the size. A hit shows a green dot instead.",
+        "**Last column** — the Serenity the attempt earned. The newest row shows «SC»: its coins are counted when the next attempt lands.\n**Ovals** mark repeats: green — the same miss twice in a row, on either side; yellow — misses one step of precision apart. Switch them off in Settings.\n**Thumb up** on a session — its quest was taken."
+    )
+    HelpTopic.DISTRIBUTION -> listOf(
+        "**Distribution** — where today's errors pile up.\nEach **column** counts the attempts with that error: red to the left = early, blue to the right = late. The further from the centre, the bigger the miss.\n**Green centre column** — the exact aim at this level's precision: 3.0, 3.00 or 3.000.",
+        "**Dashed lines** — your typical early and late misses.\n**Total tries** — today's attempts. **Coin** — the Serenity they earned.\nA narrow pile around a tall centre means control; a pile shifted to one side shows your lean."
+    )
+    HelpTopic.GEOM_MEAN -> listOf(
+        "**Geom. Mean** — your typical miss today.\n**Red** — the typical early error. **Blue** — the typical late error. **Middle number** — your overall lean: minus = you tend to stop early, plus = late.\nThe same three lines run through the distribution and the attempt log.",
+        "It is a geometric mean, so a few wild misses sway it less than an ordinary average.\nRed and blue close to the centre mean a tight hand. The middle number near zero means you have found the serenity point."
+    )
+    HelpTopic.STAT_PERIOD -> listOf(
+        "**Period** — what the cards below are counted for: the current **Session**, a **Day**, a calendar **Week**, a **Month** or **All time**.\nThe line under the buttons names it; the **‹ ›** arrows step to the previous or next one. A session that crossed midnight counts whole.",
+        "**Gauge** on the left — today's balance of early and late stops.\n**Not filtered:** the sessions log at the bottom always shows your whole history, and **Practice** in the top card is counted over all time."
+    )
+    HelpTopic.STAT_SUMMARY -> listOf(
+        "**Totals** for the selected period.\n**Play time** — time spent on the Play screen. **Attempts**, **Sessions** — how many. **Serenity coins** — earned in the period.\n**Wins/precise** — wins, eased quests included; after the slash, exact hits with no tolerance.",
+        "**Pace of play** — attempts per minute of play.\n**Practice** — your average play time per day you played, over all time.\n**Face** on the right sums up the period. Tap it for the full report; it needs at least 30 attempts."
+    )
+    HelpTopic.STAT_CHANCE -> listOf(
+        "**Chance of win** for the period.\n**Hit rate** — the share of attempts that won, eased quests included.\n**Attempts per win** — what one win costs you on average.",
+        "**Lucky Index** — how much more often you hit exactly 3.000 than blind chance would. Chance here is one millisecond out of the spread of your results.\n1 = no better than chance, above 1 = skill. It appears after your first exact 3.000."
+    )
+    HelpTopic.STAT_GEOM -> listOf(
+        "**Geometric mean ÷ spread**, with the extreme 3% of results cut off at each end.\n**Early** — your typical early miss. **Late** — your typical late miss. **Absolute** — your overall lean: minus = early, plus = late.\nA geometric mean is swayed less by a few wild misses than an ordinary average.",
+        "**Factor after ÷** — your spread: a typical attempt lands between the mean ÷ factor and the mean × factor.\nThe closer it is to 1, the steadier your hand."
+    )
+    HelpTopic.STAT_RANGE -> listOf(
+        "**Range of deviations.**\n**Top strip** — the period's attempts split into early (red), wins (green) and late (blue). The **beak** marks the serenity point, exactly 3.0.",
+        "**Lower strip** — the range of your results, 97% on both sides: the extreme 3% is cut off at each end.\nIts **ends** are your furthest usual misses; the **colour boundary** shows how the range divides between early and late.",
+        "**White ticks** — your most frequent miss on each side, written below as «0.020 × 6»: that miss, repeated 6 times.\nOnly misses repeated at least twice count."
+    )
+    HelpTopic.STAT_PACE -> listOf(
+        "**Pace of learning.**\n**Chart** — how good your attempts were over the period. Each point is the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. A point is an hour, a day or a month, depending on the period.",
+        "A **rising line** means your attempts are getting better.\n**SC/att** — the average Serenity per attempt in the period."
+    )
+    HelpTopic.STAT_SESSIONS -> listOf(
+        "**Sessions log** — your whole history, whatever period is selected: year, month, week, day, session. Tap a row to unfold it.\n**lucky** — the Lucky Index of the row («no luck» = no exact 3.000 in the session). **mean** — typical early / late miss, ms. **att4win** — attempts per win.",
+        "**Under each row:** play time · win %. Above the day, both are averages over the days you played.\n**Thumb up:** session — its quest was taken (eased too); day — at least one quest was taken; week, month, year — at least half of the days played are up.\n**👑** — a session whose quest was taken."
+    )
+    HelpTopic.RANKS_NAME -> listOf(
+        "**Your name** in the leaderboard.\nType a name (up to 24 characters) and tap **Save**. Until you save, the automatic name is used; saving an empty field gives you a new automatic name."
+    )
+    HelpTopic.RANKS_TABLE -> listOf(
+        "**Leaderboard** — every player who has played.\n**Lvl** — the quest reached (level.task). **Coin** — all Serenity earned. **Acc%** — the share of winning attempts. **Luck** — how much more often than chance they hit exactly 3.000; above 1 = skill.",
+        "Tap a **column header** to sort by it, best first; tap it again to reverse. The highlighted column is the current sort.\nYour own row is **orange**. Tap **another player's row** to compare yourself with them."
+    )
 }
 
 /** Регистрирует layout-границы элемента как тап-зону справки. */
@@ -390,7 +338,7 @@ fun HelpTapOverlayVisual(
                 val sidePadPx = with(density) { 12.dp.toPx() }
                 if (below) HelpBeak(up = true, anchorX = local.center.x - sidePadPx)
                 HelpBubbleCard(
-                    text      = helpText(sel),
+                    pages     = helpPages(sel),
                     onDismiss = { onSelect(null) }
                 )
                 if (!below) HelpBeak(up = false, anchorX = local.center.x - sidePadPx)
@@ -463,8 +411,23 @@ private fun HelpBeak(up: Boolean, anchorX: Float) {
     }
 }
 
+/** «**жирное**» → жирный span; остальное как есть. */
+private fun helpMarkup(text: String): AnnotatedString = buildAnnotatedString {
+    text.split("**").forEachIndexed { i, part ->
+        if (i % 2 == 1) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(part) }
+        else append(part)
+    }
+}
+
+/**
+ * Бабл справки: абзацы с жирными названиями элементов, длинный текст —
+ * страницами с переключателем «‹ 1/2 ›» (Alex 2026-10-06: «сделай текст
+ * более читабельным с выделениями, слишком большой разбивай на куски»).
+ */
 @Composable
-private fun HelpBubbleCard(text: String, onDismiss: () -> Unit) {
+private fun HelpBubbleCard(pages: List<String>, onDismiss: () -> Unit) {
+    var page by remember(pages) { mutableStateOf(0) }
+    val bodyStyle = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = HelpTextColor)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -475,33 +438,70 @@ private fun HelpBubbleCard(text: String, onDismiss: () -> Unit) {
             .pointerInput(Unit) { detectTapGestures { } }
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
-        Row(verticalAlignment = Alignment.Top) {
-            BasicText(
-                text     = tidyLineBreaks(text),
-                modifier = Modifier.weight(1f),
-                style    = TextStyle(
-                    fontSize   = 12.sp,
-                    lineHeight = 17.sp,
-                    color      = HelpTextColor
-                )
-            )
-            Box(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(22.dp)
-                    .border(1.dp, HelpTextColor, CircleShape)
-                    .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center
-            ) {
-                BasicText(
-                    text  = "×",
-                    style = TextStyle(
-                        fontSize   = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = HelpTextColor
+        Column {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(
+                    modifier            = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    pages[page].split("\n").forEach { paragraph ->
+                        BasicText(text = helpMarkup(tidyLineBreaks(paragraph)), style = bodyStyle)
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(22.dp)
+                        .border(1.dp, HelpTextColor, CircleShape)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicText(
+                        text  = "×",
+                        style = TextStyle(
+                            fontSize   = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color      = HelpTextColor
+                        )
                     )
-                )
+                }
+            }
+            if (pages.size > 1) {
+                Row(
+                    modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    HelpPageArrow("‹", enabled = page > 0) { page-- }
+                    BasicText(
+                        text     = "${page + 1} / ${pages.size}",
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        style    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = HelpTextColor)
+                    )
+                    HelpPageArrow("›", enabled = page < pages.size - 1) { page++ }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun HelpPageArrow(symbol: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .border(1.dp, HelpTextColor.copy(alpha = if (enabled) 1f else 0.25f), CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        BasicText(
+            text  = symbol,
+            style = TextStyle(
+                fontSize   = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color      = HelpTextColor.copy(alpha = if (enabled) 1f else 0.25f)
+            )
+        )
     }
 }

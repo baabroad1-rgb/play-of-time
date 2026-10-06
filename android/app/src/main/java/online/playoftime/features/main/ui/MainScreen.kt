@@ -100,6 +100,11 @@ fun MainScreen(
     var helpMode by remember { mutableStateOf(false) }
     var helpTopic by remember { mutableStateOf<HelpTopic?>(null) }
     val helpZones = remember { androidx.compose.runtime.mutableStateMapOf<HelpTopic, androidx.compose.ui.geometry.Rect>() }
+    // Зоны из нескольких кусков (Alex 2026-10-06: «пузырь должен открываться по
+    // тапу на любые части объекта»): секундомер + плашка-подсказка под ним,
+    // гистограмма + «Total tries» и монетка по её бокам.
+    val stopwatchParts    = remember { androidx.compose.runtime.mutableStateMapOf<Any, androidx.compose.ui.geometry.Rect>() }
+    val distributionParts = remember { androidx.compose.runtime.mutableStateMapOf<Any, androidx.compose.ui.geometry.Rect>() }
     var helpQuestionRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
 
     // Play-time трекер: следим за NavBackStackEntry lifecycle этого экрана.
@@ -528,7 +533,7 @@ fun MainScreen(
                 // поэтому это фиксированная dp-константа, а не производная от chartBounds.
                 val progressBarOffsetX = (CHART_LABEL_WIDTH - CHART_SC_PAD) / 2
 
-                Box(modifier = Modifier.helpZone(helpZones, HelpTopic.STOPWATCH)) {
+                Box(modifier = Modifier.helpZonePartDisposable(helpZones, HelpTopic.STOPWATCH, stopwatchParts, "button")) {
                     StopWatchButton(
                         modifier          = Modifier
                             .align(Alignment.Center)
@@ -676,6 +681,7 @@ fun MainScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .helpZonePartDisposable(helpZones, HelpTopic.STOPWATCH, stopwatchParts, "hint")
                             .padding(horizontal = Dimens.horizontalPadding, vertical = 2.dp)
                             .background(
                                 color = patternColor.copy(alpha = 0.15f),
@@ -862,7 +868,7 @@ fun MainScreen(
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Box(
                             modifier = Modifier
-                                .helpZone(helpZones, HelpTopic.DISTRIBUTION)
+                                .helpZonePartDisposable(helpZones, HelpTopic.DISTRIBUTION, distributionParts, "chart")
                                 .onGloballyPositioned { chartBounds = it.boundsInRoot() }
                         ) {
                             DistribChart(
@@ -895,7 +901,9 @@ fun MainScreen(
                     DiagramTotalsRow(
                         totalCount = attemptsOnly.size,
                         totalScm   = attemptsOnly.sumOf { it.scm ?: 0.0 },
-                        modifier   = Modifier.align(Alignment.TopCenter)
+                        modifier   = Modifier
+                            .align(Alignment.TopCenter)
+                            .helpZonePartDisposable(helpZones, HelpTopic.DISTRIBUTION, distributionParts, "totals")
                     )
                 }
             }
