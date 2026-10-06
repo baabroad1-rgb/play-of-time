@@ -17,7 +17,6 @@ import online.playoftime.features.stats.ui.StatsContract.Event
 import online.playoftime.features.stats.ui.StatsContract.State
 import online.playoftime.use_case.ContextUseCase
 import online.playoftime.use_case.RecalculateScmUseCase
-import java.util.Calendar
 
 class StatsViewModel(
     private val context: ContextUseCase,
@@ -56,30 +55,14 @@ class StatsViewModel(
             runCatching {
                 val analytics = statUseCases.analyticsUseCase(period, offset)
 
-                // Auto-expand tree path to the most recent session
-                val recent = analytics.sessions.maxByOrNull { it.startTime }
-                val cal    = Calendar.getInstance()
-                val (autoYears, autoMonths, autoWeeks, autoDays, autoSessions) = if (recent != null) {
-                    cal.timeInMillis = recent.startTime
-                    val y = cal.get(Calendar.YEAR)
-                    val m = cal.get(Calendar.MONTH)
-                    val d = cal.get(Calendar.DAY_OF_MONTH)
-                    val w = cal.get(Calendar.WEEK_OF_YEAR)
-                    listOf(setOf(y), setOf("$y-$m"), setOf("$y-$m-$w"), setOf("$y-$m-$d"), setOf(recent.sessionId))
-                } else {
-                    listOf(emptySet(), emptySet(), emptySet(), emptySet(), emptySet())
-                }
-
+                // Дерево по умолчанию свёрнуто (Alex 2026-10-06: «не надо
+                // разворачивать»). Раскрытые вручную узлы при обновлении экрана
+                // не трогаем — состояние раскрытия здесь не перезаписывается.
                 setState {
                     copy(
                         analytics        = analytics,
                         analyticsLoading = false,
-                        selectedPeriod   = period,
-                        expandedYears    = autoYears    as Set<Int>,
-                        expandedMonths   = autoMonths   as Set<String>,
-                        expandedWeeks    = autoWeeks    as Set<String>,
-                        expandedDays     = autoDays     as Set<String>,
-                        expandedSessions = autoSessions as Set<Int>
+                        selectedPeriod   = period
                     )
                 }
             }.onFailure {

@@ -625,6 +625,7 @@ private fun AnalyticsContent(
                     trueThreeWins = yearNode.trueThreeWins,
                     luckyIndex    = yearNode.luckyIndex,
                     expanded      = yearNode.year in expandedYears,
+                    summary       = yearNode.summary,
                     onClick       = { onToggleYear(yearNode.year) },
                     helpMode      = helpMode
                 )
@@ -647,6 +648,7 @@ private fun AnalyticsContent(
                             trueThreeWins = monthNode.trueThreeWins,
                             luckyIndex    = monthNode.luckyIndex,
                             expanded      = monthKey in expandedMonths,
+                            summary       = monthNode.summary,
                             onClick       = { onToggleMonth(monthKey) },
                             helpMode      = helpMode
                         )
@@ -669,6 +671,7 @@ private fun AnalyticsContent(
                                     trueThreeWins = weekNode.trueThreeWins,
                                     luckyIndex    = weekNode.luckyIndex,
                                     expanded      = weekKey in expandedWeeks,
+                                    summary       = weekNode.summary,
                                     onClick       = { onToggleWeek(weekKey) },
                                     helpMode      = helpMode
                                 )
@@ -678,12 +681,6 @@ private fun AnalyticsContent(
                                 weekNode.days.forEach { dayNode ->
                                     val dayKey = "${yearNode.year}-${monthNode.month}-${dayNode.day}"
                                     item {
-                                        // Палец у дня — по большинству успешных сессий
-                                        // (isQuestComplete). Активные сессии (thumbUp==null)
-                                        // из знаменателя исключаем.
-                                        val judged = dayNode.sessions.filter { it.thumbUp != null }
-                                        val dayThumb = if (judged.isEmpty()) null
-                                            else judged.count { it.isQuestComplete } * 2 > judged.size
                                         Box(
                                             Modifier.helpZonePartDisposable(
                                                 helpZones, HelpTopic.STAT_SESSIONS, sessionsTreeParts, "day-$dayKey"
@@ -697,7 +694,7 @@ private fun AnalyticsContent(
                                             trueThreeWins = dayNode.trueThreeWins,
                                             luckyIndex    = dayNode.luckyIndex,
                                             expanded      = dayKey in expandedDays,
-                                            thumbUp       = dayThumb,
+                                            summary       = dayNode.summary,
                                             onClick       = { onToggleDay(dayKey) },
                                             helpMode      = helpMode
                                         )
@@ -1645,25 +1642,28 @@ private fun formatLucky(l: Double): String =
     if (l <= 0.0) "—" else "%.2f".format(l)
 
 @Composable
-private fun TreeYearRow(year: Int, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, onClick: () -> Unit, helpMode: Boolean = false) =
+private fun TreeYearRow(year: Int, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
     TreeRow(0.dp, year.toString(), attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
-        metricStyle(14.sp, FontWeight.Bold, MaterialTheme.colorScheme.baseTextColor), onClick, helpMode = helpMode)
+        metricStyle(14.sp, FontWeight.Bold, MaterialTheme.colorScheme.baseTextColor), onClick,
+        summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeMonthRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, onClick: () -> Unit, helpMode: Boolean = false) =
+private fun TreeMonthRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
     TreeRow(12.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
-        metricStyle(13.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.90f)), onClick, helpMode = helpMode)
+        metricStyle(13.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.90f)), onClick,
+        summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeWeekRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, onClick: () -> Unit, helpMode: Boolean = false) =
+private fun TreeWeekRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
     TreeRow(18.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
-        metricStyle(12.5.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.84f)), onClick, helpMode = helpMode)
+        metricStyle(12.5.sp, FontWeight.Medium, MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.84f)), onClick,
+        summary = summary, helpMode = helpMode)
 
 @Composable
-private fun TreeDayRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, thumbUp: Boolean?, onClick: () -> Unit, helpMode: Boolean = false) =
+private fun TreeDayRow(label: String, attempts: Int, geomEarlyMs: Double, geomLateMs: Double, trueThreeWins: Int, luckyIndex: Double, expanded: Boolean, summary: NodeSummary, onClick: () -> Unit, helpMode: Boolean = false) =
     TreeRow(24.dp, label, attempts, geomEarlyMs, geomLateMs, trueThreeWins, luckyIndex, expanded,
         labelStyle(12.sp, color = MaterialTheme.colorScheme.baseTextColor.copy(alpha = 0.78f)), onClick,
-        thumbUp = thumbUp, helpMode = helpMode)
+        summary = summary, helpMode = helpMode)
 
 @Composable
 private fun TreeRow(
@@ -1677,9 +1677,8 @@ private fun TreeRow(
     expanded      : Boolean,
     labelStyle2   : TextStyle,
     onClick       : () -> Unit,
-    // Item 2 (Alex 2026-07-26): палец у дней — успех по большинству сессий.
-    // null → иконка не рисуется (год/месяц).
-    thumbUp       : Boolean? = null,
+    // Палец, длительность и процент побед узла — см. NodeSummary.
+    summary       : NodeSummary,
     // В режиме справки тап по строке дерева должен показывать бабл STAT_SESSIONS
     // (через helpTapGestures на внешнем Box), а не разворачивать/сворачивать
     // строку — иначе .clickable() ниже consume'ит тап раньше, чем очередь
@@ -1689,11 +1688,16 @@ private fun TreeRow(
     helpMode      : Boolean = false
 ) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
-    Row(
+    val thumbUp = summary.thumbUp
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = !helpMode) { onClick() }
             .padding(start = indent, top = 4.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -1738,6 +1742,22 @@ private fun TreeRow(
             style = metricStyle(11.sp, FontWeight.Normal, textColor.copy(alpha = 0.58f))
                 .copy(textAlign = TextAlign.Center)
         )
+    }
+    // Длительность и процент побед — та же подстрока, что у сессии.
+    Row(
+        modifier              = Modifier.fillMaxWidth().padding(start = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        BasicText(
+            text  = formatDuration(summary.playMs),
+            style = metricStyle(10.sp, FontWeight.Normal, textColor.copy(alpha = 0.48f))
+        )
+        BasicText(
+            text  = "${summary.winPct.roundToInt()}% ✓",
+            style = metricStyle(10.sp, FontWeight.Medium, resultGreenColor.copy(alpha = 0.85f))
+        )
+    }
     }
 }
 
@@ -2341,10 +2361,49 @@ private fun formatDuration(ms: Long): String {
 //  Дерево год → месяц → день
 // ──────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Палец, длительность и процент побед у узлов дерева выше сессии
+ * (Alex 2026-10-06: «палец вверх и другие атрибуты сессии вынеси на все
+ * верхние уровни… для недели, месяца и тп считается как среднее по дням,
+ * когда играли»).
+ *
+ * День — по самому дню: палец вверх, если взят хотя бы один квест (полный
+ * или с индульгенцией — оба ставят isQuestComplete), время — сколько
+ * наиграно за день, процент — по всем попыткам дня. Неделя, месяц, год —
+ * среднее по игровым дням: время и процент усредняются по дням, палец
+ * вверх, если зелёных дней не меньше половины.
+ *
+ * thumbUp == null — судить не о чем: в узле только идущая сейчас сессия.
+ */
+private data class NodeSummary(val playMs: Long, val winPct: Double, val thumbUp: Boolean?)
+
+private fun daySummary(sessions: List<SessionTreeData>): NodeSummary {
+    val attempts = sessions.sumOf { it.attempts }
+    val thumb = when {
+        sessions.any { it.isQuestComplete } -> true
+        sessions.all { it.thumbUp == null } -> null
+        else -> false
+    }
+    return NodeSummary(
+        playMs  = sessions.sumOf { it.activeTimeMs },
+        winPct  = if (attempts > 0) sessions.sumOf { it.wins } * 100.0 / attempts else 0.0,
+        thumbUp = thumb
+    )
+}
+
+private fun averageOfDays(days: List<NodeSummary>): NodeSummary {
+    val judged = days.mapNotNull { it.thumbUp }
+    return NodeSummary(
+        playMs  = days.sumOf { it.playMs } / days.size.coerceAtLeast(1),
+        winPct  = days.sumOf { it.winPct } / days.size.coerceAtLeast(1),
+        thumbUp = if (judged.isEmpty()) null else judged.count { it } * 2 >= judged.size
+    )
+}
+
 private data class SessionDayNode(val day: Int, val label: String,
     val sessions: List<SessionTreeData>, val totalAttempts: Int, val totalWins: Int,
     val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
-    val luckyIndex: Double)
+    val luckyIndex: Double, val summary: NodeSummary)
 // Неделя как отдельная сущность дерева (Alex 2026-09-09: "сделай неделю как
 // сущность и фильтр на экране аналитикс, не забудь отразить в дереве попыток")
 // — календарная ISO-неделя (Calendar.WEEK_OF_YEAR), группирует дни ВНУТРИ
@@ -2356,15 +2415,15 @@ private data class SessionDayNode(val day: Int, val label: String,
 private data class SessionWeekNode(val weekOfYear: Int, val label: String,
     val days: List<SessionDayNode>, val totalAttempts: Int, val totalWins: Int,
     val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
-    val luckyIndex: Double)
+    val luckyIndex: Double, val summary: NodeSummary)
 private data class SessionMonthNode(val month: Int, val label: String,
     val weeks: List<SessionWeekNode>, val totalAttempts: Int, val totalWins: Int,
     val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
-    val luckyIndex: Double)
+    val luckyIndex: Double, val summary: NodeSummary)
 private data class SessionYearNode(val year: Int, val months: List<SessionMonthNode>,
     val totalAttempts: Int, val totalWins: Int,
     val geomEarlyMs: Double, val geomLateMs: Double, val trueThreeWins: Int,
-    val luckyIndex: Double)
+    val luckyIndex: Double, val summary: NodeSummary)
 
 /** exp(mean(ln(x))) over positive values — 0.0 if the list is empty. */
 private fun geometricMean(values: List<Double>): Double {
@@ -2455,7 +2514,8 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                                 geomEarlyMsOf(dBars),
                                 geomLateMsOf(dBars),
                                 trueThreeWinsOf(dBars),
-                                luckyIndexOf(dBars))
+                                luckyIndexOf(dBars),
+                                daySummary(dSessions))
                         }
                         .sortedByDescending { it.day }
                     val monthLabel = cal.also {
@@ -2480,7 +2540,8 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                                 geomEarlyMsOf(wBars),
                                 geomLateMsOf(wBars),
                                 trueThreeWinsOf(wBars),
-                                luckyIndexOf(wBars))
+                                luckyIndexOf(wBars),
+                                averageOfDays(wDays.map { it.summary }))
                         }
                         .sortedByDescending { it.weekOfYear }
                     SessionMonthNode(month, monthLabel, weeks,
@@ -2489,7 +2550,8 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                         geomEarlyMsOf(mBars),
                         geomLateMsOf(mBars),
                         trueThreeWinsOf(mBars),
-                        luckyIndexOf(mBars))
+                        luckyIndexOf(mBars),
+                        averageOfDays(days.map { it.summary }))
                 }
                 .sortedByDescending { it.month }
             val yBars = ySessions.flatMap { it.attemptBars }
@@ -2499,7 +2561,8 @@ private fun buildTree(sessions: List<SessionTreeData>): List<SessionYearNode> {
                 geomEarlyMsOf(yBars),
                 geomLateMsOf(yBars),
                 trueThreeWinsOf(yBars),
-                luckyIndexOf(yBars))
+                luckyIndexOf(yBars),
+                averageOfDays(months.flatMap { m -> m.weeks.flatMap { w -> w.days.map { it.summary } } }))
         }
         .sortedByDescending { it.year }
 }
