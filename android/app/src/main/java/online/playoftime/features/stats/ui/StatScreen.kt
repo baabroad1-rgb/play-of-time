@@ -511,13 +511,12 @@ private fun AnalyticsContent(
                     label = "Attempts per win",
                     value = if (data.attemptsPerWin > 0) "%.1f".format(data.attemptsPerWin) else "—"
                 )
-                if (data.luckyIndex > 0) {
-                    CardMetricRow(
-                        label = "Lucky Index",
-                        value = "%.2f".format(data.luckyIndex),
-                        note  = "(empirical / theoretical probability — higher is better)"
-                    )
-                }
+                // Строка есть всегда; без чистых троек — прочерк (Alex 2026-10-07).
+                CardMetricRow(
+                    label = "Lucky Index",
+                    value = if (data.luckyIndex > 0) "%.2f".format(data.luckyIndex) else "—",
+                    note  = "(empirical / theoretical probability — higher is better)"
+                )
             }
             }
         }
