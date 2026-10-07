@@ -460,7 +460,7 @@ class AnalyticsUseCase(
                             sittings.add(mutableListOf(att))
                         else cur.add(att)
                     }
-                    fromGroups(sittings.takeLast(24), SimpleDateFormat("EEE HH:mm", Locale.ENGLISH))
+                    fromGroups(sittings.takeLast(24), SimpleDateFormat("EEE\nHH:mm", Locale.ENGLISH))
                 }
                 // День — равные блоки попыток по порядку: до 16 точек, не меньше
                 // 10 попыток в точке. Каждая точка весит одинаково.

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -2186,141 +2187,82 @@ private fun PaceSparklineChart(
     formatY  : (Float) -> String = { "%.1f%%".format(it * 100) },
     legend   : String = "efficiency"
 ) {
-    // null = бакет без данных (Alex 2026-08-14: «прерывай графики для периодов,
-    // данных о которых у тебя нет») — исключается из min/max и разрывает линию,
-    // вместо того чтобы тянуть её сквозь пропуск или опускать в ноль.
+    // Столбики от нуля с подписью даты/времени под ними (Alex 2026-10-07:
+    // «сделай столбиковой диаграммой с указанием даты или времени»).
+    // null = точка без данных: место под столбик остаётся пустым, подпись есть.
     val realValues = values.filterNotNull()
-    if (values.size < 2 || realValues.size < 2) return
+    if (values.size < 2 || realValues.isEmpty()) return
     val textColor   = MaterialTheme.colorScheme.baseTextColor
-    val axisAlpha   = 0.25f
     val yAxisWidth  = 44.dp
-    val chartHeight = 60.dp
+    val chartHeight = 64.dp
+    val maxV        = realValues.max().coerceAtLeast(0.0001f)
+    val lastRealIdx = values.indexOfLast { it != null }
+    // Подписи — под каждым столбиком, если влезают; иначе через один-два.
+    val step = when {
+        values.size <= 8  -> 1
+        values.size <= 16 -> 2
+        else              -> 3
+    }
 
-    val minV  = realValues.min()
-    val maxV  = realValues.max()
-    val range = (maxV - minV).coerceAtLeast(0.001f)
-
-    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-        // Chart row: Y-axis labels + canvas
-        Row(
-            modifier          = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            // Y-axis labels
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(
-                modifier = Modifier
-                    .width(yAxisWidth)
-                    .height(chartHeight),
+                modifier = Modifier.width(yAxisWidth).height(chartHeight),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Значения — доля эффективности 0..1 (Alex 2026-08-14: нормализовано
-                // по «потолку» SC для точности каждой попытки, чтобы график не был
-                // задавлен масштабом levelFactor между уровнями) — показываем в %.
-                // 1 знак после запятой (Alex 05.09: «почему по оси Y два одинаковых
-                // 1%?» — %.0f округлял 1.4% и 0.6% до одного и того же «1%», раз
-                // efficiency у реальных попыток часто однозначный процент).
                 BasicText(formatY(maxV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
-                BasicText(formatY(minV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
+                BasicText(formatY(0f),   style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
             }
-
-            // Line chart canvas
-            Canvas(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(chartHeight)
-            ) {
-                val w   = size.width
-                val h   = size.height
-                val pad = 6.dp.toPx()
-
-                // Y = 0 reference line (if range crosses zero)
-                val zeroFraction = if (minV < 0f && maxV > 0f) (-minV) / range else -1f
-                if (zeroFraction in 0f..1f) {
-                    val zy = h - pad - zeroFraction * (h - 2 * pad)
-                    drawLine(
-                        color       = textColor.copy(alpha = 0.15f),
-                        start       = Offset(0f, zy),
-                        end         = Offset(w, zy),
-                        strokeWidth = 1.dp.toPx()
+            Canvas(modifier = Modifier.weight(1f).height(chartHeight)) {
+                val w     = size.width
+                val h     = size.height
+                val slot  = w / values.size
+                val barW  = slot * 0.62f
+                val top   = 4.dp.toPx()
+                values.forEachIndexed { i, v ->
+                    if (v == null) return@forEachIndexed
+                    val barH = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
+                    drawRoundRect(
+                        color        = if (i == lastRealIdx) lineColor else lineColor.copy(alpha = lineColor.alpha * 0.7f),
+                        topLeft      = Offset(slot * i + (slot - barW) / 2f, h - barH),
+                        size         = Size(barW, barH),
+                        cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                     )
                 }
-
-                // Y-axis left border
                 drawLine(
-                    color       = textColor.copy(alpha = axisAlpha),
-                    start       = Offset(0f, 0f),
-                    end         = Offset(0f, h),
-                    strokeWidth = 1.dp.toPx()
-                )
-                // X-axis bottom border
-                drawLine(
-                    color       = textColor.copy(alpha = axisAlpha),
+                    color       = textColor.copy(alpha = 0.25f),
                     start       = Offset(0f, h),
                     end         = Offset(w, h),
                     strokeWidth = 1.dp.toPx()
                 )
-
-                // Trend line — рвётся на null-бакетах: moveTo (не lineTo) начинает
-                // новый сегмент, так что пропуск данных не соединяется линией.
-                val path = Path()
-                var segmentOpen = false
-                values.forEachIndexed { i, v ->
-                    if (v == null) {
-                        segmentOpen = false
-                        return@forEachIndexed
-                    }
-                    val x = if (values.size > 1) w * i / (values.size - 1) else w / 2f
-                    val y = h - pad - ((v - minV) / range) * (h - 2 * pad)
-                    if (!segmentOpen) { path.moveTo(x, y); segmentOpen = true }
-                    else path.lineTo(x, y)
-                }
-                drawPath(path, lineColor, style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round))
-
-                // Current-value dot — на последнем РЕАЛЬНОМ (не null) значении.
-                val lastRealIdx = values.indexOfLast { it != null }
-                if (lastRealIdx >= 0) {
-                    val v = values[lastRealIdx]!!
-                    val lastX = if (values.size > 1) w * lastRealIdx / (values.size - 1) else w / 2f
-                    val lastY = h - pad - ((v - minV) / range) * (h - 2 * pad)
-                    drawCircle(lineColor, radius = 3.dp.toPx(), center = Offset(lastX, lastY))
-                }
             }
         }
-
-        // X-axis: session dates or fallback "older"/"now"
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
+        // Подписи оси X — по центру своего столбика.
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
             Spacer(Modifier.width(yAxisWidth))
-            Row(
-                modifier              = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Чтобы подписи не наезжали при большом числе бакетов — показываем
-                // только первую / среднюю / последнюю (или все, если их ≤ 3).
-                val shown = if (xLabels.size <= 3) xLabels
-                            else listOf(xLabels.first(), xLabels[xLabels.size / 2], xLabels.last())
-                if (shown.isNotEmpty()) {
-                    shown.forEach { lab ->
-                        BasicText(lab, style = labelStyle(8.sp, color = textColor.copy(alpha = 0.43f)))
+            Row(modifier = Modifier.weight(1f)) {
+                values.indices.forEach { i ->
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                        if (i % step == 0) {
+                            BasicText(
+                                text     = xLabels.getOrElse(i) { "" },
+                                style    = labelStyle(8.sp, color = textColor.copy(alpha = 0.43f))
+                                    .copy(textAlign = TextAlign.Center),
+                                softWrap = false,
+                                modifier = Modifier.wrapContentWidth(unbounded = true)
+                            )
+                        }
                     }
-                } else {
-                    BasicText("older", style = labelStyle(8.sp, color = textColor.copy(alpha = 0.43f)))
-                    BasicText("now",   style = labelStyle(8.sp, color = textColor.copy(alpha = 0.43f)))
                 }
             }
         }
-
-        // Legend
         Row(
-            modifier              = Modifier.padding(start = yAxisWidth),
+            modifier              = Modifier.padding(start = yAxisWidth, top = 4.dp),
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Canvas(modifier = Modifier.width(8.dp).height(8.dp)) {
-                drawCircle(lineColor, radius = size.minDimension / 2f)
+                drawRect(lineColor)
             }
             BasicText(legend, style = labelStyle(8.sp, color = lineColor.copy(alpha = 0.7f)))
         }
