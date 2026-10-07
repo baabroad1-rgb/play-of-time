@@ -403,6 +403,24 @@ class AnalyticsUseCase(
                 }
                 return PaceChartSeries(v, hit, lucky, l)
             }
+            // Точки не по календарю, а по готовым группам попыток (Alex 2026-10-07:
+            // «попробуй другую дискретизацию для дня, недели»). Часы дня и дни
+            // недели в основном пустые — линия из 2–3 обрывков. Группы идут
+            // подряд, без пропусков; группа < 2 попыток — без точки.
+            fun fromGroups(groupsList: List<List<TryDatabaseModel>>, labFmt: SimpleDateFormat): PaceChartSeries {
+                val v = groupsList.map { g ->
+                    val scored = g.mapNotNull { att ->
+                        att.scm?.takeIf { it > 0.0 }?.let { it / peakScmForAccuracy(att.accuracy) }
+                    }
+                    if (scored.size < 2) null else (scored.sum() / scored.size).toFloat()
+                }
+                val hit = groupsList.map { g ->
+                    if (g.size < 2) null else (countTrueThree(g, aimTime).toDouble() / g.size * 100.0).toFloat()
+                }
+                val lucky = groupsList.map { g -> if (g.size < 2) null else luckyIndexOf(g, aimTime).toFloat() }
+                val l = groupsList.map { g -> labFmt.format(Date(g.first().startTime)) }
+                return PaceChartSeries(v, hit, lucky, l)
+            }
             when (period) {
                 PeriodFilter.ALL_TIME -> {
                     // Баг #3 (найден 2026-08-14, Alex: «проблема в верном выборе
@@ -432,10 +450,24 @@ class AnalyticsUseCase(
                 }
                 PeriodFilter.MONTH    ->
                     bucket(SimpleDateFormat("yyyyMMdd", Locale.US), SimpleDateFormat("d MMM", Locale.ENGLISH), 16, Calendar.DAY_OF_MONTH)
-                PeriodFilter.WEEK     ->
-                    bucket(SimpleDateFormat("yyyyMMdd", Locale.US), SimpleDateFormat("EEE d", Locale.ENGLISH), 7, Calendar.DAY_OF_MONTH)
-                PeriodFilter.TODAY    ->
-                    bucket(SimpleDateFormat("yyyyMMddHH", Locale.US), SimpleDateFormat("HH:00", Locale.ENGLISH), 12, Calendar.HOUR_OF_DAY)
+                // Неделя — точка на каждый сеанс (игра без перерывов > 10 мин),
+                // последние 24 сеанса.
+                PeriodFilter.WEEK     -> {
+                    val sittings = mutableListOf<MutableList<TryDatabaseModel>>()
+                    ordered.forEach { att ->
+                        val cur = sittings.lastOrNull()
+                        if (cur == null || att.startTime - cur.last().startTime > 10 * 60_000L)
+                            sittings.add(mutableListOf(att))
+                        else cur.add(att)
+                    }
+                    fromGroups(sittings.takeLast(24), SimpleDateFormat("EEE HH:mm", Locale.ENGLISH))
+                }
+                // День — равные блоки попыток по порядку: до 16 точек, не меньше
+                // 10 попыток в точке. Каждая точка весит одинаково.
+                PeriodFilter.TODAY    -> {
+                    val size = maxOf(10, (ordered.size + 15) / 16)
+                    fromGroups(ordered.chunked(size), SimpleDateFormat("HH:mm", Locale.ENGLISH))
+                }
                 PeriodFilter.SESSION  -> {
                     // Session — сырые точки по попыткам, не по календарю: пропусков
                     // тут нет по определению (последовательные попытки одной сессии),

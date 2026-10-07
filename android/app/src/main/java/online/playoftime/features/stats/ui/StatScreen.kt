@@ -561,10 +561,10 @@ private fun AnalyticsContent(
         // ── PACE OF LEARNING ─────────────────────────────────────────────
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_PACE)) {
-            StatCard("Pace of learning", pl) {
-                // Что рисует график — выбор в выпадающем списке (Alex 2026-10-07).
-                var metric by rememberSaveable { mutableStateOf(PaceMetric.PACE) }
-                PaceMetricDropdown(metric) { metric = it }
+            // Что рисует график — выбор в выпадающем списке, который стоит на
+            // месте заголовка блока (Alex 2026-10-07).
+            var metric by rememberSaveable { mutableStateOf(PaceMetric.PACE) }
+            StatCard("", pl, header = { PaceMetricDropdown(metric) { metric = it } }) {
                 val series = when (metric) {
                     PaceMetric.PACE  -> data.paceChartValues
                     PaceMetric.HIT   -> data.paceChartHitRate
@@ -1581,6 +1581,7 @@ private fun assignModesToFloors(
 private fun StatCard(
     title   : String,
     period  : String = "",
+    header  : (@Composable () -> Unit)? = null,
     content : @Composable () -> Unit
 ) {
     // Заголовок блока — над карточкой, а не внутри неё (Alex 2026-10-05,
@@ -1594,7 +1595,7 @@ private fun StatCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            BasicText(text = title, style = blockTitleStyle)
+            if (header != null) header() else BasicText(text = title, style = blockTitleStyle)
             if (period.isNotEmpty()) {
                 BasicText(text = period, style = blockTitleStyle)
             }
@@ -2139,26 +2140,23 @@ private fun MiniHistogram(
 /** Ряды графика Pace of learning (Alex 2026-10-07). */
 private enum class PaceMetric(val title: String, val legend: String, val formatY: (Float) -> String) {
     // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
-    PACE ("Pace",        "efficiency", { "%.1f%%".format(it * 100) }),
-    HIT  ("Hit rate",    "hit rate",   { "%.1f%%".format(it) }),
-    LUCKY("Lucky index", "lucky",      { "%.2f".format(it) })
+    PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) }),
+    HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
+    LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) })
 }
 
 @Composable
 private fun PaceMetricDropdown(selected: PaceMetric, onSelect: (PaceMetric) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
+        // Выглядит как заголовок блока, плюс стрелка списка.
         Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .border(1.dp, metricLabelGray.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                .clickable { open = true }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.clickable { open = true },
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            BasicText(selected.title, style = metricValueStyle())
-            BasicText("▾", style = metricLabelStyle())
+            BasicText(selected.title, style = blockTitleStyle)
+            BasicText("▾", style = blockTitleStyle)
         }
         DropdownMenu(
             expanded         = open,
