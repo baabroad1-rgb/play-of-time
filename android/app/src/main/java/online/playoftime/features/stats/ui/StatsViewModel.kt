@@ -55,14 +55,22 @@ class StatsViewModel(
             runCatching {
                 val analytics = statUseCases.analyticsUseCase(period, offset)
 
-                // Дерево по умолчанию свёрнуто (Alex 2026-10-06: «не надо
-                // разворачивать»). Раскрытые вручную узлы при обновлении экрана
-                // не трогаем — состояние раскрытия здесь не перезаписывается.
+                // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
+                // годы развёрнуты, месяцы видны, ниже — свёрнуто. Делается только
+                // при первой загрузке; раскрытые/свёрнутые вручную узлы при
+                // обновлении экрана не трогаем.
                 setState {
+                    val years = analytics.sessions.map {
+                        java.util.Calendar.getInstance().apply { timeInMillis = it.startTime }
+                            .get(java.util.Calendar.YEAR)
+                    }.toSet()
+                    val applyDefault = !treeDefaultApplied && years.isNotEmpty()
                     copy(
                         analytics        = analytics,
                         analyticsLoading = false,
-                        selectedPeriod   = period
+                        selectedPeriod   = period,
+                        expandedYears    = if (applyDefault) years else expandedYears,
+                        treeDefaultApplied = treeDefaultApplied || applyDefault
                     )
                 }
             }.onFailure {

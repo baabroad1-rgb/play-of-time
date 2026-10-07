@@ -14,6 +14,7 @@ class StatsContract {
         val analyticsLoading: Boolean = true,
         // Дерево: какие узлы раскрыты
         val expandedYears: Set<Int> = emptySet(),
+        val treeDefaultApplied: Boolean = false,
         val expandedMonths: Set<String> = emptySet(),
         val expandedWeeks: Set<String> = emptySet(),
         val expandedDays: Set<String> = emptySet(),

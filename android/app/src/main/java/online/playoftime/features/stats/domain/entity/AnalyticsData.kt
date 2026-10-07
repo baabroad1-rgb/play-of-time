@@ -115,6 +115,9 @@ data class AnalyticsData(
     // месяц) — график должен рвать линию тут, а не тянуть её сквозь пропуск
     // или формально опускать до нуля.
     val paceChartValues          : List<Float?> = emptyList(),
+    // Те же бакеты, другие ряды (Alex 2026-10-07): Hit rate в %, Lucky index.
+    val paceChartHitRate         : List<Float?> = emptyList(),
+    val paceChartLucky           : List<Float?> = emptyList(),
     val paceChartLabels          : List<String> = emptyList(),
 
     // ── Quest tolerance (for histogram green zone) ───────────────────

@@ -340,9 +340,12 @@ class AnalyticsUseCase(
         // Lucky Index к уровню). Фикс: делим каждый scm на «потолок» SC для
         // ТОЧНОСТИ этой конкретной попытки (peakScmForAccuracy) — получаем
         // эффективность 0..1, сравнимую между уровнями, левелфактор сокращается.
-        val (paceChartValues, paceChartLabels) = run {
+        // Тот же бакет даёт ещё два ряда для выпадающего списка над графиком
+        // (Alex 2026-10-07): Hit rate (% побед с допуском, как в Chance of Win) и
+        // Lucky index бакета (та же формула, что headline Lucky).
+        val paceChart: PaceChartSeries = run {
             val ordered = periodAttempts.sortedBy { it.startTime }
-            if (ordered.isEmpty()) return@run emptyList<Float?>() to emptyList<String>()
+            if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList())
             // Баг #4 (найден 2026-08-14, Alex: «прерывай графики для периодов, данных
             // о которых у тебя нет»): бакеты строились ТОЛЬКО из дней/часов/месяцев,
             // где реально были попытки — пропуски (не играл неделю, не играл ночью)
@@ -353,7 +356,7 @@ class AnalyticsUseCase(
             // а не 0f и не пропускается — PaceSparklineChart рвёт линию на null,
             // вместо того чтобы тянуть её сквозь пропуск или формально опускать в ноль.
             fun bucket(keyFmt: SimpleDateFormat, labFmt: SimpleDateFormat, maxN: Int, calField: Int):
-                Pair<List<Float?>, List<String>> {
+                PaceChartSeries {
                 val groups = LinkedHashMap<String, MutableList<TryDatabaseModel>>()
                 ordered.forEach {
                     groups.getOrPut(keyFmt.format(Date(it.startTime))) { mutableListOf() }.add(it)
@@ -388,7 +391,17 @@ class AnalyticsUseCase(
                     if (!bucketAttempts.isNullOrEmpty()) labFmt.format(Date(bucketAttempts.first().startTime))
                     else runCatching { labFmt.format(keyFmt.parse(key)!!) }.getOrDefault(key)
                 }
-                return v to l
+                // Те же правила разрыва: нет попыток или меньше двух — null.
+                val hit: List<Float?> = keys.map { key ->
+                    val b = groups[key]
+                    if (b == null || b.size < 2) null
+                    else (countTrueThree(b, aimTime).toDouble() / b.size * 100.0).toFloat()
+                }
+                val lucky: List<Float?> = keys.map { key ->
+                    val b = groups[key]
+                    if (b == null || b.size < 2) null else luckyIndexOf(b, aimTime).toFloat()
+                }
+                return PaceChartSeries(v, hit, lucky, l)
             }
             when (period) {
                 PeriodFilter.ALL_TIME -> {
@@ -431,7 +444,18 @@ class AnalyticsUseCase(
                         att.scm?.takeIf { it > 0.0 }?.let { idx to (it / peakScmForAccuracy(att.accuracy)) }
                     }
                     val last = scoredIndexed.takeLast(20)
-                    (last.map { it.second.toFloat() as Float? }) to (last.map { "#${it.first + 1}" })
+                    // Hit rate и Lucky для одной попытки бессмысленны (0 или 100%),
+                    // поэтому в сессии — скользящее окно из 10 попыток до этой.
+                    fun window(idx: Int) = ordered.subList((idx - 9).coerceAtLeast(0), idx + 1)
+                    PaceChartSeries(
+                        values = last.map { it.second.toFloat() as Float? },
+                        hit    = last.map { (idx, _) ->
+                            val w = window(idx)
+                            (countTrueThree(w, aimTime).toDouble() / w.size * 100.0).toFloat() as Float?
+                        },
+                        lucky  = last.map { (idx, _) -> luckyIndexOf(window(idx), aimTime).toFloat() as Float? },
+                        labels = last.map { "#${it.first + 1}" }
+                    )
                 }
             }
         }
@@ -482,8 +506,10 @@ class AnalyticsUseCase(
             sparklinePaceOfLearning      = sparklinePace,
             sparklineChanceOfWin         = sparklineWin,
             sparklineSessionDates        = sparklineSessions.map { it.startTime },
-            paceChartValues              = paceChartValues,
-            paceChartLabels              = paceChartLabels,
+            paceChartValues              = paceChart.values,
+            paceChartHitRate             = paceChart.hit,
+            paceChartLucky               = paceChart.lucky,
+            paceChartLabels              = paceChart.labels,
             sessions                     = sessionsList,
             periodAttempts           = periodTotal,
             period                   = period,
@@ -502,6 +528,21 @@ class AnalyticsUseCase(
      */
     private fun peakScmForAccuracy(accuracy: Int): Double =
         99.0 * 10.0.pow((accuracy - 3).toDouble())
+
+    private class PaceChartSeries(
+        val values: List<Float?>, val hit: List<Float?>, val lucky: List<Float?>, val labels: List<String>
+    )
+
+    /** Lucky index набора попыток — та же формула, что headline Lucky выше. */
+    private fun luckyIndexOf(attempts: List<TryDatabaseModel>, aimTime: Int): Double {
+        if (attempts.isEmpty()) return 0.0
+        val errs = attempts.map { (it.endTime - it.startTime - aimTime).toDouble() }.sorted()
+        val lo = errs[(errs.size * 0.03).toInt().coerceIn(0, errs.size - 1)]
+        val hi = errs[(errs.size * 0.97).toInt().coerceIn(0, errs.size - 1)]
+        val slots = ((abs(lo) + abs(hi)) / 1.0).toLong().coerceAtLeast(1L) + 1L
+        val luckyWins = errs.count { abs(it) < 0.5 }
+        return luckyWins.toDouble() / errs.size * slots
+    }
 
     private fun countTrueThree(attempts: List<TryDatabaseModel>, aimTime: Int): Int {
         return attempts.count { attempt ->

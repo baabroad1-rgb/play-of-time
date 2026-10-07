@@ -24,6 +24,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -559,15 +562,39 @@ private fun AnalyticsContent(
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_PACE)) {
             StatCard("Pace of learning", pl) {
-                if (data.paceChartValues.size >= 2) {
-                    PaceSparklineChart(data.paceChartValues, accent.copy(alpha = 0.65f), data.paceChartLabels)
+                // Что рисует график — выбор в выпадающем списке (Alex 2026-10-07).
+                var metric by rememberSaveable { mutableStateOf(PaceMetric.PACE) }
+                PaceMetricDropdown(metric) { metric = it }
+                val series = when (metric) {
+                    PaceMetric.PACE  -> data.paceChartValues
+                    PaceMetric.HIT   -> data.paceChartHitRate
+                    PaceMetric.LUCKY -> data.paceChartLucky
+                }
+                if (series.size >= 2) {
+                    PaceSparklineChart(
+                        values     = series,
+                        lineColor  = accent.copy(alpha = 0.65f),
+                        xLabels    = data.paceChartLabels,
+                        formatY    = metric.formatY,
+                        legend     = metric.legend
+                    )
                     Spacer(Modifier.height(6.dp))
                 }
-                CardMetricRow(
-                    label = "SC/att",
-                    value = "%+.1f".format(data.paceOfLearning),
-                    note  = "Average Serenity per attempt"
-                )
+                when (metric) {
+                    PaceMetric.PACE -> CardMetricRow(
+                        label = "SC/att",
+                        value = "%+.1f".format(data.paceOfLearning),
+                        note  = "Average Serenity per attempt"
+                    )
+                    PaceMetric.HIT -> CardMetricRow(
+                        label = "Hit rate",
+                        value = "%.1f%%".format(data.trueThreeHitRatePct)
+                    )
+                    PaceMetric.LUCKY -> CardMetricRow(
+                        label = "Lucky Index",
+                        value = if (data.luckyIndex > 0) "%.2f".format(data.luckyIndex) else "—"
+                    )
+                }
             }
             }
         }
@@ -2109,8 +2136,58 @@ private fun MiniHistogram(
 //  Pace Sparkline Chart (with axes and legend)
 // ──────────────────────────────────────────────────────────────────────────────
 
+/** Ряды графика Pace of learning (Alex 2026-10-07). */
+private enum class PaceMetric(val title: String, val legend: String, val formatY: (Float) -> String) {
+    // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
+    PACE ("Pace",        "efficiency", { "%.1f%%".format(it * 100) }),
+    HIT  ("Hit rate",    "hit rate",   { "%.1f%%".format(it) }),
+    LUCKY("Lucky index", "lucky",      { "%.2f".format(it) })
+}
+
 @Composable
-private fun PaceSparklineChart(values: List<Float?>, lineColor: Color, xLabels: List<String> = emptyList()) {
+private fun PaceMetricDropdown(selected: PaceMetric, onSelect: (PaceMetric) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.dp, metricLabelGray.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                .clickable { open = true }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            BasicText(selected.title, style = metricValueStyle())
+            BasicText("▾", style = metricLabelStyle())
+        }
+        DropdownMenu(
+            expanded         = open,
+            onDismissRequest = { open = false },
+            modifier         = Modifier.background(cardBg)
+        ) {
+            PaceMetric.entries.forEach { m ->
+                DropdownMenuItem(
+                    text    = {
+                        BasicText(
+                            m.title,
+                            style = if (m == selected) metricValueStyle() else metricLabelStyle()
+                        )
+                    },
+                    onClick = { onSelect(m); open = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaceSparklineChart(
+    values   : List<Float?>,
+    lineColor: Color,
+    xLabels  : List<String> = emptyList(),
+    formatY  : (Float) -> String = { "%.1f%%".format(it * 100) },
+    legend   : String = "efficiency"
+) {
     // null = бакет без данных (Alex 2026-08-14: «прерывай графики для периодов,
     // данных о которых у тебя нет») — исключается из min/max и разрывает линию,
     // вместо того чтобы тянуть её сквозь пропуск или опускать в ноль.
@@ -2144,8 +2221,8 @@ private fun PaceSparklineChart(values: List<Float?>, lineColor: Color, xLabels: 
                 // 1 знак после запятой (Alex 05.09: «почему по оси Y два одинаковых
                 // 1%?» — %.0f округлял 1.4% и 0.6% до одного и того же «1%», раз
                 // efficiency у реальных попыток часто однозначный процент).
-                BasicText("%.1f%%".format(maxV * 100), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
-                BasicText("%.1f%%".format(minV * 100), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
+                BasicText(formatY(maxV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
+                BasicText(formatY(minV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
             }
 
             // Line chart canvas
@@ -2247,7 +2324,7 @@ private fun PaceSparklineChart(values: List<Float?>, lineColor: Color, xLabels: 
             Canvas(modifier = Modifier.width(8.dp).height(8.dp)) {
                 drawCircle(lineColor, radius = size.minDimension / 2f)
             }
-            BasicText("efficiency", style = labelStyle(8.sp, color = lineColor.copy(alpha = 0.7f)))
+            BasicText(legend, style = labelStyle(8.sp, color = lineColor.copy(alpha = 0.7f)))
         }
     }
 }

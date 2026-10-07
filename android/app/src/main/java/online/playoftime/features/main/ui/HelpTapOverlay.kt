@@ -121,8 +121,9 @@ fun helpPages(topic: HelpTopic): List<String> = when (topic) {
         "**White ticks** — your most frequent miss on each side, written below as «0.020 × 6»: that miss, repeated 6 times.\nOnly misses repeated at least twice count."
     )
     HelpTopic.STAT_PACE -> listOf(
-        "**Pace of learning.**\n**Chart** — how good your attempts were over the period. Each point is the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. A point is an hour, a day or a month, depending on the period.",
-        "A **rising line** means your attempts are getting better.\n**SC/att** — the average Serenity per attempt in the period."
+        "**Pace of learning.**\n**Chart** — how your play changed over the period. A point is an hour, a day or a month, depending on the period. Pick what it shows in the **list** above it.",
+        "**Pace** — how good your attempts were: the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. **SC/att** — the average Serenity per attempt.\n**Hit rate** — the share of attempts that won.\n**Lucky index** — how often you hit exactly 3.000, compared with chance.",
+        "A **rising line** means you are getting better."
     )
     HelpTopic.STAT_SESSIONS -> listOf(
         "**Sessions log** — your whole history, whatever period is selected: year, month, week, day, session. Tap a row to unfold it.\n**lucky** — the Lucky Index of the row («no luck» = no exact 3.000 in the session). **mean** — typical early / late miss, ms. **att4win** — attempts per win.",
