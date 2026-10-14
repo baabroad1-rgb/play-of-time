@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Play of Time · Measurement</title>
-  <meta name="description" content="A short timing test: stop the stopwatch at exactly three seconds." />
+  <meta name="description" content="A tool for assessing how adequately you estimate time. Measure before and after a procedure to see how it affects your activation." />
   <meta name="theme-color" content="#000000" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -82,27 +82,23 @@
       padding: 14px 30px; border-radius: 999px;
     }
     .cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-    .cta-note { color: var(--muted); font-size: 13px; margin-top: 12px; }
-
     /* Sections */
     section { padding: 34px 0; border-top: 1px solid var(--line); }
     h2 { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 18px; }
-    .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-    .steps li { display: flex; gap: 14px; align-items: flex-start; background: var(--card); border-radius: var(--radius); padding: 16px; }
-    .steps .n {
-      flex: none; width: 28px; height: 28px; border-radius: 50%;
-      display: grid; place-items: center;
-      background: rgba(255, 85, 28, .14); color: var(--accent);
-      font-weight: 700; font-size: 14px;
+    .intro { margin: 0 0 18px; font-size: 17px; }
+    .flow { display: flex; align-items: stretch; gap: 6px; }
+    .flow .box {
+      flex: 1 1 0; min-width: 0;
+      background: var(--card); border-radius: var(--radius);
+      padding: 14px 6px; text-align: center;
+      display: flex; flex-direction: column; justify-content: center;
     }
-    .steps b, .grid b { display: block; font-weight: 600; margin-bottom: 2px; }
-    .steps span, .grid span { color: var(--soft); font-size: 15px; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 560px) { .grid { grid-template-columns: 1fr 1fr; } }
-    .grid div { background: var(--card); border-radius: var(--radius); padding: 16px; }
-    .plain p { margin: 0 0 12px; color: var(--soft); }
-    .plain p:last-child { margin-bottom: 0; }
-    .plain strong { color: var(--text); font-weight: 600; }
+    .flow .box b { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+    .flow .box span { color: var(--soft); font-size: 13px; }
+    .flow .box.mid { background: rgba(255, 85, 28, .14); }
+    .flow .box.mid b { color: var(--accent); }
+    .flow .arrow { flex: none; align-self: center; color: var(--muted); font-size: 18px; }
+    .outro { margin: 16px 0 0; color: var(--soft); }
 
     footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
 
@@ -130,36 +126,22 @@
         <div class="err" id="demoErr">&nbsp;</div>
         <div class="bar"><i id="demoBar"></i></div>
       </div>
-      <h1>Measure your sense of&nbsp;time</h1>
-      <p class="lead">Start the stopwatch and stop it at exactly 3.000 seconds. A few minutes of attempts show how precisely you hit the moment and how you act after each result.</p>
+      <h1>How accurately do you sense&nbsp;time?</h1>
+      <p class="lead">A tool for assessing how adequately you estimate time.</p>
       <a class="cta" href="#start" id="start">Start measurement</a>
-      <div class="cta-note">About 5 minutes · no sign-up</div>
     </div>
 
     <section>
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li><div class="n">1</div><div><b>Press RUN</b><span>The stopwatch starts.</span></div></li>
-        <li><div class="n">2</div><div><b>Press STOP at 3.000</b><span>Right after the press you see how far off you were.</span></div></li>
-        <li><div class="n">3</div><div><b>Repeat</b><span>A fixed series of attempts, the same for everyone, so results compare fairly.</span></div></li>
-      </ol>
-    </section>
-
-    <section>
-      <h2>What is measured</h2>
-      <div class="grid">
-        <div><b>Accuracy</b><span>How close your presses come to 3.000 seconds.</span></div>
-        <div><b>Early or late</b><span>Whether you tend to stop before the mark or after it.</span></div>
-        <div><b>Steadiness</b><span>How evenly you hold your level from one attempt to the next.</span></div>
-        <div><b>Correction</b><span>How you adjust after a miss in one direction.</span></div>
-        <div><b>Tempo</b><span>Your natural rhythm between attempts.</span></div>
+      <h2>Before and after</h2>
+      <p class="intro">Want to see how a procedure affects your activation? Take one measurement before it and one after.</p>
+      <div class="flow">
+        <div class="box"><b>Measure</b><span>before</span></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="box mid"><b>Procedure</b></div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="box"><b>Measure</b><span>after</span></div>
       </div>
-    </section>
-
-    <section class="plain">
-      <h2>Measurement only</h2>
-      <p>This is the measuring core of <strong>Play of Time</strong> with everything else taken out: levels, quests, scores and rankings stay in the game. Every attempt is recorded the same way, which keeps one measurement comparable with another.</p>
-      <p><strong>Anonymous.</strong> You get a random code instead of an account. Your attempts are stored under this code and used only for the measurement.</p>
+      <p class="outro">Compare the two results.</p>
     </section>
   </main>
 
