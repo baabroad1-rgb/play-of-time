@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: Ranks — сообщение «сначала пройди сессию», досылка замеров при открытии
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1e87f2c26cd1850900609b207d3ad51d3eee8156)
+
 ### Measurement: сохранение имени регистрирует игрока, если первая отправка не дошла
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b04d1ef10c15f9d1baa36f648dab000c60434fa2)
@@ -2131,4 +2135,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 119.
+Всего записей: 120.
