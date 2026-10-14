@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: Analytics по одной сессии — выпадающий список вместо фильтров периода
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5b0a632eede36ffff5a8080647251dfd40a9fec5)
+
 ### Measurement: полноэкранный режим по касанию и манифест для домашнего экрана
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/56a7e25299818d421603b68e2427afde95aba06e)
@@ -2014,4 +2018,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 106.
+Всего записей: 107.
