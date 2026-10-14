@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: сама правка средних по промахам (в прошлый коммит попал только журнал)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ce75d148bac23a7fec88455318575d4d2f1af211)
+
 ### Measurement: средние опоздания и преждевременных остановок только по промахам
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/501ec3507e1679a5125d86a1e636cd1bbbcf71b5)
@@ -1994,4 +1998,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 101.
+Всего записей: 102.
