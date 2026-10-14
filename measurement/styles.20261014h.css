@@ -4788,6 +4788,9 @@ body.game-open .page iframe {
 
 /* Ranks: why you are not in the table yet. */
 .mlb-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   padding: 10px 12px;
   border-radius: 10px;
@@ -4796,3 +4799,5 @@ body.game-open .page iframe {
   font-size: 14px;
   line-height: 1.35;
 }
+.mlb-notice span { flex: 1 1 auto; min-width: 0; }
+.mlb-notice .chip { flex: none; }

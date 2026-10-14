@@ -2501,12 +2501,7 @@
     return "↺";
   }
 
-  // One-shot note under the stopwatch (measurement version): set after the
-  // name is saved, gone on the next RUN.
-  let playNotice = "";
-
   function toastMessage(currentTimer) {
-    if (playNotice && currentTimer.state !== "running") return { kind: "gold", text: escapeHtml(playNotice) };
     return null; // measurement version: no cheer-ups, twins or neighbors
     if (!db.settings.cheerUpsEnabled) return null;
     if (db.lastMessage && currentTimer.state !== "running") {
@@ -3734,7 +3729,6 @@
       // dismissCheerBubble/spawnCheerBubbleGhost) so it doesn't block RUN.
       if (cheerBubble) dismissCheerBubble();
       db.lastMessage = "";
-      playNotice = "";
       timer.state = "running";
       timer.resultType = "none";
       timer.elapsed = 0;
@@ -4533,19 +4527,9 @@
         if (data && data.displayName) identity.displayName = data.displayName;
         saveIdentity();
         mlbNameDraft = null;
-        mlbNameStatus = "";
-        // Back to the main screen after saving (Alex 2026-10-14). If this
-        // player has no complete measurement at the current level yet, say
-        // what gets them into Ranks.
-        const level = db.settings.currentLevelId || 1;
-        const hasOne = db.measurements.some((m) => m.levelId === level);
-        playNotice = hasOne
-          ? "Name saved: " + identity.displayName
-          : "Name saved. Complete one session of " + MEASUREMENT_ATTEMPTS + " attempts to get into Ranks.";
+        mlbNameStatus = "Saved.";
         mlbData = null;
-        stopMetronome();
-        view = "play";
-        render();
+        renderPreservingFocus();
       })
       // The reason is shown as is, so a failure on a real device can be told
       // apart from a dropped connection (Alex 2026-10-14: one instance could
@@ -4593,7 +4577,7 @@
           </div>
           <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
             `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
-          ${notInTable ? `<p class="mlb-notice">You are not in the table yet. Complete one session of ${MEASUREMENT_ATTEMPTS} attempts at ${formatTime(AIM_TIME, currentQuestFrom(level).accuracy)} first.</p>` : ""}
+          ${notInTable ? `<div class="mlb-notice"><span>You are not in the table yet. Complete one session of ${MEASUREMENT_ATTEMPTS} attempts at ${formatTime(AIM_TIME, currentQuestFrom(level).accuracy)} first.</span><button id="mlbGoPlay" class="chip active" type="button">Play</button></div>` : ""}
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
               <span>Player</span>
@@ -4610,6 +4594,13 @@
       </section>`;
     document.querySelectorAll("[data-lb-level]").forEach((btn) => {
       btn.addEventListener("click", () => { lbLevel = Number(btn.dataset.lbLevel); render(); });
+    });
+    // "Play" in the notice: back to the main screen at the level shown here.
+    const goPlay = document.getElementById("mlbGoPlay");
+    if (goPlay) goPlay.addEventListener("click", () => {
+      if (level !== db.settings.currentLevelId) setLevel(level);
+      view = "play";
+      render();
     });
     const saveBtn = document.getElementById("lbNameSave");
     if (saveBtn) saveBtn.addEventListener("click", saveMeasurementName);
