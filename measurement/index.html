@@ -202,10 +202,18 @@
       var frame = document.getElementById("appFrame");
       var theme = document.querySelector('meta[name="theme-color"]');
       var req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      // Tell the app when it is on screen: hidden time is not play time.
+      function tellApp(msg) {
+        var w = frame.querySelector("iframe").contentWindow;
+        if (w) w.postMessage(msg, location.origin);
+      }
+      tellApp("pot-hidden");
+      frame.querySelector("iframe").addEventListener("load", function () { if (frame.hidden) tellApp("pot-hidden"); });
       if (!req) return;
       start.addEventListener("click", function (e) {
         e.preventDefault();
         frame.hidden = false;
+        tellApp("pot-shown");
         try {
           var p = req.call(frame, { navigationUI: "hide" });
           if (p && p.catch) p.catch(function () { location.href = "./play.html"; });
@@ -215,7 +223,7 @@
       });
       function onFs() {
         var fs = document.fullscreenElement || document.webkitFullscreenElement;
-        if (!fs) frame.hidden = true;
+        if (!fs) { frame.hidden = true; tellApp("pot-hidden"); }
         if (theme) theme.setAttribute("content", "#000000");
       }
       document.addEventListener("fullscreenchange", onFs);

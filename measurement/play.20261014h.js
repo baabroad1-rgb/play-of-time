@@ -172,6 +172,7 @@
   function logPlayRejection(label, err) {
     try { console.warn(`[audio] ${label} play() rejected:`, err && err.name, err && err.message); } catch (e) { /* ignore */ }
   }
+  let appFrameHidden = false; // the landing page hid this app (left full screen)
   let metronomeId = 0;
   let playTickStart = 0;
   let lastRunPointerAt = 0;
@@ -799,6 +800,7 @@
 
   function startPlayTicker() {
     if (view !== "play" || !currentSession() || playTickStart) return;
+    if (document.hidden || appFrameHidden) return; // not on screen — not active
     playTickStart = Date.now();
   }
 
@@ -1056,19 +1058,23 @@
   //   perMinute  — attempts ÷ minutes from the first RUN to the last STOP;
   //   perWin     — attempts ÷ wins (null if no wins). A win is an exact hit
   //                at the level's precision: 3.0 / 3.00 / 3.000.
-  function measurementStats(attempts) {
+  // activeMs: time the main screen was open and active during the
+  // measurement (session.activeTimeMs, the play ticker) — Alex 2026-10-14:
+  // only that time counts for attempts per minute, not the wall clock from
+  // the first RUN to the last STOP (Ranks, Settings, a background tab or the
+  // landing page do not count).
+  function measurementStats(attempts, activeMs) {
     const errs = attempts.filter((a) => !isQuestWinAttempt(a)).map(signedErrorMs);
     const late = errs.filter((e) => e > 0);
     const early = errs.filter((e) => e < 0).map((e) => -e);
     const mean = (arr) => (arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : null);
     const wins = attempts.filter(isQuestWinAttempt).length;
-    const spanMs = attempts.length ? attempts[attempts.length - 1].endTime - attempts[0].startTime : 0;
     return {
       attempts: attempts.length,
       wins,
       lateAvgMs: mean(late),
       earlyAvgMs: mean(early),
-      perMinute: spanMs > 0 ? attempts.length / (spanMs / 60000) : null,
+      perMinute: activeMs > 0 ? attempts.length / (activeMs / 60000) : null,
       perWin: wins ? attempts.length / wins : null
     };
   }
@@ -1084,7 +1090,7 @@
       accuracy: attempts[0].accuracy,
       startTime: attempts[0].startTime,
       endTime: attempts[attempts.length - 1].endTime,
-      ...measurementStats(attempts)
+      ...measurementStats(attempts, (db.sessions.find((x) => x.id === sessionId) || {}).activeTimeMs || 0)
     };
     db.measurements.push(record);
     return record;
@@ -5533,6 +5539,28 @@
     } catch (_) { /* not allowed here — the next tap tries again */ }
   }
   document.addEventListener("pointerdown", requestPageFullscreen, true);
+
+  // The landing page (index.html) shows this app in a frame and tells it
+  // when the frame is hidden (player left full screen) or shown again. Hidden
+  // time is not play time: stop the ticker, drop a running attempt.
+  window.addEventListener("message", (event) => {
+    if (event.origin !== location.origin) return;
+    if (event.data === "pot-hidden") {
+      appFrameHidden = true;
+      stopMetronome();
+      flushPlayTicker();
+      if (timer.state === "running") {
+        cancelAnimationFrame(timer.raf);
+        timer.state = "ready";
+        timer.elapsed = 0;
+        timer.resultType = "none";
+        render();
+      }
+    } else if (event.data === "pot-shown") {
+      appFrameHidden = false;
+      if (view === "play") startPlayTicker();
+    }
+  });
 
   // Measurement page: play.html is the app itself (no landing overlay to
   // open), so audio is unlocked on the first real tap anywhere.
