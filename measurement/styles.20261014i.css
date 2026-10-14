@@ -4801,3 +4801,14 @@ body.game-open .page iframe {
 }
 .mlb-notice span { flex: 1 1 auto; min-width: 0; }
 .mlb-notice .chip { flex: none; }
+
+/* Name field frozen until the first session at this level. */
+.mlb-name-panel.is-off { opacity: .45; }
+.mlb-name-panel.is-off input,
+.mlb-name-panel.is-off button { pointer-events: none; }
+
+/* Own row: "Player 007 (you)" fits without an ellipsis on a phone. The name
+   column gets more room, "(you)" a smaller size; only really long custom
+   names are still cut. */
+.measure-lb .mlb-row { grid-template-columns: minmax(0, 2.2fr) repeat(4, minmax(0, 1fr)); }
+.mlb-you-tag { font-size: 11px; margin-left: 3px; }

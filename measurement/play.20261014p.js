@@ -4552,6 +4552,12 @@
     // Not in the table yet → say why in plain words (Alex 2026-10-14: a saved
     // name showed nowhere, and the reason was not obvious).
     const notInTable = Boolean(rows && !rows.some((r) => r.you));
+    // Name can be set only once you are in the table at this level (Alex
+    // 2026-10-14): until then the field and Save are frozen under the notice.
+    // While the table loads they stay frozen; if it cannot load, a complete
+    // local measurement at this level unfreezes them.
+    const inTable = rows ? !notInTable : (mlbError && db.measurements.some((m) => m.levelId === level));
+    const nameOff = !inTable ? " disabled" : "";
     let body;
     if (mlbError && mlbDataLevel === level) body = `<div class="android-empty">Can't reach the leaderboard. Check the connection and open Ranks again.</div>`;
     else if (!rows) body = `<div class="android-empty">Loading…</div>`;
@@ -4568,16 +4574,16 @@
       <section class="settings-screen leaderboard-screen measure-lb">
         <div class="sticky"><h1 class="section-title">Ranks</h1></div>
         <div class="settings-content">
-          <div class="panel mlb-name-panel">
-            <div class="lb-name-row">
-              <input id="lbNameInput" type="text" maxlength="24" placeholder="Your name" value="${escapeHtml(mlbNameDraft != null ? mlbNameDraft : (identity.displayName || ""))}">
-              <button id="lbNameSave" class="chip active" type="button">Save</button>
-            </div>
-            <p class="formula">${escapeHtml(mlbNameStatus || "Your name in the table. Leave it empty to go back to your Player number.")}</p>
-          </div>
           <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
             `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
           ${notInTable ? `<div class="mlb-notice"><span>You are not in the table yet. Complete one session of ${MEASUREMENT_ATTEMPTS} attempts at ${formatTime(AIM_TIME, currentQuestFrom(level).accuracy)} first.</span><button id="mlbGoPlay" class="chip active" type="button">Play</button></div>` : ""}
+          <div class="panel mlb-name-panel${nameOff ? " is-off" : ""}">
+            <div class="lb-name-row">
+              <input id="lbNameInput" type="text" maxlength="24" placeholder="Your name" value="${escapeHtml(mlbNameDraft != null ? mlbNameDraft : (identity.displayName || ""))}"${nameOff}>
+              <button id="lbNameSave" class="chip active" type="button"${nameOff}>Save</button>
+            </div>
+            <p class="formula">${escapeHtml(mlbNameStatus || (nameOff ? "Your name opens after your first session at this level." : "Your name in the table. Leave it empty to go back to your Player number."))}</p>
+          </div>
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
               <span>Player</span>
