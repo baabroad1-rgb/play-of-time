@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: игра без квестов — уровень в настройках, замер 33 попытки, свой лидерборд
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a1a46507bb147f8d84cf11cbd597c4c4252bdc47)
+
 ### Measurement: лендинг — инструмент оценки и замер до/после процедуры
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2660b5366b90dfb9fd10389c5f6210dc676f8baa)
@@ -1986,4 +1990,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 99.
+Всего записей: 100.
