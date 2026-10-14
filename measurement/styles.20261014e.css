@@ -4757,3 +4757,21 @@ body.game-open .page iframe {
 }
 .mlb-name { white-space: nowrap; }
 .mlb-rank { margin-right: 4px; }
+
+/* Close button, top-right corner of every screen (Alex 2026-10-14). */
+.app-close {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 4px);
+  right: calc(env(safe-area-inset-right, 0px) + 6px);
+  z-index: 60;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, .7);
+  font-size: 24px;
+  line-height: 30px;
+  padding: 0;
+}
+.app-close:focus-visible { outline: 2px solid #fff; }

@@ -5540,6 +5540,36 @@
   }
   document.addEventListener("pointerdown", requestPageFullscreen, true);
 
+  // Close button, top-right corner (Alex 2026-10-14). Inside the landing
+  // page's frame it asks the landing to leave full screen (the landing then
+  // hides the app); opened on its own (play.html, home-screen icon) it goes
+  // to the landing page.
+  (function addCloseButton() {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "app-close";
+    btn.setAttribute("aria-label", "Close");
+    btn.textContent = "×";
+    btn.addEventListener("click", () => {
+      stopMetronome();
+      flushPlayTicker();
+      if (timer.state === "running") {
+        cancelAnimationFrame(timer.raf);
+        timer.state = "ready";
+        timer.elapsed = 0;
+        timer.resultType = "none";
+        render();
+      }
+      if (window.self !== window.top) {
+        window.parent.postMessage("pot-close", location.origin);
+      } else {
+        if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        location.href = "./index.html";
+      }
+    });
+    (document.getElementById("gameOverlay") || document.body).appendChild(btn);
+  })();
+
   // The landing page (index.html) shows this app in a frame and tells it
   // when the frame is hidden (player left full screen) or shown again. Hidden
   // time is not play time: stop the ticker, drop a running attempt.

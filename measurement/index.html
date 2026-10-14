@@ -226,6 +226,17 @@
         if (!fs) { frame.hidden = true; tellApp("pot-hidden"); }
         if (theme) theme.setAttribute("content", "#000000");
       }
+      // The app's close button (top-right ×) asks to leave full screen.
+      window.addEventListener("message", function (e) {
+        if (e.origin !== location.origin || e.data !== "pot-close") return;
+        var ex = document.exitFullscreen || document.webkitExitFullscreen;
+        if ((document.fullscreenElement || document.webkitFullscreenElement) && ex) {
+          try { var p = ex.call(document); if (p && p.catch) p.catch(function () {}); } catch (err) {}
+        } else {
+          frame.hidden = true;
+          tellApp("pot-hidden");
+        }
+      });
       document.addEventListener("fullscreenchange", onFs);
       document.addEventListener("webkitfullscreenchange", onFs);
     })();
