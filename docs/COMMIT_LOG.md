@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: полноэкранный режим по касанию и манифест для домашнего экрана
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/56a7e25299818d421603b68e2427afde95aba06e)
+
 ### Measurement: упрощённый Analytics — попадания, hit rate, попыток на победу, темп, геом. средние
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/82510c921922a2f7df7e191f760a1c7d3178cf09)
@@ -2010,4 +2014,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 105.
+Всего записей: 106.
