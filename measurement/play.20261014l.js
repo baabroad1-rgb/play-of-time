@@ -416,13 +416,23 @@
     }
   }
 
+  // Fallback when localStorage is blocked: window.name holds a JSON map
+  // {key: value}. It used to hold ONE value, so the identity and the game
+  // data overwrote each other and the device got a new player id on every
+  // load (measurement version fix, 2026-10-14).
+  function fallbackMap() {
+    if (!window.name || !window.name.startsWith(FALLBACK_STORAGE_PREFIX)) return {};
+    try {
+      const map = JSON.parse(window.name.slice(FALLBACK_STORAGE_PREFIX.length));
+      return map && typeof map === "object" && !Array.isArray(map) && !map.settings ? map : {};
+    } catch (_) { return {}; }
+  }
+
   function readStorage(key) {
     const storage = browserLocalStorage();
     if (storage) return storage.getItem(key);
-    if (window.name && window.name.startsWith(FALLBACK_STORAGE_PREFIX)) {
-      return window.name.slice(FALLBACK_STORAGE_PREFIX.length);
-    }
-    return null;
+    const map = fallbackMap();
+    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
   }
 
   function writeStorage(key, value) {
@@ -433,7 +443,9 @@
     }
     // Some embedded browser test surfaces disable localStorage. Keep the app usable
     // in that restricted context while normal browsers use localStorage above.
-    window.name = FALLBACK_STORAGE_PREFIX + value;
+    const map = fallbackMap();
+    map[key] = value;
+    window.name = FALLBACK_STORAGE_PREFIX + JSON.stringify(map);
   }
 
   // ── Player identity (anonymous, device-local) ────────────────────────────
@@ -4498,9 +4510,11 @@
   // именем»). Same as the game's Ranks: a field and Save. An empty field
   // gives back the player's own Player NNN.
   let mlbNameStatus = "";
+  let mlbNameDraft = null; // typed name kept on screen until it is saved
   function saveMeasurementName() {
     const input = document.getElementById("lbNameInput");
     const name = (input.value || "").trim().slice(0, 24);
+    mlbNameDraft = name;
     mlbNameStatus = "Saving…";
     render();
     fetch(API_BASE + "set_name.php", {
@@ -4508,15 +4522,25 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ playerId: identity.playerId, syncToken: identity.syncToken, name })
     })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((res) => res.json().catch(() => ({})).then((data) => (res.ok ? data : Promise.reject(new Error(res.status + " " + (data.error || ""))))))
       .then((data) => {
         if (data && data.displayName) identity.displayName = data.displayName;
         saveIdentity();
+        mlbNameDraft = null;
         mlbNameStatus = "Saved.";
         mlbData = null;
         renderPreservingFocus();
       })
-      .catch(() => { mlbNameStatus = "Could not save. Check the connection and try again."; renderPreservingFocus(); });
+      // The reason is shown as is, so a failure on a real device can be told
+      // apart from a dropped connection (Alex 2026-10-14: one instance could
+      // not save a name).
+      .catch((err) => {
+        const why = err && err.message ? err.message.trim() : "";
+        mlbNameStatus = why && !/fetch|network|load/i.test(why)
+          ? "Could not save (" + why + "). Try again."
+          : "Could not save. Check the connection and try again.";
+        renderPreservingFocus();
+      });
   }
 
   function renderLeaderboard() {
@@ -4543,7 +4567,7 @@
         <div class="settings-content">
           <div class="panel mlb-name-panel">
             <div class="lb-name-row">
-              <input id="lbNameInput" type="text" maxlength="24" placeholder="Your name" value="${escapeHtml(identity.displayName || "")}">
+              <input id="lbNameInput" type="text" maxlength="24" placeholder="Your name" value="${escapeHtml(mlbNameDraft != null ? mlbNameDraft : (identity.displayName || ""))}">
               <button id="lbNameSave" class="chip active" type="button">Save</button>
             </div>
             <p class="formula">${escapeHtml(mlbNameStatus || "Your name in the table. Leave it empty to go back to your Player number.")}</p>

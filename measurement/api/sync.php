@@ -21,20 +21,7 @@ if (count($list) > 500) json_error("too many measurements");
 $pdo = m_db();
 $now = gmdate("Y-m-d H:i:s");
 
-$sel = $pdo->prepare("SELECT seq, sync_token, display_name FROM m_players WHERE id = ?");
-$sel->execute(array($playerId));
-$player = $sel->fetch();
-if ($player === false) {
-    $ins = $pdo->prepare("INSERT INTO m_players (id, sync_token, display_name, created_at, updated_at) VALUES (?, ?, '', ?, ?)");
-    $ins->execute(array($playerId, $syncToken, $now, $now));
-    $sel->execute(array($playerId));
-    $player = $sel->fetch();
-    $name = measurement_player_name($player["seq"]);
-    $pdo->prepare("UPDATE m_players SET display_name = ? WHERE id = ?")->execute(array($name, $playerId));
-    $player["display_name"] = $name;
-} elseif (!hash_equals((string) $player["sync_token"], $syncToken)) {
-    json_error("token mismatch", 403);
-}
+$player = measurement_player($pdo, $playerId, $syncToken);
 
 $num = function ($v, $min, $max) {
     if ($v === null || !is_numeric($v)) return null;

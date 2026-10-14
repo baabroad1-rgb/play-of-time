@@ -16,11 +16,8 @@ $syncToken = isset($input["syncToken"]) ? trim((string) $input["syncToken"]) : "
 if (!looks_like_id($playerId) || !looks_like_token($syncToken)) json_error("invalid playerId/syncToken");
 
 $pdo = m_db();
-$sel = $pdo->prepare("SELECT seq, sync_token FROM m_players WHERE id = ?");
-$sel->execute(array($playerId));
-$player = $sel->fetch();
-if ($player === false) json_error("unknown player", 404);
-if (!hash_equals((string) $player["sync_token"], $syncToken)) json_error("token mismatch", 403);
+// Not registered yet (first sync never got through) — register now.
+$player = measurement_player($pdo, $playerId, $syncToken);
 
 $name = measurement_clean_name(isset($input["name"]) ? $input["name"] : "");
 if ($name === null) $name = measurement_player_name($player["seq"]);

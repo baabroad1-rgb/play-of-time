@@ -44,3 +44,33 @@ function measurement_clean_name($raw) {
     $name = trim($name);
     return $name === "" ? null : $name;
 }
+
+// Finds the player or registers them (Alex 2026-10-14: saving a name failed
+// with "unknown player" when the device had not registered yet — e.g. its
+// first sync did not get through). Registration gives the next "Player NNN".
+// Two first requests at once (two tabs) race on the insert; the loser's
+// duplicate-key error is caught and it reads the row the winner made.
+// Returns the row {seq, sync_token, display_name}, or json_error 403 when
+// the token does not match.
+function measurement_player(PDO $pdo, $playerId, $syncToken) {
+    $sel = $pdo->prepare("SELECT seq, sync_token, display_name FROM m_players WHERE id = ?");
+    $sel->execute(array($playerId));
+    $player = $sel->fetch();
+    if ($player === false) {
+        $now = gmdate("Y-m-d H:i:s");
+        try {
+            $pdo->prepare("INSERT INTO m_players (id, sync_token, display_name, created_at, updated_at) VALUES (?, ?, '', ?, ?)")
+                ->execute(array($playerId, $syncToken, $now, $now));
+        } catch (Exception $e) { /* another request registered them first */ }
+        $sel->execute(array($playerId));
+        $player = $sel->fetch();
+        if ($player === false) json_error("could not register player", 500);
+        if ((string) $player["display_name"] === "") {
+            $name = measurement_player_name($player["seq"]);
+            $pdo->prepare("UPDATE m_players SET display_name = ? WHERE id = ? AND display_name = ''")->execute(array($name, $playerId));
+            $player["display_name"] = $name;
+        }
+    }
+    if (!hash_equals((string) $player["sync_token"], $syncToken)) json_error("token mismatch", 403);
+    return $player;
+}
