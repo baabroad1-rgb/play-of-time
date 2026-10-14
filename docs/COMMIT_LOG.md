@@ -9,6 +9,22 @@
 
 ## 14 октября 2026
 
+### Measurement: лендинг — вращалка, кнопка с состояниями, ссылка на игру
+
+Просьба Алекса, только лендинг measurement/index.html.
+
+- В шапке вместо значка-секундомера фирменная вращалка с главного сайта.
+  Слои — файлы в measurement/assets/, побайтно те же, что встроены в
+  webapp/index.html.
+- Демо-кнопка проходит круг ▶ RUN → ■ STOP → ↺ RESET → ▶ RUN, каждое
+  нажатие показано псевдотапом.
+- В подвале ссылка на полную игру: «For the full version of the app,
+  visit playoftime.online».
+
+Проверено в Chromium, ошибок нет. Превью Алекс одобрил.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c74b24e1271c9e1b287c16ce8c79c46aa3e59bba)
+
 ### Revert "Сверка состояния и свежая передача: в проекте три продукта, а не два"
 
 This reverts commit d16c5aaef59a5aa656c2d2a8d91b2f1ebfd21c6d.
@@ -2094,4 +2110,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 116.
+Всего записей: 117.
