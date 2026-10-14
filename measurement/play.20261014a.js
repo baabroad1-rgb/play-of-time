@@ -1047,13 +1047,16 @@
   }
 
   // Numbers of one measurement (also the leaderboard row):
-  //   lateAvgMs  — arithmetic mean of late errors, ms (null if no late stops);
-  //   earlyAvgMs — arithmetic mean of early errors, ms, as a positive number;
+  //   lateAvgMs  — arithmetic mean of late errors over MISSES only, ms
+  //                (null if no late misses). A hit (3.0 on screen) is left
+  //                out even if its raw ms is off (Alex 2026-10-14: "берём
+  //                только те попытки, которые помечены как неуспешные");
+  //   earlyAvgMs — the same for early misses, as a positive number;
   //   perMinute  — attempts ÷ minutes from the first RUN to the last STOP;
   //   perWin     — attempts ÷ wins (null if no wins). A win is an exact hit
   //                at the level's precision: 3.0 / 3.00 / 3.000.
   function measurementStats(attempts) {
-    const errs = attempts.map(signedErrorMs);
+    const errs = attempts.filter((a) => !isQuestWinAttempt(a)).map(signedErrorMs);
     const late = errs.filter((e) => e > 0);
     const early = errs.filter((e) => e < 0).map((e) => -e);
     const mean = (arr) => (arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : null);
