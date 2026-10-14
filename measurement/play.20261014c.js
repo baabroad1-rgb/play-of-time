@@ -5430,6 +5430,30 @@
       startPlayTicker();
     }
   });
+  // Browser bars off (Alex 2026-10-14): the page asks for fullscreen on a
+  // tap, as the game does when it opens. A browser grants it only inside a
+  // real tap, so it happens on a tap, and again on the next tap after the
+  // player leaves fullscreen. Never on RUN or while an attempt runs: the
+  // screen resize would jump under the stopwatch mid-attempt. iPhone Safari has no
+  // fullscreen for pages; there the bars go only when the page is added to
+  // the home screen (manifest.webmanifest, display: fullscreen).
+  function requestPageFullscreen(event) {
+    if (timer.state === "running") return;
+    // RUN itself starts an attempt — no resize then; the RESET tap after it,
+    // or any other tap, switches to fullscreen.
+    const onRun = event && event.target && event.target.closest && event.target.closest("#runButton");
+    if (onRun && timer.state === "ready") return;
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    const el = document.getElementById("gameOverlay") || document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return;
+    try {
+      const p = req.call(el, { navigationUI: "hide" });
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) { /* not allowed here — the next tap tries again */ }
+  }
+  document.addEventListener("pointerdown", requestPageFullscreen, true);
+
   // Measurement page: play.html is the app itself (no landing overlay to
   // open), so audio is unlocked on the first real tap anywhere.
   document.addEventListener("pointerdown", unlockAudioPlayback, { once: true });
