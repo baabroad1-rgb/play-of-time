@@ -58,3 +58,8 @@ jobs:
             cmp "/tmp/$f" "measurement/$f"
             echo "OK $f"
           done
+          # Leaderboard API answers with JSON (first request creates the m_ tables).
+          curl -fsS "https://playoftime.online/measurement/api/leaderboard.php?level=1" | tee /tmp/lb.json
+          grep -q '"rows"' /tmp/lb.json
+          echo
+          echo "OK api/leaderboard.php"

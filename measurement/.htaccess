@@ -1,0 +1,7 @@
+# play.html names the current script file; a cached copy would keep players
+# on an old build. Same rule the game's root .htaccess has for index.html.
+<IfModule mod_headers.c>
+  <FilesMatch "^(index|play)\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

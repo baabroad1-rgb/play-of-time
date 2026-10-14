@@ -3819,7 +3819,7 @@
     // Measurement version: every hit (target taken) plays the hooray sound —
     // there is no quest to complete. The 33rd attempt opens the completion card.
     if (timer.resultType === "win") playSuccessSound();
-    if (result.type === "measurement") measurementDone = result.record;
+    if (result.type === "measurement") { measurementDone = result.record; syncMeasurements(); }
     saveDb();
     render();
   }
@@ -4427,36 +4427,85 @@
   // ── Leaderboard ────────────────────────────────────────────────────────
   const LB_SORTS = [["level", "Progress"], ["sc", "Coins"], ["hitrate", "Accuracy"], ["combined", "Luck"]];
 
-  // ── Measurement leaderboard (on this device) ─────────────────────────────
-  // One row per completed measurement at the selected level, newest first.
-  // Four numbers only: average late error, average early error, attempts
-  // per minute, attempts per win.
-  let lbLevel = null; // level shown on the leaderboard; null = current level
+  // ── Measurement leaderboard (shared, on the server) ──────────────────────
+  // Identity as in the game: a random playerId + secret syncToken made once
+  // on this device (loadIdentity). The first sync registers the player and
+  // the server names them "Player 001", "Player 002", … by join order.
+  // One row per player: their latest complete measurement at the selected
+  // level, fewest attempts per win on top. Four numbers per row.
+  let lbLevel = null;      // level shown; null = the current level
+  let mlbData = null;      // rows for mlbDataLevel, from api/leaderboard.php
+  let mlbDataLevel = null;
+  let mlbLoading = false;
+  let mlbError = false;
+  let mSyncInFlight = false;
 
   function fmtAvgMs(v) { return v == null ? "—" : Math.round(v) + " ms"; }
   function fmtPerMin(v) { return v == null ? "—" : v.toFixed(1); }
   function fmtPerWin(v) { return v == null ? "—" : v.toFixed(1); }
-  function fmtLbDate(ts) {
-    const d = new Date(ts);
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  // Sends every measurement the server has not seen yet. Best effort: if
+  // the network is down it just tries again after the next measurement or
+  // on the next visit; the measurement itself is already saved locally.
+  function syncMeasurements() {
+    if (mSyncInFlight || !identity.playerId) return;
+    const lastId = identity.lastSyncedMeasurementId || 0;
+    const pending = db.measurements.filter((m) => m.id > lastId);
+    if (!pending.length && identity.displayName) return;
+    mSyncInFlight = true;
+    fetch(API_BASE + "sync.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: identity.playerId, syncToken: identity.syncToken, measurements: pending })
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data) => {
+        mSyncInFlight = false;
+        if (data && data.displayName) identity.displayName = data.displayName;
+        if (pending.length) identity.lastSyncedMeasurementId = Math.max(...pending.map((m) => m.id));
+        saveIdentity();
+        if (view === "leaderboard") { mlbData = null; render(); }
+      })
+      .catch(() => { mSyncInFlight = false; });
+  }
+
+  function fetchMeasurementLeaderboard(level) {
+    mlbLoading = true;
+    mlbError = false;
+    fetch(API_BASE + "leaderboard.php?level=" + level + "&playerId=" + encodeURIComponent(identity.playerId || ""), { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data) => {
+        mlbData = Array.isArray(data.rows) ? data.rows : [];
+        mlbDataLevel = level;
+        mlbLoading = false;
+        if (view === "leaderboard") render();
+      })
+      .catch(() => {
+        mlbLoading = false;
+        mlbError = true;
+        mlbDataLevel = level;
+        if (view === "leaderboard") render();
+      });
   }
 
   function renderLeaderboard() {
     const level = lbLevel || db.settings.currentLevelId || 1;
-    const rows = db.measurements
-      .filter((m) => m.levelId === level)
-      .sort((a, b) => b.endTime - a.endTime);
-    const body = rows.length
-      ? rows.map((m, i) => `
-          <div class="mlb-row${i === 0 ? " mlb-latest" : ""}">
-            <span class="mlb-when">#${m.id}<small>${fmtLbDate(m.endTime)}</small></span>
-            <b class="late">${fmtAvgMs(m.lateAvgMs)}</b>
-            <b class="early">${fmtAvgMs(m.earlyAvgMs)}</b>
-            <b>${fmtPerMin(m.perMinute)}</b>
-            <b>${fmtPerWin(m.perWin)}</b>
-          </div>`).join("")
-      : `<div class="android-empty">No measurements at this level yet. Finish ${MEASUREMENT_ATTEMPTS} attempts to see the first row.</div>`;
+    if (mlbDataLevel !== level || (mlbData === null && !mlbError)) {
+      if (!mlbLoading) fetchMeasurementLeaderboard(level);
+    }
+    const rows = mlbDataLevel === level ? mlbData : null;
+    let body;
+    if (mlbError && mlbDataLevel === level) body = `<div class="android-empty">Can't reach the leaderboard. Check the connection and open Ranks again.</div>`;
+    else if (!rows) body = `<div class="android-empty">Loading…</div>`;
+    else if (!rows.length) body = `<div class="android-empty">No measurements at this level yet. Finish ${MEASUREMENT_ATTEMPTS} attempts to see the first row.</div>`;
+    else body = rows.map((r, i) => `
+          <div class="mlb-row${r.you ? " mlb-you" : ""}">
+            <span class="mlb-when"><span class="mlb-rank">${i + 1}</span>${escapeHtml(r.name || "—")}${r.you ? "<small>you</small>" : ""}</span>
+            <b class="late">${fmtAvgMs(r.lateAvgMs)}</b>
+            <b class="early">${fmtAvgMs(r.earlyAvgMs)}</b>
+            <b>${fmtPerMin(r.perMinute)}</b>
+            <b>${fmtPerWin(r.perWin)}</b>
+          </div>`).join("");
     app.innerHTML = `
       <section class="settings-screen leaderboard-screen measure-lb">
         <div class="sticky"><h1 class="section-title">Ranks</h1></div>
@@ -4465,7 +4514,7 @@
             `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
-              <span>Measurement</span>
+              <span>Player</span>
               <span>Late, avg</span>
               <span>Early, avg</span>
               <span>Attempts / min</span>
@@ -4473,7 +4522,7 @@
             </div>
             ${body}
           </div>
-          <p class="formula">Each row is one measurement of ${MEASUREMENT_ATTEMPTS} attempts, newest on top. Late and early: the average miss past and before the mark. Attempts per win: how many attempts one hit takes.</p>
+          <p class="formula">Each player's latest measurement of ${MEASUREMENT_ATTEMPTS} attempts at this level. Fewest attempts per win on top.${identity.displayName ? ` You are ${escapeHtml(identity.displayName)}.` : ""}</p>
         </div>
         ${nav()}
       </section>`;
@@ -5027,7 +5076,7 @@
         // Re-entering the leaderboard tab should reflect anything that
         // synced while the player was elsewhere, not a stale earlier fetch
         // or a stale error from a previous visit.
-        if (view === "leaderboard") { leaderboardData = null; leaderboardError = null; }
+        if (view === "leaderboard") { leaderboardData = null; leaderboardError = null; mlbData = null; mlbError = false; mlbDataLevel = null; }
         render();
       });
     });
@@ -5491,5 +5540,5 @@
   document.addEventListener("touchstart", unlockAudioPlayback, { once: true, passive: true });
   bindHostPage();
   render();
-  scheduleSync(); // catch up anything left over from a previous visit, or backfill on first run
+  syncMeasurements(); // registers the player (name) and sends anything left from a previous visit // catch up anything left over from a previous visit, or backfill on first run
 })();

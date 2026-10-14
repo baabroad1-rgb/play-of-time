@@ -1,0 +1,4 @@
+# Only sync.php and leaderboard.php are requested by the browser.
+<FilesMatch "^(db|_lib)\.php$">
+  Require all denied
+</FilesMatch>

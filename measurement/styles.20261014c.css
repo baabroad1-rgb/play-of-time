@@ -4731,3 +4731,10 @@ body.game-open .page iframe {
 }
 .session-select option { background: #1e1e1e; color: #fff; }
 .session-none { color: var(--muted); font-size: 12px; }
+
+/* Shared leaderboard: rank number before the name, own row highlighted. */
+.mlb-rank { color: var(--muted); font-size: 11px; margin-right: 6px; }
+.mlb-when { display: block; }
+.mlb-when small { display: block; }
+.mlb-you { background: rgba(230, 164, 64, .10); border-radius: 8px; }
+.mlb-you .mlb-when { color: var(--sand); }
