@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: упрощённый Analytics — попадания, hit rate, попыток на победу, темп, геом. средние
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/82510c921922a2f7df7e191f760a1c7d3178cf09)
+
 ### Measurement: отдельная выкладка в /measurement/ на playoftime.online
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4d81222568b7d6f432a2700269587b93a3dc6b1a)
@@ -2006,4 +2010,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 104.
+Всего записей: 105.
