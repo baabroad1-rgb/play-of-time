@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: Ranks — уровни наверху, сообщение, имя заблокировано до первой сессии
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/fddff176603986545c7a19345232c2b4f49c5796)
+
 ### Measurement: сообщение «сначала пройди сессию» в Ranks с кнопкой Play, без автоперехода
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c86d120a594093390b2eefdddc14cafea1c6bf26)
@@ -2143,4 +2147,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 122.
+Всего записей: 123.
