@@ -40,7 +40,21 @@
     /* Header */
     header { padding: 18px 0; }
     .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
-    .brand svg { flex: none; }
+    /* Фирменная вращалка — та же, что в шапке главного сайта: кольцо,
+       треугольник и буква t со шлейфом, те же анимации. */
+    .brand-mark { flex: none; width: 40px; height: 40px; }
+    .pot-logo { position: relative; width: 100%; height: 100%; perspective: 900px; }
+    .pot-logo .pot-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .pot-logo .pot-ring { z-index: 0; animation: pot-ring-spin 5s cubic-bezier(.34,1.56,.64,1) infinite; }
+    @keyframes pot-ring-spin {
+      0% { transform: rotate(0deg); } 8% { transform: rotate(0deg); }
+      22% { transform: rotate(372deg); } 30% { transform: rotate(355deg); }
+      36% { transform: rotate(360deg); } 100% { transform: rotate(360deg); }
+    }
+    .pot-logo .pot-triangle { z-index: 1; transform-style: preserve-3d; transform-origin: 50% 50%; animation: pot-tri-spin 3s linear infinite; }
+    @keyframes pot-tri-spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+    .pot-logo .pot-letter { z-index: 2; transform-style: preserve-3d; transform-origin: 48.5% 50%; animation: pot-letter-spin 3s linear infinite; }
+    @keyframes pot-letter-spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(-360deg); } }
     .brand .tag {
       margin-left: auto;
       font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
@@ -57,6 +71,21 @@
       background: var(--card);
       border-radius: var(--radius);
       padding: 22px 16px 18px;
+    }
+    .readout { position: relative; overflow: hidden; }
+    /* Надпись состояния — как на кнопке в игре: ▶ RUN, ■ STOP, ↺ RESET. */
+    .readout .action { font-size: 20px; font-weight: 700; letter-spacing: .02em; margin: 2px 0 2px; }
+    /* Псевдотап: след пальца в момент нажатия. */
+    .readout .tap {
+      position: absolute; left: 50%; top: 52%;
+      width: 64px; height: 64px; margin: -32px 0 0 -32px;
+      border-radius: 50%; background: rgba(255, 255, 255, .35);
+      opacity: 0; transform: scale(.4); pointer-events: none;
+    }
+    .readout .tap.go { animation: demo-tap .5s ease-out; }
+    @keyframes demo-tap {
+      0% { opacity: .9; transform: scale(.4); }
+      100% { opacity: 0; transform: scale(1.6); }
     }
     .readout .label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
     .readout .time {
@@ -101,8 +130,15 @@
     .outro { margin: 16px 0 0; color: var(--soft); }
 
     footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
+    footer .full { margin-top: 8px; }
+    footer .full a { color: var(--accent); text-decoration: none; }
+    footer .full a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-    @media (prefers-reduced-motion: reduce) { .bar i { transition: none !important; } }
+    @media (prefers-reduced-motion: reduce) {
+      .bar i { transition: none !important; }
+      .pot-logo .pot-layer { animation: none !important; }
+      .readout .tap { display: none; }
+    }
 
     /* The measurement app, opened full screen from Start measurement. */
     .app-frame { position: fixed; inset: 0; z-index: 100; background: #000; }
@@ -113,11 +149,17 @@
 <body>
   <header class="wrap">
     <div class="brand">
-      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-        <circle cx="13" cy="14" r="10" fill="none" stroke="#ff551c" stroke-width="2" />
-        <rect x="11" y="1" width="4" height="3" rx="1" fill="#ff551c" />
-        <path d="M13 14 L13 8" stroke="#fff" stroke-width="2" stroke-linecap="round" />
-      </svg>
+      <div class="brand-mark" aria-hidden="true">
+        <div class="pot-logo">
+          <img class="pot-layer pot-ring" src="./assets/pot-ring.png" alt="">
+          <img class="pot-layer pot-triangle" src="./assets/pot-triangle.png" alt="">
+          <img class="pot-layer pot-letter" style="opacity:0.15;animation-delay:0.24s" src="./assets/pot-letter.png" alt="">
+          <img class="pot-layer pot-letter" style="opacity:0.28;animation-delay:0.16s" src="./assets/pot-letter.png" alt="">
+          <img class="pot-layer pot-letter" style="opacity:0.42;animation-delay:0.1s" src="./assets/pot-letter.png" alt="">
+          <img class="pot-layer pot-letter" style="opacity:0.55;animation-delay:0.05s" src="./assets/pot-letter.png" alt="">
+          <img class="pot-layer pot-letter" src="./assets/pot-letter.png" alt="">
+        </div>
+      </div>
       Play of Time
       <span class="tag">Measurement</span>
     </div>
@@ -125,11 +167,13 @@
 
   <main class="wrap">
     <div class="hero">
-      <div class="readout" aria-hidden="true">
+      <div class="readout" id="demo" aria-hidden="true">
         <div class="label">Target 3.000 s</div>
         <div class="time" id="demoTime">0.000</div>
+        <div class="action" id="demoAction">▶ RUN</div>
         <div class="err" id="demoErr">&nbsp;</div>
         <div class="bar"><i id="demoBar"></i></div>
+        <span class="tap" id="demoTap"></span>
       </div>
       <h1>How accurately do you sense&nbsp;time?</h1>
       <p class="lead">A tool for assessing how adequately you estimate time.</p>
@@ -150,7 +194,10 @@
     </section>
   </main>
 
-  <footer class="wrap">Play of Time · measurement version</footer>
+  <footer class="wrap">
+    Play of Time · measurement version
+    <div class="full">For the full version of the app, visit <a href="https://playoftime.online/">playoftime.online</a></div>
+  </footer>
 
   <!-- The app itself (play.html), loaded in the background and shown full
        screen on Start measurement, the way the game opens from its landing. -->
@@ -159,17 +206,34 @@
   </div>
 
   <script>
-    // Demo readout: a counter runs to a press near 3.000 and shows the error,
-    // early in red, late in blue, as in the game. Purely decorative.
+    // Demo button: the same cycle as the stopwatch in the app. A pseudo-tap
+    // on ▶ RUN starts it, a pseudo-tap on ■ STOP near 3.000 stops it and
+    // shows the error (early red, late blue), a pseudo-tap on ↺ RESET clears
+    // it, and round again. Purely decorative.
     (function () {
       var timeEl = document.getElementById("demoTime");
+      var actEl = document.getElementById("demoAction");
       var errEl = document.getElementById("demoErr");
       var barEl = document.getElementById("demoBar");
+      var tapEl = document.getElementById("demoTap");
       var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       var presses = [2.987, 3.021, 2.996, 3.000, 3.008, 2.974, 3.013];
       var k = 0;
+      function tap() {
+        tapEl.classList.remove("go");
+        void tapEl.offsetWidth; // restart the animation
+        tapEl.classList.add("go");
+      }
+      function ready() {
+        timeEl.textContent = "0.000";
+        actEl.textContent = "▶ RUN";
+        errEl.className = "err";
+        errEl.innerHTML = "&nbsp;";
+        barEl.style.width = "0%";
+      }
       function show(target) {
         timeEl.textContent = target.toFixed(3);
+        actEl.textContent = "↺ RESET";
         var e = Math.round((target - 3) * 1000);
         errEl.className = "err " + (e < 0 ? "early" : e > 0 ? "late" : "exact");
         errEl.textContent = e === 0 ? "exactly 3.000" : (e < 0 ? "−" : "+") + (Math.abs(e) / 1000).toFixed(3) + " s";
@@ -178,18 +242,28 @@
       if (reduce) { show(2.996); return; }
       function run() {
         var target = presses[k++ % presses.length];
+        tap();                                   // tap on ▶ RUN
+        actEl.textContent = "■ STOP";
         var start = performance.now();
-        errEl.innerHTML = "&nbsp;";
-        errEl.className = "err";
         (function tick(now) {
           var t = (now - start) / 1000;
-          if (t >= target) { show(target); setTimeout(run, 1800); return; }
+          if (t >= target) {
+            tap();                               // tap on ■ STOP
+            show(target);
+            setTimeout(function () {
+              tap();                             // tap on ↺ RESET
+              ready();
+              setTimeout(run, 1100);
+            }, 2000);
+            return;
+          }
           timeEl.textContent = t.toFixed(3);
           barEl.style.width = (t / 3 * 100) + "%";
           requestAnimationFrame(tick);
         })(start);
       }
-      run();
+      ready();
+      setTimeout(run, 900);
     })();
 
     // Start measurement: open the app over the landing in full screen, so the
