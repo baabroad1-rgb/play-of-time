@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: общий лидерборд с идентификацией как в игре, имена Player NNN
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f77c552e8085cc119757f6d3b383507cd7d1eab0)
+
 ### Measurement: Start measurement открывает приложение сразу на весь экран
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b884b40db9917255daaed5afeaf3fc514a862abe)
@@ -2022,4 +2026,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 108.
+Всего записей: 109.
