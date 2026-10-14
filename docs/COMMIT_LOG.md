@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: лендинг — инструмент оценки и замер до/после процедуры
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2660b5366b90dfb9fd10389c5f6210dc676f8baa)
+
 ### Measurement version: черновик лендинга в measurement/
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b2d848c8ce43bb7e766914c019d95d90474094a3)
@@ -1982,4 +1986,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 98.
+Всего записей: 99.
