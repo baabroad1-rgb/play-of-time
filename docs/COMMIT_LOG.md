@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: крестик закрытия приложения в правом верхнем углу
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c6421aecaeeefafe25dd01d81eaede1631ca6463)
+
 ### Measurement: откат версии 2.001 (Алекс отменил просьбу)
 
 This reverts commit 1fa9653.
@@ -2044,4 +2048,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 113.
+Всего записей: 114.
