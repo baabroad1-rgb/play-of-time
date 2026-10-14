@@ -9,6 +9,12 @@
 
 ## 14 октября 2026
 
+### Measurement: откат версии 2.001 (Алекс отменил просьбу)
+
+This reverts commit 1fa9653.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4c1170b3616a4f0bdee2b66f644184a0e354d32a)
+
 ### Measurement: версия 2.001 в Settings и на лендинге
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1fa96537e7f0501843fc80b3182bd2d5dd57df05)
@@ -2038,4 +2044,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 112.
+Всего записей: 113.
