@@ -1,13 +1,8 @@
 # Play of Time — Web App (project brief)
 
-> **START HERE:** [`../docs/HANDOFF_2026-10-14.md`](../docs/HANDOFF_2026-10-14.md)
-> — состояние проекта, что живое, что открыто. Читать перед любой работой.
-> Правила работы с Алексом — в `../docs/HANDOFF_2026-09-29.md`, раздел 6.
->
-> Этот файл — про веб-версию в `webapp/`. Рядом с ней с 7 октября живёт
-> **`measurement/`** — отдельная игра без квестов на playoftime.online/measurement/,
-> со своей выкладкой. Своего брифа у неё пока нет; правила отсюда к ней
-> применимы по духу, но про неё самоё тут ничего.
+> **START HERE:** [`../docs/HANDOFF_2026-09-29.md`](../docs/HANDOFF_2026-09-29.md)
+> — состояние проекта, что живое, что открыто, как работать с Алексом.
+> Читать перед любой работой.
 
 Web port of the native Android "Play of Time" 3-second timing trainer. Goal:
 **behave the same way as the native app.** This file is the brief for anyone
