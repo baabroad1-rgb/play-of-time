@@ -4500,7 +4500,7 @@
     else if (!rows.length) body = `<div class="android-empty">No measurements at this level yet. Finish ${MEASUREMENT_ATTEMPTS} attempts to see the first row.</div>`;
     else body = rows.map((r, i) => `
           <div class="mlb-row${r.you ? " mlb-you" : ""}">
-            <span class="mlb-when"><span class="mlb-rank">${i + 1}</span>${escapeHtml(r.name || "—")}${r.you ? "<small>you</small>" : ""}</span>
+            <span class="mlb-name"><span class="mlb-rank">${i + 1}</span>${escapeHtml(r.name || "—")}</span>
             <b class="late">${fmtAvgMs(r.lateAvgMs)}</b>
             <b class="early">${fmtAvgMs(r.earlyAvgMs)}</b>
             <b>${fmtPerMin(r.perMinute)}</b>
@@ -4515,10 +4515,10 @@
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
               <span>Player</span>
-              <span>Late, avg</span>
-              <span>Early, avg</span>
-              <span>Attempts / min</span>
-              <span>Attempts / win</span>
+              <span>Late avg</span>
+              <span>Early avg</span>
+              <span>Att/min</span>
+              <span>Att/win</span>
             </div>
             ${body}
           </div>

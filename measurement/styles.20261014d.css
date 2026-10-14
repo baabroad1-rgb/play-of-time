@@ -4738,3 +4738,22 @@ body.game-open .page iframe {
 .mlb-when small { display: block; }
 .mlb-you { background: rgba(230, 164, 64, .10); border-radius: 8px; }
 .mlb-you .mlb-when { color: var(--sand); }
+
+/* Ranks table, compact (Alex 2026-10-14): headers in normal case, the name
+   on one line, tight rows, narrow side margins. */
+.measure-lb .settings-content { padding-left: 6px; padding-right: 6px; }
+.measure-lb .mlb-table { padding: 2px 6px; }
+.measure-lb .mlb-row {
+  grid-template-columns: minmax(max-content, 1.4fr) repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px 4px;
+  font-size: 13px;
+}
+.measure-lb .mlb-head {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  padding-top: 7px;
+}
+.mlb-name { white-space: nowrap; }
+.mlb-rank { margin-right: 4px; }
