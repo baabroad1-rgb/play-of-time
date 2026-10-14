@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: версия 2.001 в Settings и на лендинге
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1fa96537e7f0501843fc80b3182bd2d5dd57df05)
+
 ### Measurement: попытки в минуту — только время на открытом главном экране
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/aaed2bf37130e55d5ca49f03672d1e8c0d445ef0)
@@ -2034,4 +2038,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 111.
+Всего записей: 112.
