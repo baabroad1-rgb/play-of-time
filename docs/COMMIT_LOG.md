@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: полный логотип на выбитых целях, уровни цифрами в ряд, без Salute & result sounds
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c07ed8e4d594561b8e224e274a1ed216f39aa783)
+
 ### Measurement: сама правка средних по промахам (в прошлый коммит попал только журнал)
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ce75d148bac23a7fec88455318575d4d2f1af211)
@@ -1998,4 +2002,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 102.
+Всего записей: 103.
