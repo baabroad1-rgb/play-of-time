@@ -4549,6 +4549,9 @@
       if (!mlbLoading) fetchMeasurementLeaderboard(level);
     }
     const rows = mlbDataLevel === level ? mlbData : null;
+    // Not in the table yet → say why in plain words (Alex 2026-10-14: a saved
+    // name showed nowhere, and the reason was not obvious).
+    const notInTable = Boolean(rows && !rows.some((r) => r.you));
     let body;
     if (mlbError && mlbDataLevel === level) body = `<div class="android-empty">Can't reach the leaderboard. Check the connection and open Ranks again.</div>`;
     else if (!rows) body = `<div class="android-empty">Loading…</div>`;
@@ -4574,6 +4577,7 @@
           </div>
           <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
             `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
+          ${notInTable ? `<p class="mlb-notice">You are not in the table yet. Complete one session of ${MEASUREMENT_ATTEMPTS} attempts at ${formatTime(AIM_TIME, currentQuestFrom(level).accuracy)} first.</p>` : ""}
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
               <span>Player</span>
@@ -5142,7 +5146,7 @@
         // Re-entering the leaderboard tab should reflect anything that
         // synced while the player was elsewhere, not a stale earlier fetch
         // or a stale error from a previous visit.
-        if (view === "leaderboard") { leaderboardData = null; leaderboardError = null; mlbData = null; mlbError = false; mlbDataLevel = null; }
+        if (view === "leaderboard") { leaderboardData = null; leaderboardError = null; mlbData = null; mlbError = false; mlbDataLevel = null; syncMeasurements(); }
         render();
       });
     });
