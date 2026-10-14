@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" class="game-open">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Play of Time measurement: 33 attempts to stop the stopwatch at exactly three seconds." />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.v13.png" />
+    <link rel="apple-touch-icon" href="./assets/icon-192.v13.png" />
+    <script>
+      // Same on-screen error box as the game: a broken script shows its error
+      // instead of a blank page. Pure ES5 so it can always run.
+      window.addEventListener("error", function (e) {
+        try {
+          var msg = (e && (e.message || (e.error && e.error.message))) || "Unknown error";
+          var src = e && e.filename ? e.filename.split("/").pop() + ":" + e.lineno : "";
+          var box = document.createElement("div");
+          box.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;" +
+            "background:#900;color:#fff;font:14px/1.4 monospace;padding:16px;overflow:auto;" +
+            "white-space:pre-wrap;";
+          box.textContent = "JS error — please screenshot this and send it:\n\n" + msg +
+            (src ? "\n(" + src + ")" : "");
+          document.body.appendChild(box);
+        } catch (ignored) {}
+      });
+    </script>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Play of Time · Measurement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;600&display=swap" />
+    <link rel="stylesheet" href="./styles.20261014a.css" />
+  </head>
+  <body class="game-open">
+    <!-- Measurement version: the app is the whole page, always open. -->
+    <div id="gameOverlay" class="game-overlay is-open" aria-hidden="false">
+      <main id="app" class="app-shell" aria-live="polite"></main>
+    </div>
+    <script src="./play.20261014a.js"></script>
+  </body>
+</html>
