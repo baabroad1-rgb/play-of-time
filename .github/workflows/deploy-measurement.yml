@@ -1,0 +1,60 @@
+name: Выложить measurement на хостинг
+
+# Отдельная выкладка измерительной версии. С выкладкой игры
+# (deploy-web.yml) не связана: свой workflow, свой триггер, своя очередь,
+# своя папка на сервере. Правка webapp/ эту выкладку не запускает,
+# правка measurement/ не трогает игру.
+#
+# Срабатывает, когда меняется measurement/ и это попадает в main.
+# Можно запустить и руками: вкладка Actions -> этот workflow -> Run workflow.
+#
+# Заливает measurement/ в папку /measurement/ на сервере:
+# https://playoftime.online/measurement/
+# Ничего на сервере не удаляет.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'measurement/**'
+      - '.github/workflows/deploy-measurement.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-measurement
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Залить measurement/ в /measurement/ на playoftime.online
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.LOGIN }}
+          password: ${{ secrets.PASSWORD }}
+          protocol: ftps
+          local-dir: ./measurement/
+          server-dir: /measurement/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/*.md
+
+      # Проверка, что страницы реально открываются по адресу и совпадают с
+      # репозиторием (из контейнера Claude сайт не виден, поэтому проверяет
+      # сам workflow).
+      - name: Проверить, что страницы открываются
+        run: |
+          set -e
+          # Скрипт и стили берутся из play.html: имена файлов меняются с каждой версией.
+          linked=$(grep -oE '(play|styles)\.[0-9a-z]+\.(js|css)' measurement/play.html | sort -u)
+          for f in index.html play.html $linked; do
+            curl -fsS "https://playoftime.online/measurement/$f?check=$GITHUB_RUN_ID" -o "/tmp/$f"
+            cmp "/tmp/$f" "measurement/$f"
+            echo "OK $f"
+          done
