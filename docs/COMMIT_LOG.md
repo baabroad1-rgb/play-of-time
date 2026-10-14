@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: Ranks — заголовки без капса, имя в одну строку, плотнее, узкие поля
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a967a3d013960f2a986c1db4b3abfe1e99cfadee)
+
 ### Measurement: общий лидерборд с идентификацией как в игре, имена Player NNN
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f77c552e8085cc119757f6d3b383507cd7d1eab0)
@@ -2026,4 +2030,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 109.
+Всего записей: 110.
