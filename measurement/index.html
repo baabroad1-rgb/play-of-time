@@ -103,6 +103,11 @@
     footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
 
     @media (prefers-reduced-motion: reduce) { .bar i { transition: none !important; } }
+
+    /* The measurement app, opened full screen from Start measurement. */
+    .app-frame { position: fixed; inset: 0; z-index: 100; background: #000; }
+    .app-frame[hidden] { display: none; }
+    .app-frame iframe { width: 100%; height: 100%; border: 0; display: block; background: #000; }
   </style>
 </head>
 <body>
@@ -147,6 +152,12 @@
 
   <footer class="wrap">Play of Time · measurement version</footer>
 
+  <!-- The app itself (play.html), loaded in the background and shown full
+       screen on Start measurement, the way the game opens from its landing. -->
+  <div class="app-frame" id="appFrame" hidden>
+    <iframe src="./play.html" title="Play of Time measurement" allow="fullscreen; autoplay"></iframe>
+  </div>
+
   <script>
     // Demo readout: a counter runs to a press near 3.000 and shows the error,
     // early in red, late in blue, as in the game. Purely decorative.
@@ -179,6 +190,36 @@
         })(start);
       }
       run();
+    })();
+
+    // Start measurement: open the app over the landing in full screen, so the
+    // browser's top and bottom bars are gone from the first attempt. The
+    // browser allows fullscreen only inside the tap itself. Leaving full
+    // screen (back gesture, Esc) returns to the landing. Where a page cannot
+    // go full screen (iPhone Safari), the link opens play.html as usual.
+    (function () {
+      var start = document.getElementById("start");
+      var frame = document.getElementById("appFrame");
+      var theme = document.querySelector('meta[name="theme-color"]');
+      var req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (!req) return;
+      start.addEventListener("click", function (e) {
+        e.preventDefault();
+        frame.hidden = false;
+        try {
+          var p = req.call(frame, { navigationUI: "hide" });
+          if (p && p.catch) p.catch(function () { location.href = "./play.html"; });
+        } catch (err) { location.href = "./play.html"; return; }
+        var win = frame.querySelector("iframe").contentWindow;
+        if (win) win.focus();
+      });
+      function onFs() {
+        var fs = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!fs) frame.hidden = true;
+        if (theme) theme.setAttribute("content", "#000000");
+      }
+      document.addEventListener("fullscreenchange", onFs);
+      document.addEventListener("webkitfullscreenchange", onFs);
     })();
   </script>
 </body>

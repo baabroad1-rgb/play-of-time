@@ -5467,6 +5467,8 @@
   // fullscreen for pages; there the bars go only when the page is added to
   // the home screen (manifest.webmanifest, display: fullscreen).
   function requestPageFullscreen(event) {
+    // Inside the landing page's frame the landing itself holds fullscreen.
+    if (window.self !== window.top) return;
     if (timer.state === "running") return;
     // RUN itself starts an attempt — no resize then; the RESET tap after it,
     // or any other tap, switches to fullscreen.
