@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: попытки в минуту — только время на открытом главном экране
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/aaed2bf37130e55d5ca49f03672d1e8c0d445ef0)
+
 ### Measurement: Ranks — заголовки без капса, имя в одну строку, плотнее, узкие поля
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a967a3d013960f2a986c1db4b3abfe1e99cfadee)
@@ -2030,4 +2034,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 110.
+Всего записей: 111.
