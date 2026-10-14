@@ -4470,7 +4470,7 @@
         if (data && data.displayName) identity.displayName = data.displayName;
         if (pending.length) identity.lastSyncedMeasurementId = Math.max(...pending.map((m) => m.id));
         saveIdentity();
-        if (view === "leaderboard") { mlbData = null; render(); }
+        if (view === "leaderboard") { mlbData = null; renderPreservingFocus(); }
       })
       .catch(() => { mSyncInFlight = false; });
   }
@@ -4484,14 +4484,39 @@
         mlbData = Array.isArray(data.rows) ? data.rows : [];
         mlbDataLevel = level;
         mlbLoading = false;
-        if (view === "leaderboard") render();
+        if (view === "leaderboard") renderPreservingFocus();
       })
       .catch(() => {
         mlbLoading = false;
         mlbError = true;
         mlbDataLevel = level;
-        if (view === "leaderboard") render();
+        if (view === "leaderboard") renderPreservingFocus();
       });
+  }
+
+  // Own name (Alex 2026-10-14: «возможность сохранить себя под новым
+  // именем»). Same as the game's Ranks: a field and Save. An empty field
+  // gives back the player's own Player NNN.
+  let mlbNameStatus = "";
+  function saveMeasurementName() {
+    const input = document.getElementById("lbNameInput");
+    const name = (input.value || "").trim().slice(0, 24);
+    mlbNameStatus = "Saving…";
+    render();
+    fetch(API_BASE + "set_name.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: identity.playerId, syncToken: identity.syncToken, name })
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data) => {
+        if (data && data.displayName) identity.displayName = data.displayName;
+        saveIdentity();
+        mlbNameStatus = "Saved.";
+        mlbData = null;
+        renderPreservingFocus();
+      })
+      .catch(() => { mlbNameStatus = "Could not save. Check the connection and try again."; renderPreservingFocus(); });
   }
 
   function renderLeaderboard() {
@@ -4506,7 +4531,7 @@
     else if (!rows.length) body = `<div class="android-empty">No measurements at this level yet. Finish ${MEASUREMENT_ATTEMPTS} attempts to see the first row.</div>`;
     else body = rows.map((r, i) => `
           <div class="mlb-row${r.you ? " mlb-you" : ""}">
-            <span class="mlb-name"><span class="mlb-rank">${i + 1}</span>${escapeHtml(r.name || "—")}</span>
+            <span class="mlb-name"><span class="mlb-rank">${i + 1}</span><span class="mlb-nm">${escapeHtml(r.name || "—")}</span>${r.you ? `<span class="mlb-you-tag">(you)</span>` : ""}</span>
             <b class="late">${fmtAvgMs(r.lateAvgMs)}</b>
             <b class="early">${fmtAvgMs(r.earlyAvgMs)}</b>
             <b>${fmtPerMin(r.perMinute)}</b>
@@ -4516,6 +4541,13 @@
       <section class="settings-screen leaderboard-screen measure-lb">
         <div class="sticky"><h1 class="section-title">Ranks</h1></div>
         <div class="settings-content">
+          <div class="panel mlb-name-panel">
+            <div class="lb-name-row">
+              <input id="lbNameInput" type="text" maxlength="24" placeholder="Your name" value="${escapeHtml(identity.displayName || "")}">
+              <button id="lbNameSave" class="chip active" type="button">Save</button>
+            </div>
+            <p class="formula">${escapeHtml(mlbNameStatus || "Your name in the table. Leave it empty to go back to your Player number.")}</p>
+          </div>
           <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
             `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
           <div class="panel mlb-table">
@@ -4528,13 +4560,17 @@
             </div>
             ${body}
           </div>
-          <p class="formula">Each player's latest measurement of ${MEASUREMENT_ATTEMPTS} attempts at this level. Fewest attempts per win on top.${identity.displayName ? ` You are ${escapeHtml(identity.displayName)}.` : ""}</p>
+          <p class="formula">Each player's latest measurement of ${MEASUREMENT_ATTEMPTS} attempts at this level. Fewest attempts per win on top.</p>
         </div>
         ${nav()}
       </section>`;
     document.querySelectorAll("[data-lb-level]").forEach((btn) => {
       btn.addEventListener("click", () => { lbLevel = Number(btn.dataset.lbLevel); render(); });
     });
+    const saveBtn = document.getElementById("lbNameSave");
+    if (saveBtn) saveBtn.addEventListener("click", saveMeasurementName);
+    const nameInput = document.getElementById("lbNameInput");
+    if (nameInput) nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); saveMeasurementName(); } });
     bindNav();
   }
 
