@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: средние опоздания и преждевременных остановок только по промахам
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/501ec3507e1679a5125d86a1e636cd1bbbcf71b5)
+
 ### Measurement: игра без квестов — уровень в настройках, замер 33 попытки, свой лидерборд
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a1a46507bb147f8d84cf11cbd597c4c4252bdc47)
@@ -1990,4 +1994,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 100.
+Всего записей: 101.
