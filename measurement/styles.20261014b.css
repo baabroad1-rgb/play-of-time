@@ -4699,3 +4699,35 @@ body.game-open .page iframe {
 /* "Measurement complete" card: values in white (the game's single-row values
    are styled for the yellow summary and read dark here). */
 .measure-done .ss2-curr { color: #fff; font-weight: 600; }
+
+/* Analytics: "Session" + drop-down of sessions (date · number · start time)
+   in place of the period filters. */
+.analytics-screen .session-pill { padding: 3px 6px 3px 6px; gap: 6px; }
+.session-tag {
+  flex: none;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.session-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 30px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.session-select option { background: #1e1e1e; color: #fff; }
+.session-none { color: var(--muted); font-size: 12px; }

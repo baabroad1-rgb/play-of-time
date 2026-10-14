@@ -4321,38 +4321,67 @@
       </div>`;
   }
 
-  // Measurement version (Alex 2026-10-14): Analytics keeps only hits, hit
-  // rate, attempts per win, pace and the three geometric means. Everything
-  // else from the game's screen (summary card, face, Lucky, range, pace chart,
-  // sessions log, distribution, "?") is gone. Numbers come from the same
-  // analytics() as in the game; with no tolerance a win is an exact hit.
+  // Measurement version (Alex 2026-10-14): Analytics shows ONE session —
+  // the one picked in the drop-down next to "Session" (date · session number
+  // · start time), the newest by default. Numbers: hits, hit rate, attempts
+  // per win, pace and the three geometric means. No period filters.
+  let analyticsSessionId = null; // null = the newest session with attempts
+
+  function analyticsSessionsList() {
+    const withAttempts = new Set(db.attempts.map((a) => a.sessionId));
+    const ordered = db.sessions.filter((x) => withAttempts.has(x.id)).sort((a, b) => a.startTime - b.startTime);
+    // Numbered within their calendar day, as in the attempt log.
+    const perDay = {};
+    const list = ordered.map((x) => {
+      const day = new Date(x.startTime).toDateString();
+      perDay[day] = (perDay[day] || 0) + 1;
+      return { session: x, number: perDay[day] };
+    });
+    return list.reverse(); // newest first
+  }
+
+  function analyticsSessionLabel(item) {
+    const d = new Date(item.session.startTime);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} · #${item.number} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   function renderAnalytics() {
-    const data = analytics(db.settings.periodFilter);
-    const periodTag = `<span class="card-period">${periodSlash(db.settings.periodFilter)}</span>`;
-    const has = data.attempts.length > 0;
-    // Early / Late over misses only, the same rule as the Ranks averages
-    // (Alex 2026-10-14): a hit is not an early or late stop even if its raw
-    // ms is a little off. Absolute stays over all attempts (overall lean).
-    const missErrs = data.attempts.filter((a) => !isQuestWinAttempt(a)).map(signedErrorMs);
+    const list = analyticsSessionsList();
+    let picked = list.find((it) => it.session.id === analyticsSessionId) || list[0] || null;
+    const attempts = picked ? attemptsBySessionId(picked.session.id) : [];
+    const has = attempts.length > 0;
+    const wins = attempts.filter(isQuestWinAttempt).length;
+    const playMin = picked ? (picked.session.activeTimeMs || 0) / 60000 : 0;
+    // Early / Late over misses only, the same rule as the Ranks averages:
+    // a hit is not an early or late stop even if its raw ms is a little off.
+    // Absolute stays over all attempts (overall lean).
+    const missErrs = attempts.filter((a) => !isQuestWinAttempt(a)).map(signedErrorMs);
     const geomEarly = geometricMean(missErrs.filter((e) => e < 0).map((e) => -e));
     const geomLate = geometricMean(missErrs.filter((e) => e > 0));
+    const geomAbs = has ? geometricMean(attempts.map((a) => a.endTime - a.startTime)) - AIM_TIME : 0;
+    const picker = list.length
+      ? `<select id="analyticsSession" class="session-select" aria-label="Session">${list.map((it) =>
+          `<option value="${it.session.id}"${picked && it.session.id === picked.session.id ? " selected" : ""}>${analyticsSessionLabel(it)}</option>`).join("")}</select>`
+      : `<span class="session-none">no sessions yet</span>`;
     app.innerHTML = `
       <section class="analytics-screen measure-analytics">
-        <div class="sticky"><div class="analytics-pill"><span class="pill-icon">${navBalanceGauge()}</span>${periodToggle()}</div></div>
+        <div class="sticky"><div class="analytics-pill session-pill"><span class="session-tag">Session</span>${picker}</div></div>
         <div class="analytics-content">
-          ${statBlock("Hits", periodTag, `
-            ${statRow("Hits", `<span class="win">${formatCount(data.periodWins)}</span> of ${formatCount(data.attempts.length)}`)}
-            ${statRow("Hit rate", has ? data.trueThreeHitRatePct.toFixed(1) + "%" : "—")}
-            ${statRow("Attempts per win", data.attemptsPerWin ? data.attemptsPerWin.toFixed(1) : "—")}
-            ${statRow("Pace", data.paceOfPlayPerMin > 0 ? data.paceOfPlayPerMin.toFixed(1) + " att/min" : "—")}`)}
-          ${statBlock("Geometric mean", periodTag, `
+          ${statBlock("Hits", "", `
+            ${statRow("Hits", `<span class="win">${formatCount(wins)}</span> of ${formatCount(attempts.length)}`)}
+            ${statRow("Hit rate", has ? (wins / attempts.length * 100).toFixed(1) + "%" : "—")}
+            ${statRow("Attempts per win", wins ? (attempts.length / wins).toFixed(1) : "—")}
+            ${statRow("Pace", playMin > 0 && has ? (attempts.length / playMin).toFixed(1) + " att/min" : "—")}`)}
+          ${statBlock("Geometric mean", "", `
             ${statRow("Early", geomEarly ? formatMs(-geomEarly, true) : "—", "", "early")}
-            ${statRow("Absolute", has ? formatMs(data.deviationAll.medianMs, true) : "—")}
+            ${statRow("Absolute", has ? formatMs(geomAbs, true) : "—")}
             ${statRow("Late", geomLate ? formatMs(geomLate, true) : "—", "", "late")}`)}
         </div>
         ${nav()}
       </section>`;
-    bindPeriodToggle();
+    const sel = document.getElementById("analyticsSession");
+    if (sel) sel.addEventListener("change", () => { analyticsSessionId = Number(sel.value); render(); });
     bindNav();
   }
 
