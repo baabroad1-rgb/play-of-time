@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Play of Time · Measurement</title>
+  <meta name="description" content="A short timing test: stop the stopwatch at exactly three seconds." />
+  <meta name="theme-color" content="#000000" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    /* Measurement version: a standalone page. Nothing here comes from webapp/,
+       only the brand colours are the same as the game. */
+    :root {
+      --bg: #000000;
+      --card: #1a1a1a;
+      --line: #2a2a2a;
+      --text: #ffffff;
+      --muted: #7f7f7f;
+      --soft: #a9a9a9;
+      --accent: #ff551c;
+      --early: #e5484d;
+      --late: #2fa8d8;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Roboto, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+    /* Header */
+    header { padding: 18px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+    .brand svg { flex: none; }
+    .brand .tag {
+      margin-left: auto;
+      font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(255, 85, 28, .45);
+      border-radius: 999px; padding: 3px 10px;
+    }
+
+    /* Hero */
+    .hero { padding: 28px 0 40px; text-align: center; }
+    .readout {
+      margin: 0 auto 28px;
+      width: min(100%, 360px);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 22px 16px 18px;
+    }
+    .readout .label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+    .readout .time {
+      font-family: "Roboto Mono", ui-monospace, monospace;
+      font-size: clamp(48px, 16vw, 72px);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      margin: 6px 0 4px;
+    }
+    .readout .err { font-family: "Roboto Mono", ui-monospace, monospace; font-size: 15px; min-height: 22px; color: var(--soft); }
+    .readout .err.early { color: var(--early); }
+    .readout .err.late { color: var(--late); }
+    .readout .err.exact { color: var(--accent); }
+    .bar { height: 4px; border-radius: 2px; background: var(--line); margin-top: 14px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+    h1 { font-size: clamp(30px, 7.5vw, 44px); line-height: 1.12; margin: 0 0 14px; font-weight: 700; letter-spacing: -.01em; }
+    .lead { color: var(--soft); font-size: 17px; margin: 0 auto 26px; max-width: 520px; }
+    .cta {
+      display: inline-block;
+      background: var(--accent); color: #000;
+      font-weight: 600; font-size: 17px; text-decoration: none;
+      padding: 14px 30px; border-radius: 999px;
+    }
+    .cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    .cta-note { color: var(--muted); font-size: 13px; margin-top: 12px; }
+
+    /* Sections */
+    section { padding: 34px 0; border-top: 1px solid var(--line); }
+    h2 { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 18px; }
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .steps li { display: flex; gap: 14px; align-items: flex-start; background: var(--card); border-radius: var(--radius); padding: 16px; }
+    .steps .n {
+      flex: none; width: 28px; height: 28px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(255, 85, 28, .14); color: var(--accent);
+      font-weight: 700; font-size: 14px;
+    }
+    .steps b, .grid b { display: block; font-weight: 600; margin-bottom: 2px; }
+    .steps span, .grid span { color: var(--soft); font-size: 15px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 560px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .grid div { background: var(--card); border-radius: var(--radius); padding: 16px; }
+    .plain p { margin: 0 0 12px; color: var(--soft); }
+    .plain p:last-child { margin-bottom: 0; }
+    .plain strong { color: var(--text); font-weight: 600; }
+
+    footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
+
+    @media (prefers-reduced-motion: reduce) { .bar i { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <circle cx="13" cy="14" r="10" fill="none" stroke="#ff551c" stroke-width="2" />
+        <rect x="11" y="1" width="4" height="3" rx="1" fill="#ff551c" />
+        <path d="M13 14 L13 8" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      Play of Time
+      <span class="tag">Measurement</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <div class="readout" aria-hidden="true">
+        <div class="label">Target 3.000 s</div>
+        <div class="time" id="demoTime">0.000</div>
+        <div class="err" id="demoErr">&nbsp;</div>
+        <div class="bar"><i id="demoBar"></i></div>
+      </div>
+      <h1>Measure your sense of&nbsp;time</h1>
+      <p class="lead">Start the stopwatch and stop it at exactly 3.000 seconds. A few minutes of attempts show how precisely you hit the moment and how you act after each result.</p>
+      <a class="cta" href="#start" id="start">Start measurement</a>
+      <div class="cta-note">About 5 minutes · no sign-up</div>
+    </div>
+
+    <section>
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><div class="n">1</div><div><b>Press RUN</b><span>The stopwatch starts.</span></div></li>
+        <li><div class="n">2</div><div><b>Press STOP at 3.000</b><span>Right after the press you see how far off you were.</span></div></li>
+        <li><div class="n">3</div><div><b>Repeat</b><span>A fixed series of attempts, the same for everyone, so results compare fairly.</span></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>What is measured</h2>
+      <div class="grid">
+        <div><b>Accuracy</b><span>How close your presses come to 3.000 seconds.</span></div>
+        <div><b>Early or late</b><span>Whether you tend to stop before the mark or after it.</span></div>
+        <div><b>Steadiness</b><span>How evenly you hold your level from one attempt to the next.</span></div>
+        <div><b>Correction</b><span>How you adjust after a miss in one direction.</span></div>
+        <div><b>Tempo</b><span>Your natural rhythm between attempts.</span></div>
+      </div>
+    </section>
+
+    <section class="plain">
+      <h2>Measurement only</h2>
+      <p>This is the measuring core of <strong>Play of Time</strong> with everything else taken out: levels, quests, scores and rankings stay in the game. Every attempt is recorded the same way, which keeps one measurement comparable with another.</p>
+      <p><strong>Anonymous.</strong> You get a random code instead of an account. Your attempts are stored under this code and used only for the measurement.</p>
+    </section>
+  </main>
+
+  <footer class="wrap">Play of Time · measurement version</footer>
+
+  <script>
+    // Demo readout: a counter runs to a press near 3.000 and shows the error,
+    // early in red, late in blue, as in the game. Purely decorative.
+    (function () {
+      var timeEl = document.getElementById("demoTime");
+      var errEl = document.getElementById("demoErr");
+      var barEl = document.getElementById("demoBar");
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var presses = [2.987, 3.021, 2.996, 3.000, 3.008, 2.974, 3.013];
+      var k = 0;
+      function show(target) {
+        timeEl.textContent = target.toFixed(3);
+        var e = Math.round((target - 3) * 1000);
+        errEl.className = "err " + (e < 0 ? "early" : e > 0 ? "late" : "exact");
+        errEl.textContent = e === 0 ? "exactly 3.000" : (e < 0 ? "−" : "+") + (Math.abs(e) / 1000).toFixed(3) + " s";
+        barEl.style.width = Math.min(100, target / 3 * 100) + "%";
+      }
+      if (reduce) { show(2.996); return; }
+      function run() {
+        var target = presses[k++ % presses.length];
+        var start = performance.now();
+        errEl.innerHTML = "&nbsp;";
+        errEl.className = "err";
+        (function tick(now) {
+          var t = (now - start) / 1000;
+          if (t >= target) { show(target); setTimeout(run, 1800); return; }
+          timeEl.textContent = t.toFixed(3);
+          barEl.style.width = (t / 3 * 100) + "%";
+          requestAnimationFrame(tick);
+        })(start);
+      }
+      run();
+    })();
+  </script>
+</body>
+</html>
