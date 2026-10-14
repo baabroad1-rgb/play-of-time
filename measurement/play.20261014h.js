@@ -47,9 +47,6 @@
   // accurate timestamp with zero manual editing, no matter when someone
   // remembers (or forgets) to touch this file.
   const APP_VERSION = "13.49";
-  // Measurement version number, shown in Settings and on the landing page.
-  // Alex 2026-10-14: starts at 2.001, +0.001 with every release.
-  const MEASUREMENT_VERSION = "2.001";
   const STORAGE_KEY = "play-of-time.measurement.v1";
   const FALLBACK_STORAGE_PREFIX = "play-of-time-measurement-fallback:";
   // Identity lives in its own storage key, separate from `db` — "Erase all
@@ -4653,7 +4650,6 @@
               <span class="settings-row-sub">Share your full history as an Excel file</span>
             </button>
           </div>
-          <p class="formula measure-version">Version ${MEASUREMENT_VERSION}</p>
         </div>
         ${nav()}
       </section>`;
