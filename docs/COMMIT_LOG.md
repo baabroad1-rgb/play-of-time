@@ -9,6 +9,10 @@
 
 ## 14 октября 2026
 
+### Measurement: после сохранения имени — возврат на главный экран с подсказкой
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/0091118b95ab9f17f4eeb2fe02daca690a85209b)
+
 ### Measurement: Ranks — сообщение «сначала пройди сессию», досылка замеров при открытии
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1e87f2c26cd1850900609b207d3ad51d3eee8156)
@@ -2135,4 +2139,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 120.
+Всего записей: 121.
