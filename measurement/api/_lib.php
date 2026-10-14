@@ -33,3 +33,14 @@ function looks_like_token($value) {
 function measurement_player_name($seq) {
     return sprintf("Player %03d", (int) $seq);
 }
+
+// A typed name, cleaned: control characters out, at most 24 characters
+// (the same cap as the input field). Empty means "give me my Player NNN
+// back". Same rule as the game's api/_lib.php, copied, not linked.
+function measurement_clean_name($raw) {
+    $name = trim((string) $raw);
+    $name = preg_replace('/[\x00-\x1F\x7F]/u', '', $name);
+    $name = function_exists('mb_substr') ? mb_substr($name, 0, 24, 'UTF-8') : substr($name, 0, 24);
+    $name = trim($name);
+    return $name === "" ? null : $name;
+}

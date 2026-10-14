@@ -4775,3 +4775,13 @@ body.game-open .page iframe {
   padding: 0;
 }
 .app-close:focus-visible { outline: 2px solid #fff; }
+
+/* Own name above the Ranks table and "(you)" in the own row (Alex
+   2026-10-14). A long name is cut with an ellipsis so the four number
+   columns keep their width; "(you)" is never cut. */
+.mlb-name-panel { margin-bottom: 10px; }
+.mlb-name-panel .formula { margin: 8px 2px 0; }
+.measure-lb .mlb-row { grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); }
+.mlb-name { display: flex; align-items: baseline; min-width: 0; }
+.mlb-nm { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mlb-you-tag { flex: none; margin-left: 4px; color: var(--sand); }
