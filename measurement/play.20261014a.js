@@ -298,7 +298,7 @@
         // 2026-09-10 native parity: two settings split out of the always-on
         // sound/visual behavior below, both default ON so existing behavior
         // is unchanged until a player explicitly opts out.
-        saluteResultSoundsOn: true,
+        saluteResultSoundsOn: false,
         twinOutlineOn: false,
         beatsPerSecond: 2,
         aimTime: AIM_TIME,
@@ -358,6 +358,7 @@
     };
     // Measurement version: these switches are gone from Settings and fixed here.
     merged.settings.cheerUpsEnabled = false;
+    merged.settings.saluteResultSoundsOn = false; // switch removed (Alex 2026-10-14), always off
     merged.settings.twinOutlineOn = false;
     merged.settings.numericTime = true;
     merged.settings.progressBarOn = true;
@@ -2352,8 +2353,8 @@
   // TargetsRow (two passes over the same index range, not two loops that
   // could be merged, precisely so DOM order controls the stack).
   // Measurement version: the targets row spans the whole strip, as many
-  // targets as fit; a hit target turns into the spinning triangle of the
-  // logo (the triangle layer of .pot-logo alone). Hits beyond the row's
+  // targets as fit; a hit target turns into the spinning logo (ring,
+  // triangle and letter t, as in the game). Hits beyond the row's
   // length keep every target turned.
   const TARGET_D = 30, TARGET_GAP = 4;
   function fitTargetsCount() {
@@ -2378,12 +2379,14 @@
     };
     const triangle = () =>
       `<div class="pot-logo">` +
+      `<img class="pot-layer pot-ring" src="${SALUTE_LOGO_RING_SRC}" alt="">` +
       `<img class="pot-layer pot-triangle" src="${SALUTE_LOGO_TRIANGLE_SRC}" alt="">` +
+      `<img class="pot-layer pot-letter" src="${SALUTE_LOGO_LETTER_SRC}" alt="">` +
       `</div>`;
     let unhitHtml = "", hitHtml = "";
     for (let i = 0; i < count; i += 1) {
       const left = i * step;
-      if (i < landed) hitHtml += `<div class="target-tile target-hit target-triangle" style="left:${left}px">${triangle()}</div>`;
+      if (i < landed) hitHtml += `<div class="target-tile target-hit" style="left:${left}px">${triangle()}</div>`;
       else unhitHtml += `<div class="target-tile" style="left:${left}px">${bullseye()}</div>`;
     }
     return `<div class="quest-targets-row" style="width:${w}px;height:${D}px">${unhitHtml}${hitHtml}</div>`;
@@ -4470,7 +4473,7 @@
         <div class="sticky"><h1 class="section-title">Ranks</h1></div>
         <div class="settings-content">
           <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
-            `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${levelPrecisionName(id)}</button>`).join("")}</div>
+            `<button class="chip ${level === id ? "active" : ""}" data-lb-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
           <div class="panel mlb-table">
             <div class="mlb-row mlb-head">
               <span>Measurement</span>
@@ -4580,13 +4583,12 @@
           <h2 class="settings-heading">Level</h2>
           <div class="panel">
             <div class="chip-row level-chips">${[1, 2, 3].map((id) =>
-              `<button class="chip ${level === id ? "active" : ""}" data-level="${id}">${levelPrecisionName(id)}<small>${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</small></button>`).join("")}</div>
+              `<button class="chip ${level === id ? "active" : ""}" data-level="${id}">${formatTime(AIM_TIME, currentQuestFrom(id).accuracy)}</button>`).join("")}</div>
             <p class="formula">A hit is exactly ${formatTime(AIM_TIME, currentQuestFrom(level).accuracy)} on the stopwatch. One measurement is ${MEASUREMENT_ATTEMPTS} attempts; changing the level starts a new one.</p>
           </div>
           <div class="panel">
             <div class="switch-row"><span>Sound</span><input id="soundOn" type="checkbox" ${db.settings.soundOn ? "checked" : ""}></div>
             <div class="switch-row"><span>Vibration</span><input id="vibrationOn" type="checkbox" ${db.settings.vibrationOn ? "checked" : ""}></div>
-            <div class="switch-row"><span>Salute & result sounds</span><input id="saluteResultSoundsOn" type="checkbox" ${db.settings.saluteResultSoundsOn !== false ? "checked" : ""}></div>
             ${beatsOn
               ? `<div class="switch-row"><span>Beats per second</span><span class="chip-row bps-chips">${BPS_CHOICES.map((v) => `<button class="chip ${bps === v ? "active" : ""}" data-bps="${v}">${v}</button>`).join("")}</span></div>`
               : `<div class="switch-row locked-row"><span>🔒 Beats per second<br><small>(turn on Sound or Vibration)</small></span><span class="locked-value">${bps}</span></div>`}
@@ -4886,7 +4888,6 @@
     // Sound / Vibration re-render: Beats per second unlocks only while one is on.
     toggle("soundOn", "soundOn", true);
     toggle("vibrationOn", "vibrationOn", true);
-    toggle("saluteResultSoundsOn", "saluteResultSoundsOn", false);
     document.querySelectorAll("[data-level]").forEach((btn) => {
       btn.addEventListener("click", () => setLevel(Number(btn.dataset.level)));
     });

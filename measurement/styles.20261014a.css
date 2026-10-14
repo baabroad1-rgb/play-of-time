@@ -4667,17 +4667,11 @@ body.game-open .page iframe {
   width: 100%;
 }
 
-/* A taken target is the logo's triangle alone, spinning. No circular clip:
-   the triangle turns in 3D and must not be cut at the tile's edge. */
-.target-tile.target-triangle {
-  border-radius: 0;
-  overflow: visible;
-}
 
 /* Level chips (Settings and Ranks). */
-.level-chips { margin-bottom: 8px; }
-.level-chips .chip { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; min-width: 88px; }
-.level-chips .chip small { font-size: 11px; opacity: .8; }
+/* Numbers only, always one row of three equal buttons. */
+.level-chips { margin-bottom: 8px; flex-wrap: nowrap; }
+.level-chips .chip { flex: 1 1 0; min-width: 0; text-align: center; font-size: 15px; font-variant-numeric: tabular-nums; }
 .bps-chips .chip { padding: 5px 9px; }
 
 /* Measurement leaderboard table. */
