@@ -1958,8 +1958,9 @@
     // where it actually reloads — the first safe point after every state
     // change (see checkForUpdate/applyUpdateIfSafe near the top of the file).
     if (updatePending) applyUpdateIfSafe();
-    // Measurement version: Play, Ranks and Settings only.
+    // Measurement version: Play, Ranks, Analytics and Settings.
     if (view === "leaderboard") renderLeaderboard();
+    else if (view === "analytics") renderAnalytics();
     else if (view === "settings") renderSettings();
     else renderPlay();
   }
@@ -4320,80 +4321,39 @@
       </div>`;
   }
 
+  // Measurement version (Alex 2026-10-14): Analytics keeps only hits, hit
+  // rate, attempts per win, pace and the three geometric means. Everything
+  // else from the game's screen (summary card, face, Lucky, range, pace chart,
+  // sessions log, distribution, "?") is gone. Numbers come from the same
+  // analytics() as in the game; with no tolerance a win is an exact hit.
   function renderAnalytics() {
     const data = analytics(db.settings.periodFilter);
-    const acc = db.settings.accuracy;
-    // Native shows the active period on the right of each card title ("/ all time").
     const periodTag = `<span class="card-period">${periodSlash(db.settings.periodFilter)}</span>`;
-    // Pairs, not two columns: each row is one grid line, so labels stay level
-    // with their right-hand neighbour (native, Alex 2026-09-27).
-    const shPair = (la, va, lb, vb) =>
-      `<div class="sh-stat"><span class="sh-label">${la}</span><b>${va}</b></div>` +
-      `<div class="sh-stat"><span class="sh-label">${lb}</span><b>${vb}</b></div>`;
+    const has = data.attempts.length > 0;
+    // Early / Late over misses only, the same rule as the Ranks averages
+    // (Alex 2026-10-14): a hit is not an early or late stop even if its raw
+    // ms is a little off. Absolute stays over all attempts (overall lean).
+    const missErrs = data.attempts.filter((a) => !isQuestWinAttempt(a)).map(signedErrorMs);
+    const geomEarly = geometricMean(missErrs.filter((e) => e < 0).map((e) => -e));
+    const geomLate = geometricMean(missErrs.filter((e) => e > 0));
     app.innerHTML = `
-      <section class="analytics-screen">
-        <button class="help-button help-button-analytics ${helpMode ? "active" : ""}" type="button">${helpMode ? "×" : "?"}</button>
-        <div class="sticky" data-help="statPeriod"><div class="analytics-pill"><span class="pill-icon">${navBalanceGauge()}</span>${periodToggle()}</div></div>
+      <section class="analytics-screen measure-analytics">
+        <div class="sticky"><div class="analytics-pill"><span class="pill-icon">${navBalanceGauge()}</span>${periodToggle()}</div></div>
         <div class="analytics-content">
-          <div class="summary-row" data-help="statSummary">
-            <div class="sh-left-card sh-grid">
-              ${shPair("Play time", formatDuration(data.periodPlayTimeMs), "Attempts", formatCount(data.attempts.length))}
-              ${shPair("Sessions", formatCount(data.periodSessionsCount), "Serenity coins", coinIcon() + formatComma(data.periodScm))}
-              ${shPair("Wins/precise", `<span class="win">${formatCount(data.periodWins)}/${formatCount(data.periodPrecise)}</span>`,
-                       "Pace of play", data.paceOfPlayPerMin > 0 ? data.paceOfPlayPerMin.toFixed(1) + " att/min" : "—")}
-              <div class="sh-stat"><span class="sh-label">Practice</span><b>${data.practiceDensityMinPerDay > 0 ? data.practiceDensityMinPerDay.toFixed(1) + " min/day" : "—"}</b></div>
-            </div>
-            ${analyticsReportCard(data)}
-          </div>
-          ${statBlock("Chance of Win", periodTag, `
-            ${statRow("Hit rate", data.trueThreeHitRatePct.toFixed(1) + "%")}
+          ${statBlock("Hits", periodTag, `
+            ${statRow("Hits", `<span class="win">${formatCount(data.periodWins)}</span> of ${formatCount(data.attempts.length)}`)}
+            ${statRow("Hit rate", has ? data.trueThreeHitRatePct.toFixed(1) + "%" : "—")}
             ${statRow("Attempts per win", data.attemptsPerWin ? data.attemptsPerWin.toFixed(1) : "—")}
-            ${statRow("Lucky Index", data.luckyIndex > 0 ? data.luckyIndex.toFixed(2) : "—")}
-            <p class="formula">Lucky = empirical / theoretical probability — higher is better.</p>`, "statChance")}
-          ${statBlock("Geometric Mean ÷ Spread", periodTag, `
-            ${statRow("Early", `${formatMs(-data.deviationEarly.medianMs, true)} ÷${spreadFactor(data.deviationEarly.stdPct)}`, "", "early")}
-            ${statRow("Absolute", `${formatMs(data.deviationAll.medianMs, true)} ÷${spreadFactor(data.deviationAll.stdPct)}`)}
-            ${statRow("Late", `${formatMs(data.deviationLate.medianMs, true)} ÷${spreadFactor(data.deviationLate.stdPct)}`, "", "late")}`, "statGeom")}
-          ${statBlock("Range of deviations", periodTag, rangeDeviationCard(data, acc), "statRange")}
-          ${statBlock(`<span class="pace-metric-wrap"><select id="paceMetric" class="pace-metric" aria-label="Chart shows">
-              ${Object.entries(PACE_METRICS).map(([k, m]) => `<option value="${k}"${k === paceMetric ? " selected" : ""}>${m.title}</option>`).join("")}
-            </select><span class="pace-metric-label">${(PACE_METRICS[paceMetric] || PACE_METRICS.pace).title}</span><span class="pace-metric-caret">▾</span></span>`, periodTag, `
-            ${paceChartSvg(paceLearningSeries(data.attempts, data.period, paceMetric), paceMetric)}
-            ${paceMetric === "hit" ? statRow("Hit rate", data.trueThreeHitRatePct.toFixed(1) + "%")
-              : paceMetric === "lucky" ? statRow("Lucky Index", data.luckyIndex > 0 ? data.luckyIndex.toFixed(2) : "—")
-              : `${statRow("SC/att", (data.paceOfLearning >= 0 ? "+" : "") + data.paceOfLearning.toFixed(3))}
-            <p class="formula">Average Serenity per attempt.</p>`}`, "statPace")}
-          <div class="panel tree-panel" data-help="statSessions">
-            <div class="tree-head">
-              <span class="tn-name block-title">Sessions log</span><span class="tn-lucky">lucky</span><span class="tn-mean">mean</span><span class="tn-a4w">att4win</span>
-            </div>
-            <div class="tree">${buildSessionTree(data.sessions)}</div>
-          </div>
-          ${data.attempts.length ? statBlock("Distribution", periodTag, distributionChartHtml(data.attempts, acc), "distribution") : ""}
+            ${statRow("Pace", data.paceOfPlayPerMin > 0 ? data.paceOfPlayPerMin.toFixed(1) + " att/min" : "—")}`)}
+          ${statBlock("Geometric mean", periodTag, `
+            ${statRow("Early", geomEarly ? formatMs(-geomEarly, true) : "—", "", "early")}
+            ${statRow("Absolute", has ? formatMs(data.deviationAll.medianMs, true) : "—")}
+            ${statRow("Late", geomLate ? formatMs(geomLate, true) : "—", "", "late")}`)}
         </div>
-        ${helpMode ? helpTapOverlay() : ""}
         ${nav()}
-        ${leaderboardReportUrl ? reportDialogHtml() : ""}
       </section>`;
     bindPeriodToggle();
-    bindTree();
-    bindPaceMetric();
     bindNav();
-    bindReportDialog();
-    const reportCardEl = document.getElementById("analyticsReportCard");
-    if (reportCardEl) reportCardEl.addEventListener("click", () => {
-      if (helpMode || data.attempts.length < ANALYTICS_MIN_FACE_ATTEMPTS) return;
-      leaderboardReportUrl = `https://playoftime.online/report.html?playerId=${encodeURIComponent(identity.playerId)}&token=${encodeURIComponent(identity.syncToken)}`;
-      leaderboardReportLoading = true;
-      render();
-    });
-    document.querySelector(".help-button") && document.querySelector(".help-button").addEventListener("click", (e) => {
-      e.stopPropagation();
-      helpMode = !helpMode;
-      helpTopic = null;
-      render();
-    });
-    bindHelpTap();
   }
 
   function renderCompletion() {
@@ -5005,6 +4965,7 @@
       <nav class="bottom-nav">
         ${navTab("play", "Play", NAV_ICONS.play)}
         ${navTab("leaderboard", "Ranks", NAV_ICONS.leaderboard)}
+        ${navTab("analytics", "Analytics", navBalanceGauge())}
         ${navTab("settings", "Settings", NAV_ICONS.settings)}
       </nav>`;
   }
