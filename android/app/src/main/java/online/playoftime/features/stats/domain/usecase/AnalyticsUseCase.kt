@@ -345,7 +345,7 @@ class AnalyticsUseCase(
         // Lucky index бакета (та же формула, что headline Lucky).
         val paceChart: PaceChartSeries = run {
             val ordered = periodAttempts.sortedBy { it.startTime }
-            if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList())
+            if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
             // Баг #4 (найден 2026-08-14, Alex: «прерывай графики для периодов, данных
             // о которых у тебя нет»): бакеты строились ТОЛЬКО из дней/часов/месяцев,
             // где реально были попытки — пропуски (не играл неделю, не играл ночью)
@@ -401,7 +401,9 @@ class AnalyticsUseCase(
                     val b = groups[key]
                     if (b == null || b.size < 2) null else luckyIndexOf(b, aimTime).toFloat()
                 }
-                return PaceChartSeries(v, hit, lucky, l)
+                val early = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { missMeanMs(it, aimTime, early = true) } }
+                val late  = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { missMeanMs(it, aimTime, early = false) } }
+                return PaceChartSeries(v, hit, lucky, early, late, l)
             }
             // Точки не по календарю, а по готовым группам попыток (Alex 2026-10-07:
             // «попробуй другую дискретизацию для дня, недели»). Часы дня и дни
@@ -418,8 +420,10 @@ class AnalyticsUseCase(
                     if (g.size < 2) null else (countTrueThree(g, aimTime).toDouble() / g.size * 100.0).toFloat()
                 }
                 val lucky = groupsList.map { g -> if (g.size < 2) null else luckyIndexOf(g, aimTime).toFloat() }
+                val early = groupsList.map { g -> if (g.size < 2) null else missMeanMs(g, aimTime, early = true) }
+                val late  = groupsList.map { g -> if (g.size < 2) null else missMeanMs(g, aimTime, early = false) }
                 val l = groupsList.map { g -> labFmt.format(Date(g.first().startTime)) }
-                return PaceChartSeries(v, hit, lucky, l)
+                return PaceChartSeries(v, hit, lucky, early, late, l)
             }
             when (period) {
                 PeriodFilter.ALL_TIME -> {
@@ -486,6 +490,8 @@ class AnalyticsUseCase(
                             (countTrueThree(w, aimTime).toDouble() / w.size * 100.0).toFloat() as Float?
                         },
                         lucky  = last.map { (idx, _) -> luckyIndexOf(window(idx), aimTime).toFloat() as Float? },
+                        early  = last.map { (idx, _) -> missMeanMs(window(idx), aimTime, early = true) },
+                        late   = last.map { (idx, _) -> missMeanMs(window(idx), aimTime, early = false) },
                         labels = last.map { "#${it.first + 1}" }
                     )
                 }
@@ -541,6 +547,10 @@ class AnalyticsUseCase(
             paceChartValues              = paceChart.values,
             paceChartHitRate             = paceChart.hit,
             paceChartLucky               = paceChart.lucky,
+            paceChartEarlyMs             = paceChart.early,
+            paceChartLateMs              = paceChart.late,
+            missMeanEarlyMs              = missMeanMs(periodAttempts, aimTime, early = true),
+            missMeanLateMs               = missMeanMs(periodAttempts, aimTime, early = false),
             paceChartLabels              = paceChart.labels,
             sessions                     = sessionsList,
             periodAttempts           = periodTotal,
@@ -562,8 +572,24 @@ class AnalyticsUseCase(
         99.0 * 10.0.pow((accuracy - 3).toDouble())
 
     private class PaceChartSeries(
-        val values: List<Float?>, val hit: List<Float?>, val lucky: List<Float?>, val labels: List<String>
+        val values: List<Float?>, val hit: List<Float?>, val lucky: List<Float?>,
+        val early: List<Float?>, val late: List<Float?>, val labels: List<String>
     )
+
+    /**
+     * Средняя ошибка промахов одной стороны, мс — как колонка «mean» в дереве
+     * сессий (Alex 2026-10-18, график «Mean error»): геометрическое среднее
+     * модулей ошибки по промахам (победа с допуском — не промах), только ранних
+     * или только поздних. null — промахов этой стороны нет.
+     */
+    private fun missMeanMs(attempts: List<TryDatabaseModel>, aimTime: Int, early: Boolean): Float? {
+        val errs = attempts.mapNotNull { att ->
+            val e = (att.endTime - att.startTime - aimTime).toDouble()
+            if ((if (early) e < 0 else e > 0) && countTrueThree(listOf(att), aimTime) == 0) abs(e) else null
+        }
+        if (errs.isEmpty()) return null
+        return exp(errs.sumOf { ln(it.coerceAtLeast(0.5)) } / errs.size).toFloat()
+    }
 
     /** Lucky index набора попыток — та же формула, что headline Lucky выше. */
     private fun luckyIndexOf(attempts: List<TryDatabaseModel>, aimTime: Int): Double {

@@ -569,15 +569,31 @@ private fun AnalyticsContent(
                     PaceMetric.PACE  -> data.paceChartValues
                     PaceMetric.HIT   -> data.paceChartHitRate
                     PaceMetric.LUCKY -> data.paceChartLucky
+                    PaceMetric.MEAN  -> data.paceChartEarlyMs
                 }
                 if (series.size >= 2) {
-                    PaceSparklineChart(
-                        values     = series,
-                        lineColor  = accent.copy(alpha = 0.65f),
-                        xLabels    = data.paceChartLabels,
-                        formatY    = metric.formatY,
-                        legend     = metric.legend
-                    )
+                    if (metric == PaceMetric.MEAN) {
+                        // Сдвоенные столбики: ранние промахи красным, поздние синим
+                        // (Alex 2026-10-18).
+                        PaceSparklineChart(
+                            values    = data.paceChartEarlyMs,
+                            lineColor = resultRedColor,
+                            xLabels   = data.paceChartLabels,
+                            formatY   = metric.formatY,
+                            legend    = "early",
+                            values2   = data.paceChartLateMs,
+                            color2    = resultBlueColor,
+                            legend2   = "late"
+                        )
+                    } else {
+                        PaceSparklineChart(
+                            values     = series,
+                            lineColor  = accent.copy(alpha = 0.65f),
+                            xLabels    = data.paceChartLabels,
+                            formatY    = metric.formatY,
+                            legend     = metric.legend
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
                 }
                 when (metric) {
@@ -593,6 +609,12 @@ private fun AnalyticsContent(
                     PaceMetric.LUCKY -> CardMetricRow(
                         label = "Lucky Index",
                         value = if (data.luckyIndex > 0) "%.2f".format(data.luckyIndex) else "—"
+                    )
+                    PaceMetric.MEAN -> CardMetricRow(
+                        label = "Early / Late",
+                        value = (data.missMeanEarlyMs?.let { "−" + formatMeanMs(it) } ?: "—") +
+                                " / " + (data.missMeanLateMs?.let { "+" + formatMeanMs(it) } ?: "—"),
+                        note  = "Average miss, ms"
                     )
                 }
             }
@@ -2142,8 +2164,13 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
     // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
     PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) }),
     HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
-    LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) })
+    LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) }),
+    MEAN ("Mean error",       "mean",       { formatMeanMs(it) + " ms" })
 }
+
+/** Средняя ошибка в мс: до 10 — с десятыми, дальше целые. */
+private fun formatMeanMs(ms: Float): String =
+    if (ms < 10f) "%.1f".format(ms) else "%.0f".format(ms)
 
 @Composable
 private fun PaceMetricDropdown(selected: PaceMetric, onSelect: (PaceMetric) -> Unit) {
@@ -2184,18 +2211,23 @@ private fun PaceSparklineChart(
     lineColor: Color,
     xLabels  : List<String> = emptyList(),
     formatY  : (Float) -> String = { "%.1f%%".format(it * 100) },
-    legend   : String = "efficiency"
+    legend   : String = "efficiency",
+    // Второй ряд — столбик рядом с первым в той же точке (Mean error: ранние
+    // и поздние промахи). null — обычный график из одного ряда.
+    values2  : List<Float?>? = null,
+    color2   : Color = lineColor,
+    legend2  : String = ""
 ) {
     // Столбики от нуля с подписью даты/времени под ними (Alex 2026-10-07:
     // «сделай столбиковой диаграммой с указанием даты или времени»).
     // null = точка без данных: место под столбик остаётся пустым, подпись есть.
-    val realValues = values.filterNotNull()
+    val realValues = values.filterNotNull() + (values2?.filterNotNull() ?: emptyList())
     if (values.size < 2 || realValues.isEmpty()) return
     val textColor   = MaterialTheme.colorScheme.baseTextColor
     val yAxisWidth  = 44.dp
     val chartHeight = 64.dp
     val maxV        = realValues.max().coerceAtLeast(0.0001f)
-    val lastRealIdx = values.indexOfLast { it != null }
+    val lastRealIdx = values.indices.lastOrNull { values[it] != null || values2?.getOrNull(it) != null } ?: -1
     // Подписи — под каждым столбиком, если влезают; иначе через один-два.
     val step = when {
         values.size <= 8  -> 1
@@ -2216,17 +2248,23 @@ private fun PaceSparklineChart(
                 val w     = size.width
                 val h     = size.height
                 val slot  = w / values.size
-                val barW  = slot * 0.62f
+                val pair  = values2 != null
+                val barW  = slot * (if (pair) 0.36f else 0.62f)
+                val gap   = if (pair) slot * 0.04f else 0f
                 val top   = 4.dp.toPx()
-                values.forEachIndexed { i, v ->
-                    if (v == null) return@forEachIndexed
+                fun bar(i: Int, v: Float, color: Color, x: Float) {
                     val barH = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
                     drawRoundRect(
-                        color        = if (i == lastRealIdx) lineColor else lineColor.copy(alpha = lineColor.alpha * 0.7f),
-                        topLeft      = Offset(slot * i + (slot - barW) / 2f, h - barH),
+                        color        = if (i == lastRealIdx) color else color.copy(alpha = color.alpha * 0.7f),
+                        topLeft      = Offset(x, h - barH),
                         size         = Size(barW, barH),
                         cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                     )
+                }
+                values.indices.forEach { i ->
+                    val left = slot * i + (slot - (if (pair) 2 * barW + gap else barW)) / 2f
+                    values[i]?.let { bar(i, it, lineColor, left) }
+                    values2?.getOrNull(i)?.let { bar(i, it, color2, left + barW + gap) }
                 }
                 drawLine(
                     color       = textColor.copy(alpha = 0.25f),
@@ -2264,6 +2302,13 @@ private fun PaceSparklineChart(
                 drawRect(lineColor)
             }
             BasicText(legend, style = labelStyle(8.sp, color = lineColor.copy(alpha = 0.7f)))
+            if (values2 != null) {
+                Spacer(Modifier.width(8.dp))
+                Canvas(modifier = Modifier.width(8.dp).height(8.dp)) {
+                    drawRect(color2)
+                }
+                BasicText(legend2, style = labelStyle(8.sp, color = color2.copy(alpha = 0.7f)))
+            }
         }
     }
 }

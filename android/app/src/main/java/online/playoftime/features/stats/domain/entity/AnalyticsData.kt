@@ -118,6 +118,12 @@ data class AnalyticsData(
     // Те же бакеты, другие ряды (Alex 2026-10-07): Hit rate в %, Lucky index.
     val paceChartHitRate         : List<Float?> = emptyList(),
     val paceChartLucky           : List<Float?> = emptyList(),
+    // Mean error (Alex 2026-10-18): средняя ошибка ранних и поздних промахов
+    // в каждом бакете, мс; и то же за весь период — для строки под графиком.
+    val paceChartEarlyMs         : List<Float?> = emptyList(),
+    val paceChartLateMs          : List<Float?> = emptyList(),
+    val missMeanEarlyMs          : Float? = null,
+    val missMeanLateMs           : Float? = null,
     val paceChartLabels          : List<String> = emptyList(),
 
     // ── Quest tolerance (for histogram green zone) ───────────────────
