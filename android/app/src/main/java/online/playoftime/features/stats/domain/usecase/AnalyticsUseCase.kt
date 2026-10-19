@@ -498,25 +498,27 @@ class AnalyticsUseCase(
                     // Session — сырые точки по попыткам, не по календарю: пропусков
                     // тут нет по определению (последовательные попытки одной сессии),
                     // так что null-разрывы не нужны, все non-null.
-                    // Точка на каждую попытку сессии, с первой по последнюю (Alex
-                    // 2026-10-19: «надо с 1 до 33», раньше — только последние 20).
-                    // Pace — по самой попытке (у последней SC ещё нет — пусто).
-                    // Hit rate, Lucky и Mean error для одной попытки бессмысленны,
-                    // поэтому — скользящее окно из 10 попыток до этой. Faces — лицо
-                    // после этой попытки: весёлое или грустное, у первой нет.
-                    fun window(idx: Int) = ordered.subList((idx - 9).coerceAtLeast(0), idx + 1)
+                    // Столбик на каждую попытку сессии, с первой по последнюю, и без
+                    // усреднения: в сессии каждый столбик — сама попытка (Alex
+                    // 2026-10-19: «в сессии должны быть не сдвоенные столбики, а по
+                    // одному столбику в каждой попытке; только начиная с уровня дня
+                    // столбики могут быть агрегированными»).
+                    //  Pace       — эффективность попытки (у последней SC ещё нет — пусто);
+                    //  Hit rate   — 100, если попытка — победа с допуском, иначе 0;
+                    //  Lucky      — 1, если ровно 3.000 (как считает Lucky), иначе 0;
+                    //  Mean error — модуль ошибки попытки, мс: в ряд early, если рано,
+                    //               в ряд late, если поздно — один столбик своего цвета;
+                    //  Faces      — 1 в ряд happy или sad по рожице после попытки.
                     val idxs = ordered.indices.toList()
+                    fun err(i: Int) = (ordered[i].endTime - ordered[i].startTime - aimTime).toDouble()
                     PaceChartSeries(
                         values = idxs.map { i ->
                             ordered[i].scm?.takeIf { it > 0.0 }?.let { (it / peakScmForAccuracy(ordered[i].accuracy)).toFloat() }
                         },
-                        hit    = idxs.map { i ->
-                            val w = window(i)
-                            (countTrueThree(w, aimTime).toDouble() / w.size * 100.0).toFloat()
-                        },
-                        lucky  = idxs.map { i -> luckyIndexOf(window(i), aimTime).toFloat() },
-                        early  = idxs.map { i -> sideGeomMeanMs(window(i), aimTime, early = true) },
-                        late   = idxs.map { i -> sideGeomMeanMs(window(i), aimTime, early = false) },
+                        hit    = idxs.map { i -> if (countTrueThree(listOf(ordered[i]), aimTime) > 0) 100f else 0f },
+                        lucky  = idxs.map { i -> if (abs(err(i)) < 0.5) 1f else 0f },
+                        early  = idxs.map { i -> err(i).takeIf { it < 0 }?.let { abs(it).toFloat() } },
+                        late   = idxs.map { i -> err(i).takeIf { it > 0 }?.toFloat() },
                         happy  = idxs.map { i -> if (faceOf[ordered[i]] == true) 1f else null },
                         sad    = idxs.map { i -> if (faceOf[ordered[i]] == false) 1f else null },
                         labels = idxs.map { "#${it + 1}" }

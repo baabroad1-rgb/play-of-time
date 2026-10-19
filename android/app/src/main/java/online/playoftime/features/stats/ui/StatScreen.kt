@@ -575,18 +575,31 @@ private fun AnalyticsContent(
                     PaceMetric.FACES -> data.paceChartHappy
                 }
                 if (series.size >= 2) {
+                    // В сессии столбик — одна попытка, без усреднения (Alex
+                    // 2026-10-19). У Hit rate, Lucky и Faces там два состояния,
+                    // и подписи — словами, а не числами.
+                    val isSession = selectedPeriod == PeriodFilter.SESSION
+                    val formatY: (Float) -> String = when {
+                        !isSession                -> metric.formatY
+                        metric == PaceMetric.HIT   -> { v -> if (v > 0f) "hit" else "miss" }
+                        metric == PaceMetric.LUCKY -> { v -> if (v > 0f) "3.000" else "—" }
+                        metric == PaceMetric.FACES -> { _ -> "" }
+                        else                       -> metric.formatY
+                    }
                     if (metric == PaceMetric.MEAN) {
-                        // Сдвоенные столбики: ранние промахи красным, поздние синим
-                        // (Alex 2026-10-18).
+                        // Ранние красным, поздние синим (Alex 2026-10-18): за день
+                        // и больше — пара столбиков в точке, в сессии — один
+                        // столбик попытки своего цвета.
                         PaceSparklineChart(
                             values    = data.paceChartEarlyMs,
                             lineColor = resultRedColor,
                             xLabels   = data.paceChartLabels,
-                            formatY   = metric.formatY,
+                            formatY   = formatY,
                             legend    = "early",
                             values2   = data.paceChartLateMs,
                             color2    = resultBlueColor,
-                            legend2   = "late"
+                            legend2   = "late",
+                            single    = isSession
                         )
                     } else if (metric == PaceMetric.FACES) {
                         // Весёлые и грустные рожицы — цветами самих лиц (FaceIcon).
@@ -594,18 +607,19 @@ private fun AnalyticsContent(
                             values    = data.paceChartHappy,
                             lineColor = FACE_HAPPY_COLOR,
                             xLabels   = data.paceChartLabels,
-                            formatY   = metric.formatY,
+                            formatY   = formatY,
                             legend    = "happy",
                             values2   = data.paceChartSad,
                             color2    = FACE_SAD_COLOR,
-                            legend2   = "sad"
+                            legend2   = "sad",
+                            single    = isSession
                         )
                     } else {
                         PaceSparklineChart(
                             values     = series,
                             lineColor  = accent.copy(alpha = 0.65f),
                             xLabels    = data.paceChartLabels,
-                            formatY    = metric.formatY,
+                            formatY    = formatY,
                             legend     = metric.legend
                         )
                     }
@@ -2240,7 +2254,10 @@ private fun PaceSparklineChart(
     // и поздние; Faces: весёлые и грустные). null — график из одного ряда.
     values2  : List<Float?>? = null,
     color2   : Color = lineColor,
-    legend2  : String = ""
+    legend2  : String = "",
+    // true — в точке не пара, а один столбик того ряда, у которого есть
+    // значение (сессия: столбик = попытка, Alex 2026-10-19).
+    single   : Boolean = false
 ) {
     // Столбики от нуля с подписью даты/времени под ними (Alex 2026-10-07:
     // «сделай столбиковой диаграммой с указанием даты или времени»).
@@ -2287,7 +2304,7 @@ private fun PaceSparklineChart(
                 val w     = size.width
                 val h     = size.height
                 val slot  = w / values.size
-                val pair  = values2 != null
+                val pair  = values2 != null && !single
                 val barW  = slot * (if (pair) 0.36f else 0.62f)
                 val gap   = if (pair) slot * 0.04f else 0f
                 val top   = 4.dp.toPx()
@@ -2310,7 +2327,7 @@ private fun PaceSparklineChart(
                 values.indices.forEach { i ->
                     val left = slot * i + (slot - (if (pair) 2 * barW + gap else barW)) / 2f
                     values[i]?.let { bar(i, it, lineColor, left) }
-                    values2?.getOrNull(i)?.let { bar(i, it, color2, left + barW + gap) }
+                    values2?.getOrNull(i)?.let { bar(i, it, color2, if (pair) left + barW + gap else left) }
                 }
                 drawLine(
                     color       = textColor.copy(alpha = 0.25f),
@@ -2322,8 +2339,18 @@ private fun PaceSparklineChart(
                 if (sel != null) {
                     val fmt = { v: Float? -> v?.let(formatY) ?: "—" }
                     val head = xLabels.getOrElse(sel) { "" }.replace('\n', ' ')
-                    val body = if (pair) "$legend ${fmt(values[sel])} · $legend2 ${fmt(values2?.getOrNull(sel))}"
-                               else fmt(values[sel])
+                    val v1 = values[sel]
+                    val v2 = values2?.getOrNull(sel)
+                    fun named(name: String, v: Float) = formatY(v).let { if (it.isBlank()) name else "$name $it" }
+                    val body = when {
+                        pair       -> "$legend ${fmt(v1)} · $legend2 ${fmt(v2)}"
+                        single     -> when {
+                            v1 != null -> named(legend, v1)
+                            v2 != null -> named(legend2, v2)
+                            else       -> "—"
+                        }
+                        else       -> fmt(v1)
+                    }
                     val tl  = measurer.measure(if (head.isEmpty()) body else "$head · $body", tipStyle)
                     val padX = 6.dp.toPx()
                     val padY = 3.dp.toPx()
