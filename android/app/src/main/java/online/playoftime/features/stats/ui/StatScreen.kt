@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.Alignment
@@ -570,6 +572,7 @@ private fun AnalyticsContent(
                     PaceMetric.HIT   -> data.paceChartHitRate
                     PaceMetric.LUCKY -> data.paceChartLucky
                     PaceMetric.MEAN  -> data.paceChartEarlyMs
+                    PaceMetric.FACES -> data.paceChartHappy
                 }
                 if (series.size >= 2) {
                     if (metric == PaceMetric.MEAN) {
@@ -584,6 +587,18 @@ private fun AnalyticsContent(
                             values2   = data.paceChartLateMs,
                             color2    = resultBlueColor,
                             legend2   = "late"
+                        )
+                    } else if (metric == PaceMetric.FACES) {
+                        // Весёлые и грустные рожицы — цветами самих лиц (FaceIcon).
+                        PaceSparklineChart(
+                            values    = data.paceChartHappy,
+                            lineColor = FACE_HAPPY_COLOR,
+                            xLabels   = data.paceChartLabels,
+                            formatY   = metric.formatY,
+                            legend    = "happy",
+                            values2   = data.paceChartSad,
+                            color2    = FACE_SAD_COLOR,
+                            legend2   = "sad"
                         )
                     } else {
                         PaceSparklineChart(
@@ -614,7 +629,11 @@ private fun AnalyticsContent(
                         label = "Early / Late",
                         value = (data.missMeanEarlyMs?.let { "−" + formatMeanMs(it) } ?: "—") +
                                 " / " + (data.missMeanLateMs?.let { "+" + formatMeanMs(it) } ?: "—"),
-                        note  = "Average miss, ms"
+                        note  = "Geometric mean, ms"
+                    )
+                    PaceMetric.FACES -> CardMetricRow(
+                        label = "Happy / Sad",
+                        value = "${data.facesHappy} / ${data.facesSad}"
                     )
                 }
             }
@@ -2165,8 +2184,13 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
     PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) }),
     HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
     LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) }),
-    MEAN ("Mean error",       "mean",       { formatMeanMs(it) + " ms" })
+    MEAN ("Mean error",       "mean",       { formatMeanMs(it) + " ms" }),
+    FACES("Faces",            "faces",      { "%.0f".format(it) })
 }
+
+// Цвета лиц главного экрана (FaceIcon: NICE и SAD).
+private val FACE_HAPPY_COLOR = Color(0xFF3FA864)
+private val FACE_SAD_COLOR   = Color(0xFFB8B8B8)
 
 /** Средняя ошибка в мс: до 10 — с десятыми, дальше целые. */
 private fun formatMeanMs(ms: Float): String =
@@ -2213,7 +2237,7 @@ private fun PaceSparklineChart(
     formatY  : (Float) -> String = { "%.1f%%".format(it * 100) },
     legend   : String = "efficiency",
     // Второй ряд — столбик рядом с первым в той же точке (Mean error: ранние
-    // и поздние промахи). null — обычный график из одного ряда.
+    // и поздние; Faces: весёлые и грустные). null — график из одного ряда.
     values2  : List<Float?>? = null,
     color2   : Color = lineColor,
     legend2  : String = ""
@@ -2228,12 +2252,14 @@ private fun PaceSparklineChart(
     val chartHeight = 64.dp
     val maxV        = realValues.max().coerceAtLeast(0.0001f)
     val lastRealIdx = values.indices.lastOrNull { values[it] != null || values2?.getOrNull(it) != null } ?: -1
-    // Подписи — под каждым столбиком, если влезают; иначе через один-два.
-    val step = when {
-        values.size <= 8  -> 1
-        values.size <= 16 -> 2
-        else              -> 3
-    }
+    // Подписи — не теснее одной на ~8 столбиков: при всех точках периода
+    // (до 30+) подписывать каждую не влезает.
+    val step = ((values.size + 7) / 8).coerceAtLeast(1)
+    // Тап с удержанием на столбике показывает его значение (Alex 2026-10-19);
+    // палец отпущен — подсказка исчезает.
+    var selected by remember(values, values2) { mutableStateOf<Int?>(null) }
+    val measurer = rememberTextMeasurer()
+    val tipStyle = labelStyle(10.sp, FontWeight.Medium, Color.White)
 
     Column {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
@@ -2244,7 +2270,20 @@ private fun PaceSparklineChart(
                 BasicText(formatY(maxV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
                 BasicText(formatY(0f),   style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
             }
-            Canvas(modifier = Modifier.weight(1f).height(chartHeight)) {
+            Canvas(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(chartHeight)
+                    .pointerInput(values.size) {
+                        detectTapGestures(
+                            onPress     = { tryAwaitRelease(); selected = null },
+                            onLongPress = { off ->
+                                selected = (off.x / (size.width.toFloat() / values.size)).toInt()
+                                    .coerceIn(0, values.size - 1)
+                            }
+                        )
+                    }
+            ) {
                 val w     = size.width
                 val h     = size.height
                 val slot  = w / values.size
@@ -2252,10 +2291,17 @@ private fun PaceSparklineChart(
                 val barW  = slot * (if (pair) 0.36f else 0.62f)
                 val gap   = if (pair) slot * 0.04f else 0f
                 val top   = 4.dp.toPx()
+                val sel   = selected
                 fun bar(i: Int, v: Float, color: Color, x: Float) {
+                    if (v <= 0f) return
                     val barH = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
+                    val a = when {
+                        sel != null  -> if (i == sel) 1f else 0.3f
+                        i == lastRealIdx -> 1f
+                        else -> 0.7f
+                    }
                     drawRoundRect(
-                        color        = if (i == lastRealIdx) color else color.copy(alpha = color.alpha * 0.7f),
+                        color        = color.copy(alpha = color.alpha * a),
                         topLeft      = Offset(x, h - barH),
                         size         = Size(barW, barH),
                         cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
@@ -2272,6 +2318,26 @@ private fun PaceSparklineChart(
                     end         = Offset(w, h),
                     strokeWidth = 1.dp.toPx()
                 )
+                // Подсказка над графиком: подпись точки и значение(я).
+                if (sel != null) {
+                    val fmt = { v: Float? -> v?.let(formatY) ?: "—" }
+                    val head = xLabels.getOrElse(sel) { "" }.replace('\n', ' ')
+                    val body = if (pair) "$legend ${fmt(values[sel])} · $legend2 ${fmt(values2?.getOrNull(sel))}"
+                               else fmt(values[sel])
+                    val tl  = measurer.measure(if (head.isEmpty()) body else "$head · $body", tipStyle)
+                    val padX = 6.dp.toPx()
+                    val padY = 3.dp.toPx()
+                    val bw  = tl.size.width + 2 * padX
+                    val bh  = tl.size.height + 2 * padY
+                    val cx  = (slot * (sel + 0.5f)).coerceIn(bw / 2f, (w - bw / 2f).coerceAtLeast(bw / 2f))
+                    drawRoundRect(
+                        color        = Color(0xF2333333),
+                        topLeft      = Offset(cx - bw / 2f, 0f),
+                        size         = Size(bw, bh),
+                        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                    )
+                    drawText(tl, topLeft = Offset(cx - bw / 2f + padX, padY))
+                }
             }
         }
         // Подписи оси X — по центру своего столбика.

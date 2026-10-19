@@ -343,9 +343,25 @@ class AnalyticsUseCase(
         // Тот же бакет даёт ещё два ряда для выпадающего списка над графиком
         // (Alex 2026-10-07): Hit rate (% побед с допуском, как в Chance of Win) и
         // Lucky index бакета (та же формула, что headline Lucky).
+        // Рожицы главного экрана (Alex 2026-10-19, график Faces): после каждой
+        // попытки, кроме первой в сессии, лицо весёлое, если ошибка (округлённая
+        // до точности уровня, как на экране) по модулю не больше предыдущей
+        // попытки той же сессии, и грустное, если больше. Та же логика, что
+        // faceKind в MainScreen.kt.
+        val faceOf = java.util.IdentityHashMap<TryDatabaseModel, Boolean>().also { m ->
+            val prevAbs = HashMap<Int, Double>()
+            periodAttempts.sortedBy { it.startTime }.forEach { att ->
+                val e = abs(displayErrorMs(att, aimTime))
+                prevAbs[att.sessionId]?.let { m[att] = e <= it }
+                prevAbs[att.sessionId] = e
+            }
+        }
+        fun happyIn(b: List<TryDatabaseModel>) = b.count { faceOf[it] == true }.toFloat()
+        fun sadIn(b: List<TryDatabaseModel>)   = b.count { faceOf[it] == false }.toFloat()
+
         val paceChart: PaceChartSeries = run {
             val ordered = periodAttempts.sortedBy { it.startTime }
-            if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+            if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
             // Баг #4 (найден 2026-08-14, Alex: «прерывай графики для периодов, данных
             // о которых у тебя нет»): бакеты строились ТОЛЬКО из дней/часов/месяцев,
             // где реально были попытки — пропуски (не играл неделю, не играл ночью)
@@ -355,7 +371,7 @@ class AnalyticsUseCase(
             // первой до последней попытки периода; бакет без попыток получает null,
             // а не 0f и не пропускается — PaceSparklineChart рвёт линию на null,
             // вместо того чтобы тянуть её сквозь пропуск или формально опускать в ноль.
-            fun bucket(keyFmt: SimpleDateFormat, labFmt: SimpleDateFormat, maxN: Int, calField: Int):
+            fun bucket(keyFmt: SimpleDateFormat, labFmt: SimpleDateFormat, calField: Int):
                 PaceChartSeries {
                 val groups = LinkedHashMap<String, MutableList<TryDatabaseModel>>()
                 ordered.forEach {
@@ -369,7 +385,9 @@ class AnalyticsUseCase(
                     cal.add(calField, 1)
                 }
                 orderedKeys.add(keyFmt.format(Date(endMillis)))
-                val keys = orderedKeys.toList().takeLast(maxN)
+                // Все точки периода, без обрезки до последних N (Alex 2026-10-19:
+                // «на каждой диаграмме надо показывать все значения»).
+                val keys = orderedKeys.toList()
                 val v: List<Float?> = keys.map { key ->
                     val bucketAttempts = groups[key]
                     if (bucketAttempts.isNullOrEmpty()) null
@@ -401,9 +419,11 @@ class AnalyticsUseCase(
                     val b = groups[key]
                     if (b == null || b.size < 2) null else luckyIndexOf(b, aimTime).toFloat()
                 }
-                val early = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { missMeanMs(it, aimTime, early = true) } }
-                val late  = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { missMeanMs(it, aimTime, early = false) } }
-                return PaceChartSeries(v, hit, lucky, early, late, l)
+                val early = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { sideGeomMeanMs(it, aimTime, early = true) } }
+                val late  = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { sideGeomMeanMs(it, aimTime, early = false) } }
+                val happy = keys.map { key -> groups[key]?.takeIf { it.isNotEmpty() }?.let { happyIn(it) } }
+                val sad   = keys.map { key -> groups[key]?.takeIf { it.isNotEmpty() }?.let { sadIn(it) } }
+                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, l)
             }
             // Точки не по календарю, а по готовым группам попыток (Alex 2026-10-07:
             // «попробуй другую дискретизацию для дня, недели»). Часы дня и дни
@@ -420,10 +440,12 @@ class AnalyticsUseCase(
                     if (g.size < 2) null else (countTrueThree(g, aimTime).toDouble() / g.size * 100.0).toFloat()
                 }
                 val lucky = groupsList.map { g -> if (g.size < 2) null else luckyIndexOf(g, aimTime).toFloat() }
-                val early = groupsList.map { g -> if (g.size < 2) null else missMeanMs(g, aimTime, early = true) }
-                val late  = groupsList.map { g -> if (g.size < 2) null else missMeanMs(g, aimTime, early = false) }
+                val early = groupsList.map { g -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = true) }
+                val late  = groupsList.map { g -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = false) }
+                val happy = groupsList.map { g -> happyIn(g) }
+                val sad   = groupsList.map { g -> sadIn(g) }
                 val l = groupsList.map { g -> labFmt.format(Date(g.first().startTime)) }
-                return PaceChartSeries(v, hit, lucky, early, late, l)
+                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, l)
             }
             when (period) {
                 PeriodFilter.ALL_TIME -> {
@@ -440,22 +462,22 @@ class AnalyticsUseCase(
                     when {
                         spanDays <= 1.5  -> bucket(
                             SimpleDateFormat("yyyyMMddHH", Locale.US),
-                            SimpleDateFormat("HH:00", Locale.ENGLISH), 12, Calendar.HOUR_OF_DAY
+                            SimpleDateFormat("HH:00", Locale.ENGLISH), Calendar.HOUR_OF_DAY
                         )
                         spanDays <= 45.0 -> bucket(
                             SimpleDateFormat("yyyyMMdd", Locale.US),
-                            SimpleDateFormat("d MMM", Locale.ENGLISH), 16, Calendar.DAY_OF_MONTH
+                            SimpleDateFormat("d MMM", Locale.ENGLISH), Calendar.DAY_OF_MONTH
                         )
                         else             -> bucket(
                             SimpleDateFormat("yyyyMM", Locale.US),
-                            SimpleDateFormat("MMM", Locale.ENGLISH), 8, Calendar.MONTH
+                            SimpleDateFormat("MMM", Locale.ENGLISH), Calendar.MONTH
                         )
                     }
                 }
                 PeriodFilter.MONTH    ->
-                    bucket(SimpleDateFormat("yyyyMMdd", Locale.US), SimpleDateFormat("d MMM", Locale.ENGLISH), 16, Calendar.DAY_OF_MONTH)
+                    bucket(SimpleDateFormat("yyyyMMdd", Locale.US), SimpleDateFormat("d MMM", Locale.ENGLISH), Calendar.DAY_OF_MONTH)
                 // Неделя — точка на каждый сеанс (игра без перерывов > 10 мин),
-                // последние 24 сеанса.
+                // все сеансы недели.
                 PeriodFilter.WEEK     -> {
                     val sittings = mutableListOf<MutableList<TryDatabaseModel>>()
                     ordered.forEach { att ->
@@ -464,7 +486,7 @@ class AnalyticsUseCase(
                             sittings.add(mutableListOf(att))
                         else cur.add(att)
                     }
-                    fromGroups(sittings.takeLast(24), SimpleDateFormat("EEE\nHH:mm", Locale.ENGLISH))
+                    fromGroups(sittings, SimpleDateFormat("EEE\nHH:mm", Locale.ENGLISH))
                 }
                 // День — равные блоки попыток по порядку: до 16 точек, не меньше
                 // 10 попыток в точке. Каждая точка весит одинаково.
@@ -476,23 +498,28 @@ class AnalyticsUseCase(
                     // Session — сырые точки по попыткам, не по календарю: пропусков
                     // тут нет по определению (последовательные попытки одной сессии),
                     // так что null-разрывы не нужны, все non-null.
-                    val scoredIndexed = ordered.withIndex().mapNotNull { (idx, att) ->
-                        att.scm?.takeIf { it > 0.0 }?.let { idx to (it / peakScmForAccuracy(att.accuracy)) }
-                    }
-                    val last = scoredIndexed.takeLast(20)
-                    // Hit rate и Lucky для одной попытки бессмысленны (0 или 100%),
-                    // поэтому в сессии — скользящее окно из 10 попыток до этой.
+                    // Точка на каждую попытку сессии, с первой по последнюю (Alex
+                    // 2026-10-19: «надо с 1 до 33», раньше — только последние 20).
+                    // Pace — по самой попытке (у последней SC ещё нет — пусто).
+                    // Hit rate, Lucky и Mean error для одной попытки бессмысленны,
+                    // поэтому — скользящее окно из 10 попыток до этой. Faces — лицо
+                    // после этой попытки: весёлое или грустное, у первой нет.
                     fun window(idx: Int) = ordered.subList((idx - 9).coerceAtLeast(0), idx + 1)
+                    val idxs = ordered.indices.toList()
                     PaceChartSeries(
-                        values = last.map { it.second.toFloat() as Float? },
-                        hit    = last.map { (idx, _) ->
-                            val w = window(idx)
-                            (countTrueThree(w, aimTime).toDouble() / w.size * 100.0).toFloat() as Float?
+                        values = idxs.map { i ->
+                            ordered[i].scm?.takeIf { it > 0.0 }?.let { (it / peakScmForAccuracy(ordered[i].accuracy)).toFloat() }
                         },
-                        lucky  = last.map { (idx, _) -> luckyIndexOf(window(idx), aimTime).toFloat() as Float? },
-                        early  = last.map { (idx, _) -> missMeanMs(window(idx), aimTime, early = true) },
-                        late   = last.map { (idx, _) -> missMeanMs(window(idx), aimTime, early = false) },
-                        labels = last.map { "#${it.first + 1}" }
+                        hit    = idxs.map { i ->
+                            val w = window(i)
+                            (countTrueThree(w, aimTime).toDouble() / w.size * 100.0).toFloat()
+                        },
+                        lucky  = idxs.map { i -> luckyIndexOf(window(i), aimTime).toFloat() },
+                        early  = idxs.map { i -> sideGeomMeanMs(window(i), aimTime, early = true) },
+                        late   = idxs.map { i -> sideGeomMeanMs(window(i), aimTime, early = false) },
+                        happy  = idxs.map { i -> if (faceOf[ordered[i]] == true) 1f else null },
+                        sad    = idxs.map { i -> if (faceOf[ordered[i]] == false) 1f else null },
+                        labels = idxs.map { "#${it + 1}" }
                     )
                 }
             }
@@ -549,8 +576,12 @@ class AnalyticsUseCase(
             paceChartLucky               = paceChart.lucky,
             paceChartEarlyMs             = paceChart.early,
             paceChartLateMs              = paceChart.late,
-            missMeanEarlyMs              = missMeanMs(periodAttempts, aimTime, early = true),
-            missMeanLateMs               = missMeanMs(periodAttempts, aimTime, early = false),
+            paceChartHappy               = paceChart.happy,
+            paceChartSad                 = paceChart.sad,
+            missMeanEarlyMs              = sideGeomMeanMs(periodAttempts, aimTime, early = true),
+            missMeanLateMs               = sideGeomMeanMs(periodAttempts, aimTime, early = false),
+            facesHappy                   = faceOf.values.count { it },
+            facesSad                     = faceOf.values.count { !it },
             paceChartLabels              = paceChart.labels,
             sessions                     = sessionsList,
             periodAttempts           = periodTotal,
@@ -573,22 +604,36 @@ class AnalyticsUseCase(
 
     private class PaceChartSeries(
         val values: List<Float?>, val hit: List<Float?>, val lucky: List<Float?>,
-        val early: List<Float?>, val late: List<Float?>, val labels: List<String>
+        val early: List<Float?>, val late: List<Float?>,
+        val happy: List<Float?>, val sad: List<Float?>, val labels: List<String>
     )
 
     /**
-     * Средняя ошибка промахов одной стороны, мс — как колонка «mean» в дереве
-     * сессий (Alex 2026-10-18, график «Mean error»): геометрическое среднее
-     * модулей ошибки по промахам (победа с допуском — не промах), только ранних
-     * или только поздних. null — промахов этой стороны нет.
+     * Геометрическое среднее ошибки одной стороны, мс — ровно как карточка
+     * Geometric Mean ÷ Spread (Alex 2026-10-19: на графике Mean error должно
+     * быть геометрическое среднее, как там): все попытки, попадания тоже,
+     * крайние 3% знаковых ошибок с каждой стороны отброшены (при ≥ 3 попытках),
+     * затем computeProfile по ранним или поздним. null — ошибок этой стороны нет.
      */
-    private fun missMeanMs(attempts: List<TryDatabaseModel>, aimTime: Int, early: Boolean): Float? {
-        val errs = attempts.mapNotNull { att ->
-            val e = (att.endTime - att.startTime - aimTime).toDouble()
-            if ((if (early) e < 0 else e > 0) && countTrueThree(listOf(att), aimTime) == 0) abs(e) else null
-        }
-        if (errs.isEmpty()) return null
-        return exp(errs.sumOf { ln(it.coerceAtLeast(0.5)) } / errs.size).toFloat()
+    private fun sideGeomMeanMs(attempts: List<TryDatabaseModel>, aimTime: Int, early: Boolean): Float? {
+        val errs = attempts.map { (it.endTime - it.startTime - aimTime).toDouble() }
+        val trimmed = if (errs.size >= 3) {
+            val sorted = errs.sorted()
+            val lo = sorted[(sorted.size * 0.03).toInt().coerceIn(0, sorted.size - 1)]
+            val hi = sorted[(sorted.size * 0.97).toInt().coerceIn(0, sorted.size - 1)]
+            errs.filter { it in lo..hi }
+        } else errs
+        val side = if (early) trimmed.filter { it < 0 }.map { abs(it) } else trimmed.filter { it > 0 }
+        if (side.isEmpty()) return null
+        return computeProfile(side).medianMs.toFloat()
+    }
+
+    /** Ошибка попытки, округлённая до точности её уровня, мс — как на экране. */
+    private fun displayErrorMs(att: TryDatabaseModel, aimTime: Int): Double {
+        val factor = 10.0.pow(att.accuracy)
+        val durRounded = ((att.endTime - att.startTime) / 1000.0 * factor).roundToLong()
+        val aimRounded = (aimTime / 1000.0 * factor).roundToLong()
+        return (durRounded - aimRounded) * (1000.0 / factor)
     }
 
     /** Lucky index набора попыток — та же формула, что headline Lucky выше. */
