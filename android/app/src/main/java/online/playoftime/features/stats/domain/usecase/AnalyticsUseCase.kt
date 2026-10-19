@@ -362,137 +362,71 @@ class AnalyticsUseCase(
         val paceChart: PaceChartSeries = run {
             val ordered = periodAttempts.sortedBy { it.startTime }
             if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
-            // Баг #4 (найден 2026-08-14, Alex: «прерывай графики для периодов, данных
-            // о которых у тебя нет»): бакеты строились ТОЛЬКО из дней/часов/месяцев,
-            // где реально были попытки — пропуски (не играл неделю, не играл ночью)
-            // молча схлопывались, и линия рисовалась НЕПРЕРЫВНОЙ между двумя точками,
-            // разделёнными на самом деле большим перерывом — врёт про непрерывный
-            // прогресс. Фикс: сетка бакетов строится по КАЛЕНДАРЮ (шаг calField) от
-            // первой до последней попытки периода; бакет без попыток получает null,
-            // а не 0f и не пропускается — PaceSparklineChart рвёт линию на null,
-            // вместо того чтобы тянуть её сквозь пропуск или формально опускать в ноль.
-            fun bucket(keyFmt: SimpleDateFormat, labFmt: SimpleDateFormat, calField: Int):
-                PaceChartSeries {
-                val groups = LinkedHashMap<String, MutableList<TryDatabaseModel>>()
-                ordered.forEach {
-                    groups.getOrPut(keyFmt.format(Date(it.startTime))) { mutableListOf() }.add(it)
-                }
-                val cal = Calendar.getInstance().apply { timeInMillis = ordered.first().startTime }
-                val endMillis = ordered.last().startTime
-                val orderedKeys = LinkedHashSet<String>()
-                while (cal.timeInMillis <= endMillis) {
-                    orderedKeys.add(keyFmt.format(cal.time))
-                    cal.add(calField, 1)
-                }
-                orderedKeys.add(keyFmt.format(Date(endMillis)))
-                // Все точки периода, без обрезки до последних N (Alex 2026-10-19:
-                // «на каждой диаграмме надо показывать все значения»).
-                val keys = orderedKeys.toList()
-                val v: List<Float?> = keys.map { key ->
-                    val bucketAttempts = groups[key]
-                    if (bucketAttempts.isNullOrEmpty()) null
-                    else {
-                        val scored = bucketAttempts.mapNotNull { att ->
-                            att.scm?.takeIf { it > 0.0 }?.let { it / peakScmForAccuracy(att.accuracy) }
-                        }
-                        // < 2 scored attempts — null, не 1-точечное "среднее" (Alex
-                        // 05.09: «график никогда не должен становиться прямой» —
-                        // несколько дней подряд с одной попыткой каждый рисовали
-                        // плоский хвост, это шум единичного замера, а не тренд;
-                        // тот же принцип 14.08 «прерывай график, если данных нет»,
-                        // распространённый с «0 попыток» на «недостаточно попыток»).
-                        if (scored.size < 2) null else (scored.sum() / scored.size).toFloat()
-                    }
-                }
-                val l = keys.map { key ->
-                    val bucketAttempts = groups[key]
-                    if (!bucketAttempts.isNullOrEmpty()) labFmt.format(Date(bucketAttempts.first().startTime))
-                    else runCatching { labFmt.format(keyFmt.parse(key)!!) }.getOrDefault(key)
-                }
-                // Те же правила разрыва: нет попыток или меньше двух — null.
-                val hit: List<Float?> = keys.map { key ->
-                    val b = groups[key]
-                    if (b == null || b.size < 2) null
-                    else (countTrueThree(b, aimTime).toDouble() / b.size * 100.0).toFloat()
-                }
-                val lucky: List<Float?> = keys.map { key ->
-                    val b = groups[key]
-                    if (b == null || b.size < 2) null else luckyIndexOf(b, aimTime).toFloat()
-                }
-                val early = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { sideGeomMeanMs(it, aimTime, early = true) } }
-                val late  = keys.map { key -> groups[key]?.takeIf { it.size >= 2 }?.let { sideGeomMeanMs(it, aimTime, early = false) } }
-                val happy = keys.map { key -> groups[key]?.takeIf { it.isNotEmpty() }?.let { happyIn(it) } }
-                val sad   = keys.map { key -> groups[key]?.takeIf { it.isNotEmpty() }?.let { sadIn(it) } }
-                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, l)
-            }
-            // Точки не по календарю, а по готовым группам попыток (Alex 2026-10-07:
-            // «попробуй другую дискретизацию для дня, недели»). Часы дня и дни
-            // недели в основном пустые — линия из 2–3 обрывков. Группы идут
-            // подряд, без пропусков; группа < 2 попыток — без точки.
-            fun fromGroups(groupsList: List<List<TryDatabaseModel>>, labFmt: SimpleDateFormat): PaceChartSeries {
-                val v = groupsList.map { g ->
+            // Нарезка оси X — единое правило для всех графиков (Alex 2026-10-19):
+            //   Session  — каждая попытка;
+            //   Today    — каждая сессия дня;
+            //   Week     — каждый день недели (7 столбиков, пустые дни — пусто);
+            //   Month    — каждый день месяца (1–31);
+            //   All time — недели, если история короче 9 месяцев, иначе месяцы.
+            // Точка без данных (или меньше двух попыток для средних) — пустая,
+            // место и подпись остаются: пропуск виден, линия не «склеивается».
+            fun slotSeries(slots: List<Pair<List<TryDatabaseModel>, String>>): PaceChartSeries {
+                val v = slots.map { (g, _) ->
                     val scored = g.mapNotNull { att ->
                         att.scm?.takeIf { it > 0.0 }?.let { it / peakScmForAccuracy(att.accuracy) }
                     }
                     if (scored.size < 2) null else (scored.sum() / scored.size).toFloat()
                 }
-                val hit = groupsList.map { g ->
+                val hit = slots.map { (g, _) ->
                     if (g.size < 2) null else (countTrueThree(g, aimTime).toDouble() / g.size * 100.0).toFloat()
                 }
-                val lucky = groupsList.map { g -> if (g.size < 2) null else luckyIndexOf(g, aimTime).toFloat() }
-                val early = groupsList.map { g -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = true) }
-                val late  = groupsList.map { g -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = false) }
-                val happy = groupsList.map { g -> happyIn(g) }
-                val sad   = groupsList.map { g -> sadIn(g) }
-                val l = groupsList.map { g -> labFmt.format(Date(g.first().startTime)) }
-                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, l)
+                val lucky = slots.map { (g, _) -> if (g.size < 2) null else luckyIndexOf(g, aimTime).toFloat() }
+                val early = slots.map { (g, _) -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = true) }
+                val late  = slots.map { (g, _) -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = false) }
+                val happy = slots.map { (g, _) -> if (g.isEmpty()) null else happyIn(g) }
+                val sad   = slots.map { (g, _) -> if (g.isEmpty()) null else sadIn(g) }
+                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, slots.map { it.second })
+            }
+            // Слоты по календарю: [границы[k], границы[k+1]) с шагом step единиц field.
+            fun byCalendar(startMs: Long, endMs: Long, field: Int, step: Int, labFmt: SimpleDateFormat): PaceChartSeries {
+                val bounds = mutableListOf(startMs)
+                val cal = Calendar.getInstance().apply { timeInMillis = startMs }
+                while (bounds.last() < endMs) { cal.add(field, step); bounds.add(cal.timeInMillis) }
+                val slots = (0 until bounds.size - 1).map { k ->
+                    ordered.filter { it.startTime >= bounds[k] && it.startTime < bounds[k + 1] } to
+                        labFmt.format(Date(bounds[k]))
+                }
+                return slotSeries(slots)
+            }
+            fun dayStart(ms: Long) = Calendar.getInstance().apply {
+                timeInMillis = ms
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
             when (period) {
                 PeriodFilter.ALL_TIME -> {
-                    // Баг #3 (найден 2026-08-14, Alex: «проблема в верном выборе
-                    // размерности шкалы X»): гранулярность бакетов была ЖЁСТКО
-                    // зашита на «месяцы» для All Time, независимо от того, сколько
-                    // реально длится история игрока. Для свежего игрока (недели-
-                    // полтора месяца игры) вся история схлопывается в 1-2 месячных
-                    // бакета — почти константа, «монотонная линия». Теперь
-                    // гранулярность подбирается ПОД реальный охват дат в выборке:
-                    // короткая история → часы/дни, длинная → месяцы.
-                    val spanDays = (ordered.last().startTime - ordered.first().startTime) /
-                        86_400_000.0
-                    when {
-                        spanDays <= 1.5  -> bucket(
-                            SimpleDateFormat("yyyyMMddHH", Locale.US),
-                            SimpleDateFormat("HH:00", Locale.ENGLISH), Calendar.HOUR_OF_DAY
-                        )
-                        spanDays <= 45.0 -> bucket(
-                            SimpleDateFormat("yyyyMMdd", Locale.US),
-                            SimpleDateFormat("d MMM", Locale.ENGLISH), Calendar.DAY_OF_MONTH
-                        )
-                        else             -> bucket(
-                            SimpleDateFormat("yyyyMM", Locale.US),
-                            SimpleDateFormat("MMM", Locale.ENGLISH), Calendar.MONTH
-                        )
+                    val first = ordered.first().startTime
+                    val last  = ordered.last().startTime + 1
+                    val nineMonths = Calendar.getInstance().apply { timeInMillis = first; add(Calendar.MONTH, 9) }
+                    if (last < nineMonths.timeInMillis) {
+                        val wk = dayStart(first).apply {
+                            while (get(Calendar.DAY_OF_WEEK) != firstDayOfWeek) add(Calendar.DAY_OF_YEAR, -1)
+                        }
+                        byCalendar(wk.timeInMillis, last, Calendar.DAY_OF_YEAR, 7,
+                            SimpleDateFormat("d MMM", Locale.ENGLISH))
+                    } else {
+                        val mo = dayStart(first).apply { set(Calendar.DAY_OF_MONTH, 1) }
+                        byCalendar(mo.timeInMillis, last, Calendar.MONTH, 1,
+                            SimpleDateFormat("MMM ''yy", Locale.ENGLISH))
                     }
                 }
-                PeriodFilter.MONTH    ->
-                    bucket(SimpleDateFormat("yyyyMMdd", Locale.US), SimpleDateFormat("d MMM", Locale.ENGLISH), Calendar.DAY_OF_MONTH)
-                // Неделя — точка на каждый сеанс (игра без перерывов > 10 мин),
-                // все сеансы недели.
-                PeriodFilter.WEEK     -> {
-                    val sittings = mutableListOf<MutableList<TryDatabaseModel>>()
-                    ordered.forEach { att ->
-                        val cur = sittings.lastOrNull()
-                        if (cur == null || att.startTime - cur.last().startTime > 10 * 60_000L)
-                            sittings.add(mutableListOf(att))
-                        else cur.add(att)
-                    }
-                    fromGroups(sittings, SimpleDateFormat("EEE\nHH:mm", Locale.ENGLISH))
-                }
-                // День — равные блоки попыток по порядку: до 16 точек, не меньше
-                // 10 попыток в точке. Каждая точка весит одинаково.
-                PeriodFilter.TODAY    -> {
-                    val size = maxOf(10, (ordered.size + 15) / 16)
-                    fromGroups(ordered.chunked(size), SimpleDateFormat("HH:mm", Locale.ENGLISH))
+                PeriodFilter.MONTH ->
+                    byCalendar(fromTime, toTime, Calendar.DAY_OF_YEAR, 1, SimpleDateFormat("d", Locale.ENGLISH))
+                PeriodFilter.WEEK ->
+                    byCalendar(fromTime, toTime, Calendar.DAY_OF_YEAR, 1, SimpleDateFormat("EEE", Locale.ENGLISH))
+                PeriodFilter.TODAY -> {
+                    val fmt = SimpleDateFormat("HH:mm", Locale.ENGLISH)
+                    slotSeries(ordered.groupBy { it.sessionId }.values.map { g -> g to fmt.format(Date(g.first().startTime)) })
                 }
                 PeriodFilter.SESSION  -> {
                     // Session — сырые точки по попыткам, не по календарю: пропусков

@@ -575,11 +575,16 @@ private fun AnalyticsContent(
                     PaceMetric.MEAN  -> data.paceChartEarlyMs
                     PaceMetric.FACES -> data.paceChartHappy
                 }
-                if (series.size >= 2) {
+                val isSession = selectedPeriod == PeriodFilter.SESSION
+                if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
+                    // Faces в сессии — ряд маленьких рожиц, по одной на попытку
+                    // (Alex 2026-10-19).
+                    SessionFacesStrip(data.paceChartHappy, data.paceChartSad)
+                    Spacer(Modifier.height(6.dp))
+                } else if (series.size >= 2) {
                     // В сессии столбик — одна попытка, без усреднения (Alex
-                    // 2026-10-19). У Hit rate, Lucky и Faces там два состояния,
+                    // 2026-10-19). У Hit rate и Lucky там два состояния,
                     // и подписи — словами, а не числами.
-                    val isSession = selectedPeriod == PeriodFilter.SESSION
                     val formatY: (Float) -> String = when {
                         !isSession                -> metric.formatY
                         metric == PaceMetric.HIT   -> { v -> if (v > 0f) "hit" else "miss" }
@@ -613,8 +618,7 @@ private fun AnalyticsContent(
                             values2   = data.paceChartSad,
                             color2    = FACE_SAD_COLOR,
                             legend2   = "sad",
-                            single    = isSession,
-                            winLoss   = isSession
+                            single    = isSession
                         )
                     } else {
                         PaceSparklineChart(
@@ -2206,9 +2210,82 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
     PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) })
 }
 
-// Цвета лиц главного экрана (FaceIcon: NICE и SAD).
+// Цвета рожиц на графике Faces: весёлая — зелёная (как FaceIcon NICE),
+// грустная — красная (Alex 2026-10-19: «рожица либо зелёная, либо красная»).
 private val FACE_HAPPY_COLOR = Color(0xFF3FA864)
-private val FACE_SAD_COLOR   = Color(0xFFB8B8B8)
+private val FACE_SAD_COLOR   = Color(0xFFDE4264)
+
+/**
+ * Faces за сессию: по маленькой рожице на каждую попытку, по порядку, с номером
+ * попытки под ней (Alex 2026-10-19). Зелёная — весёлая, красная — грустная.
+ * У первой попытки сессии рожицы нет (её не с чем сравнить) — тусклый кружок.
+ */
+@Composable
+private fun SessionFacesStrip(happy: List<Float?>, sad: List<Float?>) {
+    val textColor = MaterialTheme.colorScheme.baseTextColor
+    val cell = 22.dp
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val perRow = (maxWidth / cell).toInt().coerceAtLeast(1)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            happy.indices.chunked(perRow).forEach { rowIdx ->
+                Row {
+                    rowIdx.forEach { i ->
+                        val kind: Boolean? = when {
+                            happy[i] != null -> true
+                            sad.getOrNull(i) != null -> false
+                            else -> null
+                        }
+                        Column(Modifier.width(cell), horizontalAlignment = Alignment.CenterHorizontally) {
+                            SmallFace(kind, 16.dp)
+                            BasicText(
+                                "${i + 1}",
+                                style = labelStyle(7.sp, color = textColor.copy(alpha = 0.43f))
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Row(
+        modifier              = Modifier.padding(top = 4.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        SmallFace(true, 9.dp)
+        BasicText("happy", style = labelStyle(8.sp, color = FACE_HAPPY_COLOR.copy(alpha = 0.8f)))
+        Spacer(Modifier.width(8.dp))
+        SmallFace(false, 9.dp)
+        BasicText("sad", style = labelStyle(8.sp, color = FACE_SAD_COLOR.copy(alpha = 0.8f)))
+    }
+}
+
+/** Маленькая рожица: залитый круг, глаза и рот. happy = null — тусклый пустой кружок. */
+@Composable
+private fun SmallFace(happy: Boolean?, size: Dp) {
+    Canvas(Modifier.size(size)) {
+        val r  = this.size.minDimension / 2f
+        val c  = Offset(this.size.width / 2f, this.size.height / 2f)
+        if (happy == null) {
+            drawCircle(Color.White.copy(alpha = 0.15f), r * 0.85f, c, style = Stroke(1.dp.toPx()))
+            return@Canvas
+        }
+        drawCircle(if (happy) FACE_HAPPY_COLOR else FACE_SAD_COLOR, r, c)
+        val ink = Color(0xFF1A1A1A)
+        drawCircle(ink, r * 0.13f, Offset(c.x - r * 0.35f, c.y - r * 0.2f))
+        drawCircle(ink, r * 0.13f, Offset(c.x + r * 0.35f, c.y - r * 0.2f))
+        val mouth = Path().apply {
+            if (happy) {
+                moveTo(c.x - r * 0.45f, c.y + r * 0.15f)
+                quadraticBezierTo(c.x, c.y + r * 0.65f, c.x + r * 0.45f, c.y + r * 0.15f)
+            } else {
+                moveTo(c.x - r * 0.42f, c.y + r * 0.5f)
+                quadraticBezierTo(c.x, c.y + r * 0.08f, c.x + r * 0.42f, c.y + r * 0.5f)
+            }
+        }
+        drawPath(mouth, ink, style = Stroke(width = (r * 0.16f).coerceAtLeast(1f), cap = StrokeCap.Round))
+    }
+}
 
 /** Средняя ошибка в мс: до 10 — с десятыми, дальше целые. */
 private fun formatMeanMs(ms: Float): String =
@@ -2269,11 +2346,7 @@ private fun PaceSparklineChart(
     legend2  : String = "",
     // true — в точке не пара, а один столбик того ряда, у которого есть
     // значение (сессия: столбик = попытка, Alex 2026-10-19).
-    single   : Boolean = false,
-    // true — последовательность «да/нет» (Faces в сессии): первый ряд —
-    // столбик вверх от средней линии, второй — вниз, высота одинаковая.
-    // Видна сама череда, а не величина (Alex 2026-10-19).
-    winLoss  : Boolean = false
+    single   : Boolean = false
 ) {
     // Столбики от нуля с подписью даты/времени под ними (Alex 2026-10-07:
     // «сделай столбиковой диаграммой с указанием даты или времени»).
@@ -2283,6 +2356,7 @@ private fun PaceSparklineChart(
     val textColor   = MaterialTheme.colorScheme.baseTextColor
     val yAxisWidth  = 44.dp
     val chartHeight = 64.dp
+    val headroom    = 20.dp
     val maxV        = realValues.max().coerceAtLeast(0.0001f)
     val lastRealIdx = values.indices.lastOrNull { values[it] != null || values2?.getOrNull(it) != null } ?: -1
     // Подписи — не теснее одной на ~8 столбиков: при всех точках периода
@@ -2297,7 +2371,10 @@ private fun PaceSparklineChart(
     Column {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(
-                modifier = Modifier.width(yAxisWidth).height(chartHeight),
+                modifier = Modifier
+                    .width(yAxisWidth)
+                    .padding(top = headroom - 5.dp)
+                    .height(chartHeight + 5.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 BasicText(formatY(maxV), style = labelStyle(8.sp, color = textColor.copy(alpha = 0.53f)))
@@ -2306,7 +2383,7 @@ private fun PaceSparklineChart(
             Canvas(
                 modifier = Modifier
                     .weight(1f)
-                    .height(chartHeight)
+                    .height(chartHeight + headroom)
                     .pointerInput(values.size) {
                         detectTapGestures(
                             onPress     = { tryAwaitRelease(); selected = null },
@@ -2323,26 +2400,21 @@ private fun PaceSparklineChart(
                 val pair  = values2 != null && !single
                 val barW  = slot * (if (pair) 0.36f else 0.62f)
                 val gap   = if (pair) slot * 0.04f else 0f
-                val top   = 4.dp.toPx()
+                // Сверху — полоса под подпись значения: столбики до неё не
+                // достают, подпись не закрывает их верх (Alex 2026-10-19).
+                val top   = headroom.toPx()
                 val sel   = selected
-                val mid   = h / 2f
-                fun bar(i: Int, v: Float, color: Color, x: Float, down: Boolean = false) {
+                fun bar(i: Int, v: Float, color: Color, x: Float) {
                     if (v <= 0f) return
                     val a = when {
                         sel != null  -> if (i == sel) 1f else 0.3f
                         i == lastRealIdx -> 1f
                         else -> 0.7f
                     }
-                    val (y, barH) = if (winLoss) {
-                        val hh = mid - top
-                        if (down) (mid + 1.dp.toPx()) to hh else (mid - hh) to hh
-                    } else {
-                        val bh = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
-                        (h - bh) to bh
-                    }
+                    val barH = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
                     drawRoundRect(
                         color        = color.copy(alpha = color.alpha * a),
-                        topLeft      = Offset(x, y),
+                        topLeft      = Offset(x, h - barH),
                         size         = Size(barW, barH),
                         cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                     )
@@ -2350,13 +2422,12 @@ private fun PaceSparklineChart(
                 values.indices.forEach { i ->
                     val left = slot * i + (slot - (if (pair) 2 * barW + gap else barW)) / 2f
                     values[i]?.let { bar(i, it, lineColor, left) }
-                    values2?.getOrNull(i)?.let { bar(i, it, color2, if (pair) left + barW + gap else left, down = winLoss) }
+                    values2?.getOrNull(i)?.let { bar(i, it, color2, if (pair) left + barW + gap else left) }
                 }
-                val axisY = if (winLoss) mid + 0.5.dp.toPx() else h
                 drawLine(
                     color       = textColor.copy(alpha = 0.25f),
-                    start       = Offset(0f, axisY),
-                    end         = Offset(w, axisY),
+                    start       = Offset(0f, h),
+                    end         = Offset(w, h),
                     strokeWidth = 1.dp.toPx()
                 )
                 // Подсказка над графиком: подпись точки и значение(я).
