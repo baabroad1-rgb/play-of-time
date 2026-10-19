@@ -565,7 +565,8 @@ private fun AnalyticsContent(
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_PACE)) {
             // Что рисует график — выбор в выпадающем списке, который стоит на
             // месте заголовка блока (Alex 2026-10-07).
-            var metric by rememberSaveable { mutableStateOf(PaceMetric.PACE) }
+            // По умолчанию — Mean error (Alex 2026-10-19).
+            var metric by rememberSaveable { mutableStateOf(PaceMetric.MEAN) }
             StatCard("", pl, header = { PaceMetricDropdown(metric) { metric = it } }) {
                 val series = when (metric) {
                     PaceMetric.PACE  -> data.paceChartValues
@@ -612,7 +613,8 @@ private fun AnalyticsContent(
                             values2   = data.paceChartSad,
                             color2    = FACE_SAD_COLOR,
                             legend2   = "sad",
-                            single    = isSession
+                            single    = isSession,
+                            winLoss   = isSession
                         )
                     } else {
                         PaceSparklineChart(
@@ -2193,13 +2195,15 @@ private fun MiniHistogram(
 // ──────────────────────────────────────────────────────────────────────────────
 
 /** Ряды графика Pace of learning (Alex 2026-10-07). */
+// Порядок пунктов в списке — порядок объявления (Alex 2026-10-19: Mean error,
+// Faces, Lucky index, Hit rate; Pace of learning — последним).
 private enum class PaceMetric(val title: String, val legend: String, val formatY: (Float) -> String) {
-    // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
-    PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) }),
-    HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
-    LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) }),
     MEAN ("Mean error",       "mean",       { formatMeanMs(it) + " ms" }),
-    FACES("Faces",            "faces",      { "%.0f".format(it) })
+    FACES("Faces",            "faces",      { "%.0f".format(it) }),
+    LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) }),
+    HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
+    // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
+    PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) })
 }
 
 // Цвета лиц главного экрана (FaceIcon: NICE и SAD).
@@ -2214,14 +2218,22 @@ private fun formatMeanMs(ms: Float): String =
 private fun PaceMetricDropdown(selected: PaceMetric, onSelect: (PaceMetric) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        // Выглядит как заголовок блока, плюс стрелка списка.
+        // Заметная кнопка-список на месте заголовка (Alex 2026-10-19: «сделай
+        // дроплист более заметным»): белый текст в рамке цвета акцента,
+        // стрелка акцентом.
+        val accent = MaterialTheme.colorScheme.accentColor
         Row(
-            modifier = Modifier.clickable { open = true },
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.12f))
+                .clickable { open = true }
+                .padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            BasicText(selected.title, style = blockTitleStyle)
-            BasicText("▾", style = blockTitleStyle)
+            BasicText(selected.title, style = blockTitleStyle.copy(color = Color.White))
+            BasicText("▾", style = blockTitleStyle.copy(color = accent))
         }
         DropdownMenu(
             expanded         = open,
@@ -2257,7 +2269,11 @@ private fun PaceSparklineChart(
     legend2  : String = "",
     // true — в точке не пара, а один столбик того ряда, у которого есть
     // значение (сессия: столбик = попытка, Alex 2026-10-19).
-    single   : Boolean = false
+    single   : Boolean = false,
+    // true — последовательность «да/нет» (Faces в сессии): первый ряд —
+    // столбик вверх от средней линии, второй — вниз, высота одинаковая.
+    // Видна сама череда, а не величина (Alex 2026-10-19).
+    winLoss  : Boolean = false
 ) {
     // Столбики от нуля с подписью даты/времени под ними (Alex 2026-10-07:
     // «сделай столбиковой диаграммой с указанием даты или времени»).
@@ -2309,17 +2325,24 @@ private fun PaceSparklineChart(
                 val gap   = if (pair) slot * 0.04f else 0f
                 val top   = 4.dp.toPx()
                 val sel   = selected
-                fun bar(i: Int, v: Float, color: Color, x: Float) {
+                val mid   = h / 2f
+                fun bar(i: Int, v: Float, color: Color, x: Float, down: Boolean = false) {
                     if (v <= 0f) return
-                    val barH = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
                     val a = when {
                         sel != null  -> if (i == sel) 1f else 0.3f
                         i == lastRealIdx -> 1f
                         else -> 0.7f
                     }
+                    val (y, barH) = if (winLoss) {
+                        val hh = mid - top
+                        if (down) (mid + 1.dp.toPx()) to hh else (mid - hh) to hh
+                    } else {
+                        val bh = ((v / maxV) * (h - top)).coerceAtLeast(1.dp.toPx())
+                        (h - bh) to bh
+                    }
                     drawRoundRect(
                         color        = color.copy(alpha = color.alpha * a),
-                        topLeft      = Offset(x, h - barH),
+                        topLeft      = Offset(x, y),
                         size         = Size(barW, barH),
                         cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                     )
@@ -2327,12 +2350,13 @@ private fun PaceSparklineChart(
                 values.indices.forEach { i ->
                     val left = slot * i + (slot - (if (pair) 2 * barW + gap else barW)) / 2f
                     values[i]?.let { bar(i, it, lineColor, left) }
-                    values2?.getOrNull(i)?.let { bar(i, it, color2, if (pair) left + barW + gap else left) }
+                    values2?.getOrNull(i)?.let { bar(i, it, color2, if (pair) left + barW + gap else left, down = winLoss) }
                 }
+                val axisY = if (winLoss) mid + 0.5.dp.toPx() else h
                 drawLine(
                     color       = textColor.copy(alpha = 0.25f),
-                    start       = Offset(0f, h),
-                    end         = Offset(w, h),
+                    start       = Offset(0f, axisY),
+                    end         = Offset(w, axisY),
                     strokeWidth = 1.dp.toPx()
                 )
                 // Подсказка над графиком: подпись точки и значение(я).
@@ -2356,7 +2380,17 @@ private fun PaceSparklineChart(
                     val padY = 3.dp.toPx()
                     val bw  = tl.size.width + 2 * padX
                     val bh  = tl.size.height + 2 * padY
-                    val cx  = (slot * (sel + 0.5f)).coerceIn(bw / 2f, (w - bw / 2f).coerceAtLeast(bw / 2f))
+                    // Тонкая линия по середине столбика (у пары — по середине
+                    // точки) на всю высоту графика, значение — над её верхом
+                    // (Alex 2026-10-19).
+                    val lx  = slot * (sel + 0.5f)
+                    drawLine(
+                        color       = Color.White.copy(alpha = 0.8f),
+                        start       = Offset(lx, bh),
+                        end         = Offset(lx, h),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                    val cx  = lx.coerceIn(bw / 2f, (w - bw / 2f).coerceAtLeast(bw / 2f))
                     drawRoundRect(
                         color        = Color(0xF2333333),
                         topLeft      = Offset(cx - bw / 2f, 0f),

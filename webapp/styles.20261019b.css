@@ -1,0 +1,4683 @@
+:root {
+  /* Exact native v12.90 dark palette (ui_theme/Colors.kt + Theme.kt). */
+  --bg: #000000;            /* baseBackgroundColor (dark) */
+  --panel: #1a1a1a;         /* analytics/settings card bg (StatScreen cardBg) */
+  --panel-2: #222222;       /* nested card (e.g. Hz meter) */
+  --panel-3: #111111;       /* sub-panel (histogram area) */
+  --line: #2a2a2a;
+  --text: #ffffff;          /* baseTextColor (dark) */
+  --muted: #a9a9a9;         /* extraGreyVariant / disabled text */
+  --faint: rgba(255, 255, 255, 0.28);
+  --accent: #ff551c;        /* orangeColor — active nav / pills / toggles / hand / "?" */
+  --sand: #e6a440;          /* sandColor / statistic — aim time, "Auto" chip, coin */
+  --early: #de4264;         /* resultRed  (early) */
+  --late: #0ca8cc;          /* resultBlue (late) */
+  --win: #8eff51;           /* resultGreen (true three) */
+  --pending: #e6a440;       /* resultYellow (pending) */
+  --radius: 8px;
+  --site-bg: #f4f3ef;
+  --site-text: #151515;
+  --site-muted: rgba(21, 21, 21, .68);
+  --site-faint: rgba(21, 21, 21, .42);
+  --site-line: rgba(21, 21, 21, .14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--site-bg);
+  color: var(--site-text);
+  font-family: Roboto, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+html.game-open,
+body.game-open {
+  overflow: hidden;
+}
+
+/* Old iPhone Safari renders <video> (and other plugin/native layers) ABOVE any
+   fixed overlay regardless of z-index. While the game is open, remove the landing
+   video from the layer tree so it can't punch through and steal the screen. */
+body.game-open .page video,
+body.game-open .page iframe {
+  display: none !important;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 18px 18px;                       /* clamp() fallback, see .timer-card */
+  padding: 18px clamp(18px, 4vw, 42px);
+  background: rgba(244, 243, 239, 0.92);
+  border-bottom: 1px solid var(--site-line);
+  backdrop-filter: blur(16px);
+}
+
+.site-header-inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  /* .page has its own internal horizontal padding (clamp(18px,4vw,42px)),
+     so body text sits that far in from the container edge; .site-header-inner
+     has no padding of its own (its inset comes from .site-header's padding
+     instead), so .brand previously sat flush with the container edge —
+     42px left of where the page's own text actually starts. Match the same
+     clamp so the logo lines up with the site's main text (Alex 2026-08-15). */
+  margin-left: clamp(18px, 4vw, 42px);
+}
+
+.brand-mark {
+  width: 60px;
+  height: 60px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.nav a {
+  color: rgba(21, 21, 21, .62);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--site-text);
+}
+
+.nav-play {
+  color: var(--site-text) !important;
+  font-weight: 700;
+}
+
+.page {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 34px 18px 80px;                  /* clamp() fallback, see .timer-card */
+  padding: 34px clamp(18px, 4vw, 42px) 80px;
+}
+
+.hero,
+.section {
+  padding: 16px 0;                          /* clamp() fallback, see .timer-card */
+  padding: clamp(16px, 2.8vw, 30px) 0;
+}
+
+.hero-split,
+.split-row,
+.play-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr);
+  gap: 28px;                                /* clamp() fallback, see .timer-card */
+  gap: clamp(28px, 6vw, 72px);
+  align-items: center;
+}
+
+/* Video/image top edge lines up with the first line of body text beside it —
+   by construction, not pixel-matching: the section label + heading live
+   OUTSIDE this grid (full width, above it), so the grid's first row is
+   always [paragraph | media], both starting at the same top. */
+.hero-split,
+.split-row {
+  align-items: start;
+}
+
+.split-row.reverse {
+  grid-template-columns: minmax(280px, .95fr) minmax(0, 1.05fr);
+}
+
+.split-row.reverse .text-column {
+  order: 2;
+}
+
+.split-row.reverse .media-frame {
+  order: 1;
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.section h2,
+.hero-premise-h {
+  margin: 0 0 14px;
+  color: var(--site-text);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.hero h1,
+.section h2,
+.hero-premise-h {
+  max-width: 780px;
+  font-size: 20px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(20px, 3vw, 34px);
+}
+
+.lede,
+.intro,
+.section p:not(.section-label),
+.hero-copy p,
+.clean-list {
+  color: var(--site-muted);
+  font-size: 13px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(13px, 1.4vw, 15px);
+  line-height: 1.58;
+}
+
+.lede {
+  margin: 0 0 3px;
+}
+
+.intro {
+  margin: 0;
+}
+
+/* Inline now — sits right after the intro sentence's period, not on its
+   own line. */
+.hero-cta {
+  margin-left: 6px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 85, 28, .4);
+  padding-bottom: 1px;
+}
+
+.hero-cta:hover {
+  border-bottom-color: var(--accent);
+}
+
+.apk-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.apk-link:hover,
+.apk-link:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hero-premise-label {
+  margin-top: 36px;
+}
+
+.section p:not(.section-label),
+.hero-copy p {
+  max-width: 760px;
+  margin: 0 0 3px;
+}
+
+.section p:not(.section-label):last-child,
+.hero-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.clean-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+
+.hero-video-label {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 0 8px;
+}
+
+.media-frame {
+  /* Top-aligned (not centered) so the image's top edge lines up with the
+     first line of the paragraph beside it. */
+  min-width: 0;
+  align-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-stage {
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-figure,
+.media-frame {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+/* Images keep their natural aspect ratio — no forced crop. Rounded directly
+   on the image itself (not just the frame) so every photo/illustration gets
+   the same corner curvature regardless of how small it renders inside its
+   frame — the frame's own clip-radius only matters when an image fills it
+   edge to edge, which most no longer do. */
+.media-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+.hero-split {
+  /* Two rows: row 1 holds only the video's label (column 2), row 2 pairs the
+     video with the tail end of the paragraph's own spanned area — the
+     paragraph spans both rows so its top lines up with the label's top
+     (Alex 2026-08-09) instead of starting a whole row lower. Row-gap
+     overridden small — the base rule's shared `gap` (28–72px) was also the
+     ROW gap once this became a 2-row grid, leaving a huge blank band between
+     the label and the video sitting right below it. Text column narrowed
+     (Alex 2026-08-09) — not to shrink the video, but to force the paragraph
+     to wrap onto more lines so its height grows to meet the video's, full
+     size, instead of shrinking the video down to the text's height. */
+  grid-template-columns: minmax(170px, .50fr) minmax(280px, 1.50fr);
+  grid-template-rows: auto 1fr;
+  row-gap: 8px;
+  /* Halved from the shared 28–72px column-gap (Alex 2026-08-09) — same
+     "which image belongs to which paragraph" clarity fix as Control/Patterns/
+     Research below. */
+  column-gap: clamp(14px, 3vw, 36px);
+  align-items: start;
+}
+
+.hero-copy {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.video-figure {
+  grid-column: 2;
+  grid-row: 2;
+  /* 22% smaller (Alex 2026-08-09), left-anchored so it shrinks toward the
+     text rather than staying centered in its column. */
+  width: 78%;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Every paired image is scaled down (not cropped) to roughly match the
+   height of the text column beside it — full image still visible, just
+   smaller, same treatment as the Research portrait. Gap is halved and the
+   ratio tuned so the text column gains width while the image holds its
+   natural (height-bound) size. */
+#control .split-row {
+  grid-template-columns: minmax(220px, 1.27fr) minmax(0, 1.23fr);
+  column-gap: 18px;
+}
+
+#control .media-frame {
+  height: 270px;
+}
+
+#patterns .split-row {
+  grid-template-columns: minmax(0, 1.22fr) minmax(220px, 1.28fr);
+  column-gap: 18px;
+  /* Was one .text-column block (2 paragraphs) + the image as the grid's only
+     two items. Alex 2026-08-09: the image now sits between the two
+     paragraphs on mobile, which means the paragraphs can't share a wrapper
+     anymore (order can't reach inside one) — they're 3 direct grid items now.
+     row-gap replicates the old plain-paragraph 3px spacing so p1/p2 still
+     read as one continuous block on desktop, same as before. */
+  row-gap: 3px;
+}
+
+#patterns .patterns-p1 {
+  grid-column: 1;
+  grid-row: 1;
+  /* Grid items don't collapse margins — without this, p1's own 3px
+     margin-bottom would stack on top of the 3px row-gap above, doubling the
+     old single-paragraph-gap spacing instead of matching it exactly. */
+  margin-bottom: 0;
+}
+
+#patterns .patterns-p2 {
+  grid-column: 1;
+  grid-row: 2;
+  margin-bottom: 0;
+}
+
+#patterns .media-frame {
+  height: 240px;
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+#research .split-row {
+  /* Fixed px columns (not fr) — the photo is height-bound and narrower than
+     any fr-based column would give it, which was leaving dead space between
+     the photo's real right edge and the text; fixed widths pin the column
+     to the photo's actual size so the 36px gap is the only space between them. */
+  grid-template-columns: 256px 390px;
+  column-gap: 18px;
+}
+
+#research .media-frame {
+  height: 304px;
+  justify-content: flex-start;
+}
+
+#control .media-frame img,
+#patterns .media-frame img,
+#research .media-frame img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Video reserves a stable 16:9 box and letterboxes instead of cropping. */
+.video-figure video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #000;
+}
+
+.play-section {
+  padding-bottom: 24px;
+}
+
+/* Stacked — shortcut directly under the heading (Alex 2026-08-09, later
+   pass). Side-by-side left the H2 vertically centered against the taller
+   shortcut's own row height, which pushed the heading down and broke the
+   label-to-heading spacing every other section shares. Single column +
+   start alignment avoids both problems. */
+.play-layout {
+  grid-template-columns: 1fr;
+  align-items: start;
+  row-gap: 14px;                            /* matches .section h2's own margin-bottom elsewhere */
+}
+
+/* Grid items don't collapse margins the way normal flow does — without this,
+   the H2's own 14px margin-bottom would stack on top of the row-gap above,
+   doubling the spacing instead of matching it. */
+.play-layout h2 {
+  margin-bottom: 0;
+}
+
+.play-layout .game-stage {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  row-gap: 10px;
+}
+
+.play-layout .game-launcher {
+  margin: 0;
+}
+
+.apk-note {
+  margin: 0;
+  color: var(--site-muted);
+  font-size: 13px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(13px, 1.4vw, 15px);
+}
+
+.game-launcher {
+  position: relative;
+  display: block;
+  /* Size comes from the in-flow <img> below — the button can never collapse
+     to zero height (no fragile percentage-of-parent dependency). Shrunk ~1.5x
+     (was 180–260px) per Alex 2026-08-09. */
+  width: 120px;                             /* clamp() fallback, see .timer-card */
+  width: clamp(120px, 13.3vw, 173px);
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.launcher-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  /* drop-shadow follows the art's alpha shape (transparent corners) */
+  filter: drop-shadow(0 12px 30px rgba(0, 0, 0, .25));
+}
+
+/* The whole shortcut IS the launch button (Alex 2026-08-09) — no visible
+   label at all normally; this is just a full-cover circular hit/hover layer,
+   almost transparent, that darkens on hover/focus for affordance. */
+.launcher-cta {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0);
+  transition: background .15s ease;
+}
+
+.game-launcher:hover .launcher-cta,
+.game-launcher:focus-visible .launcher-cta {
+  background: rgba(255, 255, 255, .32);
+}
+
+.game-launcher {
+  transition: transform .15s ease;
+}
+
+.game-launcher:hover,
+.game-launcher:focus-visible {
+  transform: scale(1.08);
+}
+
+.launcher-preview {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  padding: 26px 22px 80px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(142,255,81,.18), transparent 32%),
+    linear-gradient(180deg, #050505 0%, #111 55%, #050505 100%);
+  opacity: .96;
+}
+
+.launcher-preview-top {
+  color: rgba(255,255,255,.72);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.launcher-preview-card {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  border-radius: 28px;
+  color: var(--win);
+  background: #183f10;
+}
+
+.launcher-preview-card strong {
+  display: block;
+  font-size: 74px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(74px, 18vw, 112px);
+  line-height: .9;
+}
+
+.launcher-preview-card em {
+  color: inherit;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.launcher-preview-chart {
+  display: block;
+  height: 74px;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(222,66,100,.20), rgba(255,255,255,.06), rgba(12,168,204,.18)),
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(255,255,255,.14) 11px),
+    repeating-linear-gradient(90deg, transparent 0 26px, rgba(142,255,81,.55) 27px 30px, transparent 31px 54px);
+}
+
+.launcher-hint {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border-radius: 999px;
+  color: #050505;
+  background: var(--win);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.game-overlay {
+  position: fixed;
+  /* `inset: 0` shorthand needs Safari 14.1+ (iOS 14.5). Older iPhone Safari
+     silently drops the rule, leaving this un-positioned — it then renders
+     in-flow instead of covering the screen, which is why the launcher tap
+     appeared to "jump to the hero video" (that's just where the block landed
+     in the page flow). Explicit longhands work on every Safari version. */
+  top: 0; right: 0; bottom: 0; left: 0;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  /* Default (implicit, `auto`-sized) grid columns size to CONTENT even with
+     justify-items:stretch — so `.app-shell`'s `width:min(100%,572px)` resolved
+     its 100% against a content-grown track (340px in a 320px window, e.g. from
+     the bottom-nav's un-wrapping tab labels), not the real viewport. That's
+     what caused the horizontal scroll. An explicit `minmax(0,1fr)` column has
+     a definite size (100% of the container, floor 0) instead of a content-
+     based one, breaking the circularity. */
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  background: #000;
+}
+
+.game-overlay.is-open {
+  display: grid;
+}
+
+.game-overlay .app-shell {
+  width: min(100%, 572px);
+  margin: 0 auto; /* re-centre within the now-stretched grid cell on wide screens */
+  height: 100vh;               /* fallback: JS hasn't run yet (shouldn't happen, belt-and-suspenders) */
+  height: var(--vh100, 100vh); /* authoritative — see setViewportHeightVar(). Deliberately NOT
+                                   overridden by 100dvh: some mobile browsers report dvh support
+                                   but resolve it wrong specifically during/after the Fullscreen
+                                   API transition this app uses, which silently reintroduced the
+                                   bottom-nav-off-screen bug even after --vh100 itself was fixed —
+                                   dvh was winning the cascade with a stale/wrong value regardless. */
+}
+
+/* .game-overlay-close removed site-wide (Alex, 2026-09-04) -- the "?" help
+   button now sits roughly where it used to, see .help-button below. */
+
+@media (max-width: 760px) {
+  /* Sticky (not static) on purpose: the page is long and, unlike desktop,
+     mobile only ever showed the full section nav — hiding it entirely left
+     no way back to "Play" short of scrolling the whole page. Keeping the
+     header pinned with just the Play link visible means the CTA is always
+     one tap away, at any scroll depth. */
+  .site-header {
+    align-items: center;
+  }
+
+  .nav a:not(.nav-play) {
+    display: none;
+  }
+
+  .nav-play {
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--site-text);
+    color: var(--site-bg) !important;
+  }
+
+  .hero-split,
+  .split-row,
+  .split-row.reverse,
+  .play-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-split {
+    grid-template-rows: auto;
+  }
+
+  .hero-video-label,
+  .hero-copy,
+  .video-figure {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  /* Stacked mobile order: paragraph, then the video's own label immediately
+     before the video — not label-first (DOM order), which put the caption
+     right after the section heading with the whole paragraph in between. */
+  .hero-copy       { order: 1; }
+  /* Margin-top kept equal to the old combined gap (row-gap + margin) so the
+     copy→label spacing is untouched; margin-bottom is the one that's halved
+     — see the row-gap:0 override below for why this pair needs its own
+     explicit margins instead of the shared row-gap. */
+  .hero-video-label { order: 2; margin: 34px 0 11px; }
+  .video-figure    {
+    order: 3;
+    /* Full width again on mobile — the desktop shrink is only meant for the
+       side-by-side layout, not the stacked one. */
+    width: 100%;
+    margin-right: 0;
+  }
+
+  /* The #control/#patterns/#research ID rules outrank the .split-row class
+     rule above at any viewport (ID beats class regardless of media query),
+     so each needs its own explicit single-column reset here too. */
+  #control .split-row,
+  #patterns .split-row,
+  #research .split-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stacked to 1 column here, so the visible gap between image and paragraph
+     is ROW-gap, not column-gap — halving column-gap (desktop fix) did nothing
+     on mobile, row-gap was still the old unhalved clamp(28,6vw,72). Halved
+     AGAIN here (Alex 2026-08-09) — image-to-paragraph gap was still too big. */
+  #control .split-row,
+  #patterns .split-row,
+  #research .split-row {
+    row-gap: clamp(7px, 1.5vw, 18px);
+  }
+
+  /* #patterns: image moves between the two paragraphs on mobile (Alex
+     2026-08-09) — "belongs to" both of them, so it sits with a small gap on
+     each side instead of trailing after the whole text block. Desktop's
+     explicit grid-column/row placement (2-column layout) doesn't apply in
+     this single-column grid, so it's reset to auto and order takes over. */
+  #patterns .patterns-p1,
+  #patterns .patterns-p2,
+  #patterns .media-frame {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  #patterns .patterns-p1 { order: 1; }
+  #patterns .media-frame { order: 2; }
+  #patterns .patterns-p2 { order: 3; margin-bottom: 0; }
+
+  /* #control and #research are "reverse" layouts — the image resets to DOM
+     order on mobile, landing directly after the H2 (Patterns/Training keep
+     text first, so their H2 isn't glued to an image). Halves the H2's
+     general 14px margin-bottom for just these two, matching the row-gap cut
+     above so the gap is even above and below the image. */
+  #control h2,
+  #research h2 {
+    margin-bottom: 7px;
+  }
+
+  /* hero-split has THREE stacked rows (copy, video label, video), not two —
+     a single shared row-gap can't halve the label→video gap without also
+     shrinking the unrelated copy→label gap above it. Zeroed out in favor of
+     explicit margins on .hero-video-label (set above) that hit each target
+     independently. */
+  .hero-split {
+    row-gap: 0;
+  }
+
+  /* Single column: size the launcher by width. Shrunk ~1.5x to match the
+     desktop rule (was 56%/220px) — this mobile override was missed earlier. */
+  .game-launcher {
+    width: min(37%, 147px);
+  }
+
+  .split-row.reverse .text-column,
+  .split-row.reverse .media-frame {
+    order: initial;
+  }
+}
+
+.app-shell {
+  width: min(100%, 560px);
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh); /* not 100dvh — see .game-overlay .app-shell */
+  margin: 0 auto;
+  background: var(--bg);
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.screen {
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.top-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.metric-block {
+  min-width: 0;
+  background: #090909;
+  padding: 12px 10px 10px;
+}
+
+.metric-label {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.metric-note {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.early {
+  color: var(--early);
+}
+
+.late {
+  color: var(--late);
+}
+
+.win {
+  color: var(--win);
+}
+
+.accent {
+  color: var(--accent);
+}
+
+.quest-panel {
+  padding: 14px 16px 8px;
+}
+
+.quest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hand-toggle,
+.period-toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel-2);
+  border-radius: 999px;
+}
+
+.hand-toggle button,
+.period-toggle button {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.hand-toggle button.active,
+.period-toggle button.active {
+  /* Native active pill: solid orange with white text. */
+  color: #fff;
+  background: var(--accent);
+}
+
+.quest-progress {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.quest-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quest-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.quest-params {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 18px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--faint);
+  background: transparent;
+}
+
+.dot.filled {
+  border-color: var(--win);
+  background: var(--win);
+  box-shadow: 0 0 10px rgba(142, 255, 81, 0.28);
+}
+
+.window-caption,
+.transition-message {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.transition-message {
+  color: rgba(230, 164, 64, 0.8);
+}
+
+.timer-zone {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 8px 16px 14px;
+}
+
+.time-display {
+  width: 100%;
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-size: 86px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(66px, 22vw, 122px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: 0;
+  user-select: none;
+}
+
+.time-display.is-early {
+  color: var(--early);
+}
+
+.time-display.is-late {
+  color: var(--late);
+}
+
+.time-display.is-win {
+  color: var(--win);
+}
+
+.run-button {
+  width: min(86vw, 360px);
+  height: 72px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #050505;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 30px rgba(230, 164, 64, 0.18);
+  touch-action: manipulation;
+}
+
+.run-button.running {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.run-button.result-early {
+  background: var(--early);
+  color: #fff;
+}
+
+.run-button.result-late {
+  background: var(--late);
+  color: #001014;
+}
+
+.run-button.result-win {
+  background: var(--win);
+  color: #061000;
+}
+
+.content-area {
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 12px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.section-title {
+  margin: 0 0 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* Period label on the right of analytics card titles ("/ all time"). */
+.card-period {
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: .75;
+}
+
+/* PACE OF LEARNING metric dropdown (2026-10-07). */
+/* The visible title is a span; the native select lies transparent over it,
+   so the caret sits right after the current name, whatever its length. */
+/* Noticeable dropdown in place of the block title (Alex 2026-10-19): white
+   text in an accent outline, accent caret. The native select lies
+   transparent over it, so the caret sits right after the current name. */
+.pace-metric-wrap {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 3px 10px; border: 1px solid rgba(255, 85, 28, .7); border-radius: 12px;
+  background: rgba(255, 85, 28, .12);
+}
+.pace-metric-label { color: #fff; }
+.pace-metric {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 16px; /* no iOS zoom on focus */
+  cursor: pointer;
+}
+.pace-metric-caret { color: var(--accent); font-size: 12px; }
+.pace-metric option { background: #1a1a1a; color: #fff; }
+
+/* PACE OF LEARNING line chart. */
+.pace-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 2px 0 4px;
+}
+.pace-chart polyline { stroke: var(--accent); }
+.pace-chart .pc-dots circle { fill: var(--accent); }
+.pace-chart .pc-bar { fill: var(--accent); opacity: .7; }
+.pace-chart .pc-bar-last { opacity: 1; }
+.pace-chart .pc-bar-e { fill: var(--early); }
+.pace-chart .pc-bar-l { fill: var(--late); }
+.pace-chart .pc-bar-h { fill: #3fa864; }   /* happy face, FaceIcon NICE */
+.pace-chart .pc-bar-s { fill: #b8b8b8; }   /* sad face, FaceIcon SAD */
+.pc-dot.pc-dot-e { background: var(--early); }
+.pc-dot.pc-dot-l { background: var(--late); }
+.pc-dot.pc-dot-h { background: #3fa864; }
+.pc-dot.pc-dot-s { background: #b8b8b8; }
+.pc-dot.pc-dot-2 { margin-left: 8px; }
+/* Tap and hold a bar (2026-10-19). */
+.pace-chart-wrap { position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.pace-chart.pc-selecting .pc-bar { opacity: .3; }
+.pace-chart.pc-selecting .pc-bar.pc-on { opacity: 1; }
+.pc-tip {
+  position: absolute; top: 0; transform: translateX(-50%);
+  background: rgba(51, 51, 51, .95); color: #fff;
+  font: 500 11px/1.3 Roboto, Arial, sans-serif;
+  padding: 3px 7px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+}
+.pc-tip[hidden] { display: none; }
+.pc-line { position: absolute; width: 1px; margin-left: -0.5px; background: rgba(255, 255, 255, .8); pointer-events: none; }
+.pc-line[hidden] { display: none; }
+.pace-chart .pc-x { text-anchor: middle; }
+.pc-dot.pc-dot-sq { border-radius: 1px; }
+.pace-chart text { font-size: 9px; fill: var(--muted); }
+.pace-chart .pc-x-l { text-anchor: start; }
+.pace-chart .pc-x-m { text-anchor: middle; }
+.pace-chart .pc-x-r { text-anchor: end; }
+.pace-chart .pc-y { text-anchor: start; }
+.pace-chart .pc-point { font-size: 7px; fill: var(--muted); opacity: .8; }
+.pace-chart .pc-axis { stroke: var(--muted); stroke-width: .5; opacity: .25; }
+.pc-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.pc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.histogram {
+  height: 86px;
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar {
+  flex: 1 0 3px;
+  min-width: 3px;
+  border-radius: 2px 2px 0 0;
+  background: var(--faint);
+}
+
+.bar.drop-in {
+  transform-origin: bottom;
+  animation: barDrop .34s cubic-bezier(.2, .8, .3, 1);
+}
+
+@keyframes barDrop {
+  0% { transform: scaleY(.15); opacity: .5; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+.bar.early {
+  background: var(--early);
+}
+
+.bar.late {
+  background: var(--late);
+}
+
+.bar.win {
+  background: var(--win);
+}
+
+.geom-row,
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.geom-row:last-child,
+.stat-row:last-child {
+  border-bottom: 0;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stat-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.attempt-log {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.attempt-row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 9px;
+  border-radius: var(--radius);
+  background: var(--panel-3);
+  font-size: 13px;
+}
+
+.attempt-row.win-row {
+  outline: none;
+}
+
+/* Freehand "marker oval" (SVG) around the run — drawn on the run's top row,
+   overflows down over the rest of the group. Green for twins, amber for neighbors. */
+.freehand-oval {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+.freehand-oval.twin path {
+  stroke: var(--win);
+  filter: drop-shadow(0 0 2px rgba(142, 255, 81, .32));
+}
+.freehand-oval.neighbor path {
+  stroke: #f5c02e;
+  filter: drop-shadow(0 0 2px rgba(245, 192, 46, .32));
+}
+
+.attempt-number {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.attempt-time {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.attempt-scm {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+
+.bottom-nav button {
+  min-height: 58px;
+  background: #090909;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bottom-nav button.active {
+  color: var(--accent);
+}
+
+.analytics-screen,
+.settings-screen,
+.about-screen {
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh); /* not 100dvh — see .game-overlay .app-shell */
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+/* "?" help button on Analytics — same size/style and same geometric spot as the
+   main screen's (top ≈ 6px, 16px from the right edge — see .help-button-quest;
+   2026-09-04 2nd round). */
+.analytics-screen { position: relative; }
+.analytics-screen .help-button-analytics {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 6px);
+  right: 16px;
+  z-index: 56;
+}
+
+/* Analytics + Settings: black page, white text (native dark theme). */
+.analytics-screen,
+.settings-screen {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* About only: amber page with dark text (native screen 6). */
+.about-screen {
+  background: #F2B70D;
+  color: #2A1E00;
+}
+
+/* On the amber About page the header, panels and text all go dark-on-amber. */
+.about-screen .sticky { background: #F2B70D; color: #2A1E00; }
+.about-screen .section-title { color: #2A1E00; }
+.about-screen .panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 6px 0 0;
+}
+.about-screen .about-text { color: #2A1E00; }
+.about-screen .about-text a { color: #2A1E00; font-weight: 700; text-decoration: underline; }
+.about-screen .about-version { color: rgba(42, 30, 0, .7); }
+
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 16px 8px;
+  background: var(--bg);
+}
+
+.analytics-content,
+.settings-content,
+.about-content {
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 18px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.summary-grid .panel {
+  min-height: 74px;
+}
+
+.big-number {
+  margin-top: 5px;
+  font-size: 24px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.range-strip {
+  display: grid;
+  grid-template-columns: var(--early-fr, 1fr) var(--win-fr, 0.2fr) var(--late-fr, 1fr);
+  height: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-3);
+}
+
+.range-strip span {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.range-strip .r-early {
+  background: var(--early);
+}
+
+.range-strip .r-win {
+  color: #061000;
+  background: var(--win);
+}
+
+.range-strip .r-late {
+  background: var(--late);
+}
+
+.formula {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.about-text {
+  margin: 4px 0 0;
+  color: rgba(242, 242, 242, .82);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.about-text a { color: var(--accent); }
+
+.about-learn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.about-learn-row .about-text { margin: 0; }
+
+.about-logo {
+  width: clamp(140px, 32vw, 220px);
+  height: clamp(140px, 32vw, 220px);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.about-version {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 6px 0 2px;
+}
+
+/* ── Analytics summary -- native SummaryHeader port (Alex 2026-09-21 native,
+   2026-09-25 web): two cards in a row. Left (2/3) = two stat columns, all
+   values same size/weight. Right (1/3) = report-face card. ── */
+.summary-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sh-left-card {
+  flex: 2;
+  display: flex;
+  gap: 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 16px 18px;
+  /* Keep clear of the "?" button that overlaps this row. */
+  padding-right: 46px;
+}
+
+.sh-col-a { flex: 0.64; display: flex; flex-direction: column; gap: 14px; }
+.sh-col-b { flex: 0.36; display: flex; flex-direction: column; gap: 14px; }
+
+.sh-stat { display: flex; flex-direction: column; gap: 4px; }
+
+.sh-label {
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.sh-stat b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sh-stat .coin-ico { margin-right: 4px; vertical-align: -2px; }
+
+.sh-report-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: center;
+}
+
+.sh-report-active { cursor: pointer; }
+
+.sh-report-face {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .04);
+}
+
+.sh-report-face iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.sh-report-label {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--accent);
+}
+
+.sh-report-hint {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: .85;
+}
+
+/* ── Analytics: pill label, range-of-deviations strip, session tree ── */
+.analytics-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 38px; /* keep the period toggle clear of the "?" button (2026-09-04 2nd round, matches .quest-pips) */
+}
+
+/* 2026-09-04 (Alex, 2nd round): the period row sat right against the top of
+   the screen -- push it down roughly half the pill's own height (~36px
+   tall, so +18px). Also extend the pill's own rounded plate leftward so the
+   analytics icon sits ON it instead of floating next to it: the plate moves
+   from .period-toggle (icon excluded) onto .analytics-pill itself (icon
+   included), and the inner .period-toggle goes transparent so there's no
+   double plate. Scoped to the Analytics screen only -- the Leaderboard's
+   reuse of .analytics-pill (sort toggle, no icon) is untouched. */
+.analytics-screen .analytics-pill {
+  margin-top: 18px;
+  background: var(--panel-2);
+  border-radius: 999px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  padding-left: 10px;
+}
+.analytics-screen .analytics-pill .period-toggle {
+  background: transparent;
+  padding: 0;
+}
+/* Alex 2026-09-19: 5th button ("Week") added between Day and Month --
+   tighten this toggle's own button padding/font so all 5 fit next to the
+   icon + reserved "?" space on narrow phones without wrapping (leaderboard's
+   own reuse of .period-toggle for its sort buttons is untouched, this is
+   scoped to the Analytics screen only). */
+.analytics-screen .analytics-pill .period-toggle button {
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+/* Same distribution/balance gauge as the bottom nav's Analytics tab,
+   carried over onto the period row itself (Alex 2026-08-11). */
+.analytics-pill .pill-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.analytics-pill .pill-icon svg.nav-balance {
+  width: 24px;
+  height: 12px;
+  display: block;
+}
+
+.analytics-label {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.rd-caption {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
+
+.rd-ratio {
+  display: flex;
+  height: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rd-ratio .seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  min-width: 0;
+}
+
+.rd-ratio .seg.early { background: var(--early); }
+.rd-ratio .seg.win { background: var(--win); color: #061000; }
+.rd-ratio .seg.late { background: var(--late); }
+
+.rd-strip {
+  position: relative;
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--early) 0%, var(--early) 50%, var(--late) 50%, var(--late) 100%);
+}
+
+.rd-serenity {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2.6px;
+  background: var(--win);
+  transform: translateX(-1.3px);
+  border-radius: 2px;
+}
+
+/* Mode markers on the strip (native: modes explicitly cut on the bar). */
+.rd-mode-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  transform: translateX(-1px);
+  background: #fff;
+  z-index: 2;
+}
+.rd-mode-tick.early { box-shadow: 0 0 0 1px rgba(222, 66, 100, .5); }
+.rd-mode-tick.late { box-shadow: 0 0 0 1px rgba(12, 168, 204, .5); }
+
+.rd-p3, .rd-p97 {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  z-index: 3;
+}
+
+.rd-p3 { left: 7px; }
+.rd-p97 { right: 7px; }
+
+.rd-modes {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.muted-cell { color: var(--muted); }
+
+.tree-panel { padding-bottom: 6px; }
+
+.tree-head {
+  display: grid;
+  grid-template-columns: 1fr 48px 74px 52px;
+  gap: 6px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.tree { display: block; }
+
+.tree-row {
+  display: grid;
+  grid-template-columns: 1fr 48px 74px 52px;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .04);
+}
+
+.tree-row .tn-lucky, .tree-row .tn-a4w,
+.tree-head .tn-lucky, .tree-head .tn-a4w { text-align: right; }
+.tree-row .tn-mean { text-align: center; font-size: 11px; }
+.tree-head .tn-mean { text-align: center; }
+.tree-row.year { font-weight: 800; }
+.tree-row.month { font-weight: 600; }
+.tree-row.session { color: var(--muted); font-size: 11px; }
+.tree-row.clickable { cursor: pointer; user-select: none; }
+.tree-row.clickable:hover { background: rgba(255, 255, 255, .03); }
+.tn-caret { color: var(--muted); opacity: .6; }
+.tree-attempts {
+  padding-left: 50px;
+  border-bottom: 1px solid rgba(255, 255, 255, .04);
+}
+/* Histogram directly under the error diagram, plot band aligned to the attempt-row
+   graph column (grid 20 6 44 6 | 1fr | 6 32 → 76px left, 38px right) so the 0-axis
+   and the horizontal scale line up bar-for-bar with the error bars above. */
+.tree-distrib {
+  padding: 3px 38px 0 76px;
+}
+.tn-name { min-width: 0; }
+.tn-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--faint);
+}
+.thumb { display: inline-block; vertical-align: middle; }
+.thumb.up path { fill: var(--win); }
+.thumb.down path { fill: var(--muted); }
+.tree-empty { color: var(--muted); padding: 10px 0; }
+
+.bars-mini {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2px;
+  align-items: end;
+  height: 42px;
+  padding-top: 8px;
+}
+
+.mini {
+  width: 6px;
+  min-height: 3px;
+  border-radius: 2px 2px 0 0;
+  background: var(--faint);
+}
+
+.mini.early {
+  background: var(--early);
+}
+
+.mini.late {
+  background: var(--late);
+}
+
+.mini.win {
+  background: var(--win);
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field input[type="range"] {
+  width: 100%;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip.active {
+  /* Native "Auto"/scale active chip is solid sand-gold with dark text. */
+  border-color: var(--sand);
+  color: #2a1e00;
+  background: var(--sand);
+}
+
+.switch-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.switch-row:last-child {
+  border-bottom: 0;
+}
+
+.switch-row input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+
+/* Locked (non-editable) beats row — native shows a lock + dim fixed value. */
+.locked-row { color: var(--muted); }
+.locked-row small { font-size: 12px; opacity: .8; }
+.locked-value {
+  min-width: 40px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: var(--panel-3);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Standalone section headings (Touch sampling rate / Start over) — plain bold,
+   not card titles, matching native. */
+.settings-heading {
+  margin: 10px 0 2px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* Live touch-rate meter card. */
+.hz-card {
+  padding: 26px 16px;
+  border-radius: 14px;
+  background: var(--panel-2, var(--panel-3));
+  text-align: center;
+  touch-action: none;
+  user-select: none;
+}
+.hz-value {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--win);
+  font-variant-numeric: tabular-nums;
+}
+.hz-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Collapsible "how dithering works" block under a caret. */
+.touch-more-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.touch-more-toggle .tm-caret { font-size: 11px; }
+.touch-more { display: none; }
+.touch-more.open { display: block; }
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary-button,
+.danger-button {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.secondary-button {
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.danger-button {
+  color: #fff;
+  background: var(--early);
+}
+
+/* "Start over" section (native, updated 2026-08-22): Export moved out of
+   the bottom nav bar into here, right above "Erase all data" — same
+   row-card visual style for both (title + subtitle stacked inside one
+   clickable rounded box), replacing the old pill-button + separate
+   `.formula` paragraph. Export's title uses the accent color (not
+   destructive); Erase's stays red. */
+.start-over-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.settings-row-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  background: var(--panel-2, var(--panel-3));
+  border: 0;
+  padding: 10px 14px;
+}
+
+.settings-row-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+.settings-row-title.export {
+  color: var(--accent);
+}
+.settings-row-title.danger {
+  color: var(--early);
+}
+
+.settings-row-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.overlay {
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0; /* inset fallback, see .game-overlay */
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  /* Circular auto-track sizing, see .game-overlay — force a definite column. */
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  padding: 22px;
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.dialog {
+  width: min(100%, 420px);
+  margin: 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.dialog h1,
+.dialog h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.dialog p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.hidden-file {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  .metric-value {
+    font-size: 18px;
+  }
+
+  .quest-params {
+    font-size: 19px;
+  }
+
+  /* NOTE: no .attempt-row / .attempt-scm override here — this predates the
+     "Android reference skin" rewrite below and was clobbering its 4-column
+     grid (20px 44px 1fr 32px) + hiding the SC column on every phone, i.e.
+     on effectively every real device (the whole app targets ≤572px). */
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Android reference skin */
+.app-shell {
+  width: min(100%, 572px);
+  background: #000;
+}
+
+.android-screen {
+  position: relative;
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh); /* not 100dvh — see .game-overlay .app-shell */
+  height: 100vh;
+  height: var(--vh100, 100vh);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  /* 2026-09-04 (Alex feedback on the quest-panel port): the "?" no longer
+     lives inside the quest panel (see .help-button-quest below, anchored to
+     this screen directly, same as Analytics' .help-button-analytics), so
+     this padding only has to clear the level-line text below the phone
+     camera/notch, not a 38px icon -- shrunk from +30px accordingly.
+     2026-09-04 (3rd round, Alex: "подними верх интерфейса на главном экране
+     до уровня... аналитикс"): dropped the env(safe-area-inset-top) term --
+     .analytics-screen/.settings-screen/.about-screen never added it to their
+     own top spacing (only their "?" button uses it), so on a real phone
+     Play sat noticeably lower than Analytics/Settings/About. Flat 14px now
+     matches how every other screen already behaves. */
+  padding-top: 14px;
+  box-sizing: border-box;
+}
+
+.android-screen > .quest-strip,
+.android-screen > .timer-zone,
+.android-screen > .android-summary,
+.android-screen > .bottom-nav {
+  flex: 0 0 auto;
+}
+
+.android-log-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+/* The actual scrolling element. Kept separate from .android-log-wrap so the
+   .log-scrollbar overlay (a sibling, not a descendant, of this) has a
+   non-scrolling containing block — see the comment on updateLogScrollbar()
+   in app.js for why that split is required. */
+.android-log-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.android-top {
+  display: grid;
+  grid-template-columns: 62px 1fr 92px 126px;
+  align-items: start;
+  column-gap: 8px;
+  padding: 4px 18px 0;
+}
+
+.metric-cluster {
+  min-width: 0;
+}
+
+.micro-label {
+  display: block;
+  color: rgba(255,255,255,.78);
+  font-size: 6px;
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+
+.true-rate strong,
+.serenity-mini strong {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-gauge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 20px;
+}
+
+.bal-arrow-lg {
+  font-size: 18px;
+}
+
+.balance-gauge i {
+  position: absolute;
+  left: 20px;
+  bottom: -2px;
+  width: 2px;
+  height: 16px;
+  background: #fff;
+  transform-origin: bottom center;
+  transform: rotate(-8deg);
+  border-radius: 3px;
+}
+
+.balance-gauge.early i {
+  transform: rotate(-42deg);
+}
+
+.balance-gauge.late i {
+  transform: rotate(42deg);
+}
+
+.hand-mini {
+  text-align: center;
+}
+
+/* Clear, visible Left/Right pill (was a mangled radial-gradient + text-indent). */
+.hand-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #000;
+  border: 1px solid var(--line);
+}
+
+.hand-toggle button {
+  min-height: 26px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: rgba(255,255,255,.72);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  text-indent: 0;
+}
+
+.hand-toggle button.active {
+  color: #fff;
+  background: var(--accent);
+  text-indent: 0;
+}
+
+.serenity-mini {
+  text-align: right;
+}
+
+.serenity-mini .coin-dots {
+  display: inline-block;
+  width: 27px;
+  height: 9px;
+  margin: 0 4px;
+  border-radius: 999px;
+  background: repeating-radial-gradient(circle at 5px 6px, #777 0 3px, transparent 4px 7px);
+  opacity: .8;
+  vertical-align: middle;
+}
+
+/* 2026-09-04 (native sync, QuestProgress.kt/MainScreen.kt as of 09-03): was
+   a 4-column grid (targets | arrows | copy-text | help-button) -- replaced
+   entirely by a vertical stack (level/quest label, pips row, centered
+   aim+targets+mechanic complex) per the current native layout. See
+   .quest-panel/.quest-level-line/.quest-pips/.quest-center below. */
+.quest-strip {
+  position: relative;
+  padding: 4px 20px 8px;
+}
+
+.quest-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.quest-level-line {
+  width: 100%;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, .63);
+  text-align: center;
+}
+
+/* ── Attempt "pips" row -- one dot per attempt-slot in the current window,
+   replaces the old arrow-bundle entirely (see renderPips in app.js). Rows
+   of 33 stacked downward for indulged windows (66/99); every odd row is
+   nudged right by half a cell so its dots sit over the gaps of the row
+   above/below (masonry stagger), matching native's AttemptPipsRow. ── */
+.quest-pips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  /* 2026-09-04 (Alex feedback, follows the .android-screen padding-top
+     shrink): keep the row's dots clear of the now screen-anchored "?"
+     (.help-button-quest, 30px + right:16px) -- same margin the "?" already
+     gets from Analytics' own row via .analytics-pill's padding-right.
+     2026-09-04 (2nd round): "?" shrunk + moved up towards the very top edge,
+     narrowed the reserved margin to match (was 44px for the bigger/lower
+     button). */
+  padding-right: 38px;
+}
+
+.pips-row {
+  display: flex;
+  height: 7px;
+}
+
+.pips-row-odd {
+  transform: translateX(calc(100% / 66));
+}
+
+.pip-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.pip-win   { background: var(--win); }
+.pip-early { background: var(--early); }
+.pip-late  { background: var(--late); }
+.pip-empty {
+  background: transparent;
+  border: 1.4px solid rgba(255, 255, 255, .43);
+}
+
+/* ── Centered complex: aim time + targets + mechanic-count label (+ the
+   completion checkmark). Occupies the panel's FULL width and centers its
+   own content within that -- same coaxial-centering rule as the stopwatch
+   button/histogram (2026-08-23 sync). The "?" help icon (2026-09-04: moved
+   out of this panel entirely, see .help-button-quest) no longer lives here,
+   so nothing pulls this group's apparent center off the true panel-wide
+   axis. ── */
+.quest-center {
+  position: relative;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.quest-center-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quest-aim {
+  margin-right: 10px;
+}
+
+.quest-aim-main {
+  color: var(--win);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.quest-aim-tol {
+  color: var(--win);
+  opacity: .7;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.quest-targets-wrap {
+  margin-right: 8px;
+}
+
+.quest-mech-count {
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.quest-mech-suffix {
+  color: #fff;
+  opacity: .85;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.bal-arrow {
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 900;
+  transition: transform .3s ease, color .3s ease;
+}
+
+/* ── Session-end summary (yellow) -- native SessionSummaryOverlay port
+   (Alex 2026-09-25): headline + previous-session comparison table + best
+   trio + personal-record badge. No face on this card (native has none). ── */
+.session-summary {
+  text-align: left;
+  border: 2px solid #f5c02e;
+  background: #171204;
+  padding: 16px;
+}
+
+.ss2-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ss2-headline {
+  color: #f5c02e;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.ss2-close {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  color: rgba(255, 255, 255, .55);
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ss2-table {
+  background: rgba(255, 255, 255, .06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.ss2-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 12px;
+}
+
+.ss2-label { color: rgba(255, 255, 255, .6); }
+
+.ss2-vals {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ss2-prev { color: rgba(255, 255, 255, .85); }
+.ss2-curr { font-weight: 800; }
+.ss2-arrow { font-weight: 800; font-size: 13px; }
+.ss2-good { color: var(--win); }
+.ss2-bad { color: var(--early); }
+.ss2-flat { color: rgba(255, 255, 255, .4); }
+
+.ss2-trio {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ss2-trio-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .5);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ss2-trio-vals {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f5c02e;
+}
+
+.ss2-record {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #f5c02e;
+  margin-bottom: 10px;
+}
+
+.ss2-hint {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, .35);
+}
+
+/* ── FailCard -- native port (Alex 2026-09-22 native, 2026-09-25 web) --
+   full-screen window-failure screen: face of the failed window, attempts/
+   wins, task description, reframe copy, next-phase line. Dismiss ONLY via
+   the button (native rule) -- no background-tap dismiss here. ── */
+.fail-card-screen {
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh);
+  background: #090909;
+  color: #f5f5f5;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fail-card-content {
+  padding: 32px 22px 24px;
+  text-align: center;
+}
+
+.fc-face {
+  width: 190px;
+  height: 190px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .04);
+}
+
+.fc-face iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.fc-face-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 245, .55);
+  margin: 0 0 20px;
+}
+
+.fc-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 16px;
+}
+
+.fc-stats {
+  display: flex;
+  justify-content: space-evenly;
+  margin-bottom: 14px;
+}
+
+.fc-stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fc-stats b { font-size: 22px; font-weight: 800; }
+.fc-stats span { font-size: 11px; color: rgba(255, 255, 255, .63); margin-top: 2px; }
+
+.fc-task {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, .68);
+  margin: 0 0 20px;
+}
+
+.fc-opener {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+
+.fc-coach {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .9);
+  margin: 0 0 20px;
+}
+
+.fc-now {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 24px;
+}
+
+.fc-btn {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #000000;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* ── "?" help overlay ── */
+.help-card {
+  position: relative;
+  text-align: left;
+  max-height: 82vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.help-card h1 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.help-card .cheer-close {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.help-item {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.help-item b {
+  display: block;
+  color: var(--accent);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.help-item span {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(242, 242, 242, .8);
+}
+
+/* ── Quest archer (bullseye targets) ── */
+/* Each target is an absolutely-positioned 30x30 tile (native's Box+offset
+   approach) rather than one shared SVG, because a hit tile now hosts a
+   live animated .pot-logo, not just another drawn shape. Unhit tiles are
+   appended to the DOM first, hit tiles second, so a hit tile always paints
+   on top of an overlapping unhit neighbour on ROW quests (see renderTargets
+   in app.js for the full reasoning). */
+.quest-targets-row {
+  position: relative;
+}
+
+.target-tile {
+  position: absolute;
+  top: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.target-tile.target-hit {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.target-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* Hand-drawn quest-completion checkmark (ported from HandDrawnCheck.kt,
+   Alex 2026-08-14) — draws itself stroke-by-stroke, ~700ms, while the just-
+   won quest's checkmark is showing (awaitingHurray window). */
+.quest-check {
+  flex: none;
+  overflow: visible;
+  margin-left: 8px;
+}
+.quest-check path {
+  fill: none;
+  stroke: #3fa864;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: quest-check-draw .7s 120ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes quest-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Progress bar over the timer digits (window 3.000 ± half) ── */
+.progress-bar {
+  position: relative;
+  display: block;
+  width: 80%;
+  margin: 2px auto 18px;
+}
+
+.pb-track {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 999px;
+}
+
+/* On an indulged (tolerance-widened) quest, everything within ±tolerance of
+   the aim counts as a win — paint that whole span green so the target zone
+   is visible, not just the thin centre notch. Zero width on a baseline
+   (tolerance 0) quest, so nothing shows there beyond the usual notch. */
+.pb-winzone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(142, 255, 81, .35);
+  z-index: 0;
+}
+
+.pb-tick {
+  position: absolute;
+  top: 1px;
+  width: 1px;
+  height: 4px;
+  background: rgba(255, 255, 255, .30);
+  transform: translateX(-.5px);
+  z-index: 2;
+}
+
+.pb-num {
+  position: absolute;
+  top: 11px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, .6);
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-num-l { left: 0; color: var(--early); }
+.pb-num-r { right: 0; color: var(--late); }
+.pb-num-c { transform: translateX(-50%); color: var(--win); font-weight: 700; }
+
+.pb-center {
+  position: absolute;
+  top: -3px;
+  width: 2.4px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--win);
+  transform: translateX(-1.2px);
+  z-index: 3;
+}
+
+/* Filling bar — grows from the left to the current time (native look):
+   left corners rounded, leading (right) edge flat, colored by result. */
+.pb-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #fff;
+  border-radius: 999px 0 0 999px;
+  transition: width .05s linear;
+  z-index: 1;
+}
+
+.pb-fill.is-early { background: var(--early); }
+.pb-fill.is-late  { background: var(--late); }
+.pb-fill.is-win   { background: var(--win); }
+
+/* «Клювик» — down-pointing triangle at the head of the fill; its tip touches
+   the top edge of the track. Colored the same as the fill. */
+.pb-beak {
+  position: absolute;
+  top: -5px;
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 5px solid #fff;
+  transform: translateX(-50%);
+  transition: left .05s linear;
+  z-index: 4;
+}
+
+.pb-beak.is-early { border-top-color: var(--early); }
+.pb-beak.is-late  { border-top-color: var(--late); }
+.pb-beak.is-win   { border-top-color: var(--win); }
+
+/* ── Cheer-up highlight (2026-09-04, native sync) ── */
+/* Was a text bubble with a "×" close button through 2026-08-23 -- native
+   (MainScreen.kt, Alex 01.09: "бабл удаляется полностью") replaced it with
+   a wordless amber glow BEHIND the quest panel: fills the panel, no
+   border/padding/shadow, pointer-events:none so it never intercepts taps.
+   Fade-in matches native's fadeIn(tween(220)) -- opacity only, no scale.
+   See dismissCheerBubble()/spawnCheerBubbleGhost() in app.js for the
+   fade-OUT, which is likewise opacity-only now (matches native's plain
+   fadeOut(tween(1500)) on the RUN-press-while-empty dismiss -- no more
+   shrink-from-bottom, that doesn't make sense for a borderless highlight). */
+.cheer-bubble {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(245, 192, 46, .14);
+  border-radius: 14px;
+  animation: cheer-highlight-enter .22s ease both;
+}
+@keyframes cheer-highlight-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Dismiss animation — see spawnCheerBubbleGhost(). The ghost is a detached
+   clone positioned over the real highlight's last on-screen rect, appended
+   to <body> (so app.innerHTML rebuilds during/after can't cut it short). */
+.cheer-bubble-ghost {
+  position: fixed;
+  margin: 0 !important;
+  pointer-events: none;
+  z-index: 999;
+  animation: none; /* don't replay the enter animation on the ghost */
+}
+.cheer-bubble-ghost.cheer-ghost-run {
+  transition: opacity 1.5s cubic-bezier(.4, 0, .2, 1);
+}
+.cheer-bubble-ghost.cheer-ghost-out {
+  opacity: 0;
+}
+
+/* ── GreetingView (HOORAY → stats card) ── */
+.greeting-screen {
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh); /* not 100dvh — see .game-overlay .app-shell */
+  background: #090909;
+  color: #f5f5f5;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.greet-congrats {
+  color: #f5f5f5;
+  font-size: 20px;
+  font-weight: 800;
+  margin: 4px 0 12px;
+}
+
+.greet-badge {
+  color: var(--win);
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.gold-block {
+  margin: 4px 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 215, 0, .10);
+  text-align: center;
+}
+
+.gold-title {
+  color: #ffd700;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.gold-sub {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.gold-stats {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .75);
+  margin-top: 6px;
+}
+
+.greet-time {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.greet-coins {
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.greet-chips {
+  display: flex;
+  justify-content: space-evenly;
+  margin: 22px 0 18px;
+}
+
+.greet-chips div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.greet-chips b {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.greet-chips span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .6);
+}
+
+.greet-praise {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 6px 0 4px;
+}
+
+.interp-table {
+  margin: 6px 0 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(242, 242, 242, .06);
+  text-align: left;
+}
+
+.cmp-row {
+  display: grid;
+  grid-template-columns: 1fr 58px 26px 58px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.cmp-head {
+  font-size: 11px;
+  color: rgba(242, 242, 242, .45);
+}
+
+.cmp-head span:nth-child(2), .cmp-head span:nth-child(4) { text-align: right; }
+.cmp-label { color: rgba(242, 242, 242, .7); }
+.cmp-row b { text-align: right; font-weight: 800; }
+.cmp-row b.win { color: var(--win); }
+.cmp-row b.early { color: var(--early); }
+.cmp-vs { text-align: center; font-size: 11px; color: rgba(242, 242, 242, .45); }
+.cmp-hist { text-align: right; color: rgba(242, 242, 242, .82); }
+
+.interp-paras {
+  text-align: left;
+  margin: 4px 0 6px;
+}
+
+.interp-para {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(242, 242, 242, .85);
+  margin: 5px 0;
+}
+
+.interp-para b { font-weight: 800; }
+
+.interp-conclusion {
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(242, 242, 242, .85);
+  margin: 4px 0 14px;
+}
+
+.quest-icons {
+  display: flex;
+  gap: 5px;
+  min-width: 48px;
+}
+
+.target-icon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #ff4c26 0 4px, #2f7ac6 5px 9px, #f3e3b5 10px 13px, #2b708c 14px 17px, #f2efd0 18px 20px, transparent 21px);
+}
+
+.target-icon.hit {
+  background:
+    radial-gradient(circle, #6f8e74 0 8px, #2d8c83 9px 13px, #dfdba8 14px 17px, #4e846d 18px 20px, transparent 21px);
+}
+
+.target-icon em {
+  position: absolute;
+  right: -3px;
+  top: -4px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #80ff63;
+  color: #164414;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.fence {
+  position: relative;
+  width: 52px;
+  height: 46px;
+  transform: skewX(-10deg);
+}
+
+.fence span {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--i) * 6px);
+  width: 6px;
+  height: 44px;
+  background: linear-gradient(#fff 0 9px, #cab276 10px 39px, #fff 40px 45px, #e24d62 46px 55px);
+  border: 1px solid rgba(255,255,255,.8);
+  clip-path: polygon(50% 0, 100% 10%, 100% 100%, 0 100%, 0 10%);
+}
+
+.quest-copy {
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.quest-copy strong {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.help-button {
+  width: 30px;  /* 2026-09-04 (Alex): shrunk to target-tile size (see .target-tile) */
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(222,66,100,.75);
+  color: rgba(222,66,100,.85);
+  background: transparent;
+  font-size: 14px;
+  position: absolute;
+  z-index: 56; /* stay visible/tappable above the help overlay */
+}
+/* 2026-09-04 (Alex feedback): anchored to the screen at the same level as
+   Analytics' "?" (.help-button-analytics below) instead of floating with
+   the quest panel's own content -- also keeps it clear of the
+   coaxially-centered aim+targets+mechanic group either way (no longer a
+   grid column consuming real width, same reasoning as the 2026-08-23
+   bottom-nav/histogram fix).
+   2026-09-04 (2nd round, Alex): shrunk + moved up/left to roughly where the
+   now-removed .game-overlay-close ("×") button used to sit (top:0, right:12). */
+.android-screen .help-button-quest {
+  top: calc(env(safe-area-inset-top, 0px) + 6px);
+  right: 16px;
+}
+.help-button.active {
+  border-color: var(--help-border);
+  color: var(--help-text);
+  background: var(--help-border);
+}
+
+/* Interactive help mode (native HelpTapOverlay port) */
+:root {
+  --help-bg: rgba(245, 192, 46, 0.95);
+  --help-border: #ffd35e;
+  --help-text: #2a1e00;
+}
+.help-tap-overlay {
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0; /* inset fallback, see .game-overlay */
+  inset: 0;
+  z-index: 55;
+}
+.help-frame {
+  position: fixed;
+  border: 1.5px solid var(--help-border);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 56;
+}
+.help-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: 40px;
+  background: var(--help-bg);
+  border: 2px solid var(--help-border);
+  border-radius: 12px;
+  color: var(--help-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 9px 14px;
+  z-index: 60;
+}
+.help-bubble-wrap {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+}
+.help-bubble-wrap.above { flex-direction: column-reverse; }
+.help-beak {
+  position: relative;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid var(--help-border);
+  transform: translateX(-50%);
+}
+.help-bubble-wrap.above .help-beak {
+  border-bottom: 0;
+  border-top: 7px solid var(--help-border);
+}
+.help-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--help-bg);
+  border: 2px solid var(--help-border);
+  border-radius: 12px;
+  color: var(--help-text);
+  padding: 10px 12px;
+}
+.help-bubble-text {
+  flex: 1 1 auto;
+  font-size: 12px;
+  line-height: 1.42;
+}
+.help-bubble-x {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--help-text);
+  background: transparent;
+  color: var(--help-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.timer-zone {
+  display: block;
+  padding: 0 21px 8px;
+}
+
+.timer-card {
+  position: relative;
+  width: 100%;
+  height: 190px;                            /* clamp() fallback for old Safari
+    (< 13.1) — clamp() itself needs 13.1+, and any device already failing on
+    optional chaining (?.) lacks it too. Without a fallback the declaration is
+    dropped entirely, height collapses to content-driven auto, and the
+    progress bar / big number / RESET label all cram together ("everything's
+    off"). Static px values approximate what clamp() computes on a typical
+    mobile viewport. */
+  height: clamp(190px, 26vh, 280px);
+  display: grid;
+  place-items: center;
+  gap: 0;
+  border-radius: 28px;
+  padding: 18px;
+  background: #2b2b2b;
+  color: #f5f5f5;
+  box-shadow: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.timer-card::before {
+  display: none;
+}
+
+.timer-card.timer-win {
+  background: #183f10;
+  color: var(--win);
+}
+
+.timer-card.timer-late {
+  background: #003640;
+  color: var(--late);
+}
+
+.timer-card.timer-early {
+  background: #43101b;
+  color: var(--early);
+}
+
+.timer-card.timer-neutral {
+  background: #2a2a2a;
+  color: #f7f7f7;
+}
+
+.face-badge {
+  position: absolute;
+  left: 9px;
+  top: 18px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #3fa864;
+  background: #eaf8ef;
+  border: 1.4px solid currentColor;
+  font-size: 0;
+  transition: top 650ms cubic-bezier(.2, .8, .2, 1), color 180ms ease, background 180ms ease;
+}
+
+.face-badge.face-sad {
+  top: calc(100% - 46px);
+  color: #b8b8b8;
+  background: #f2f2f2;
+}
+
+.face-badge i,
+.face-badge b {
+  position: absolute;
+  top: 11px;
+  width: 2.6px;
+  height: 2.6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.face-badge i {
+  left: 8px;
+}
+
+.face-badge b {
+  right: 8px;
+}
+
+.face-badge::before,
+.face-badge::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  width: 8px;
+  height: 4px;
+  border-top: 1.2px solid currentColor;
+  border-radius: 50%;
+}
+
+.face-badge::before {
+  left: 5px;
+  transform: rotate(-10deg);
+}
+
+.face-badge::after {
+  right: 5px;
+  transform: rotate(10deg);
+}
+
+.face-badge em {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 6px;
+  height: 7px;
+  border-bottom: 1.6px solid currentColor;
+  border-radius: 0 0 50% 50%;
+}
+
+.face-badge.face-sad em {
+  bottom: 4px;
+  border-bottom: 0;
+  border-top: 1.6px solid currentColor;
+  border-radius: 50% 50% 0 0;
+}
+
+.face-badge.face-repeat-nice b {
+  animation: face-wink 360ms ease;
+}
+
+.face-badge.face-repeat-sad em {
+  animation: sad-mouth 640ms ease;
+}
+
+.face-badge.face-slide-sad {
+  animation: face-slide-down 650ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.face-badge.face-slide-nice {
+  animation: face-slide-up 650ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes face-wink {
+  45% {
+    height: 1.4px;
+    border-radius: 999px;
+    transform: scaleX(1.8);
+  }
+}
+
+@keyframes sad-mouth {
+  45% {
+    transform: scaleX(1.16) translateY(1px);
+  }
+}
+
+@keyframes face-slide-down {
+  from { top: 18px; }
+  to { top: calc(100% - 46px); }
+}
+
+@keyframes face-slide-up {
+  from { top: calc(100% - 46px); }
+  to { top: 18px; }
+}
+
+.time-display {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  min-height: 0;
+  display: block;
+  font-size: 70px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(70px, 18vw, 82px);
+  font-weight: 700;
+  line-height: .9;
+  color: currentColor;
+  text-align: center;
+}
+
+.timer-action {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: -12px;
+  color: currentColor;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.timer-card.running {
+  color: #fff;
+}
+
+.timer-card.running.stop-active .timer-action {
+  color: var(--win);
+}
+
+.cheer-toast {
+  margin-top: 4px;
+  margin-left: 0;
+  margin-right: auto;
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.cheer-toast.gold {
+  color: #f5bd76;
+  background: #261904;
+}
+
+.cheer-toast.green {
+  color: var(--win);
+  background: #112d0d;
+}
+
+.cheer-toast.red {
+  color: var(--early);
+  background: #2a0711;
+}
+
+.cheer-toast.blue {
+  color: var(--late);
+  background: #031b23;
+}
+
+/* Container padding narrowed 16px→6px (2026-08-23 width fix, Alex: "и чего у
+   тебя справа все так уехало и диаграмма и гистограмма. по ширине они должны
+   быть не меньше прогресбара" — the coaxiality fix just above had widened the
+   right-side scm/tries columns for symmetric centering, which as a side
+   effect shrank the shared histogram/log plot band from ~244px down to
+   ~206px, well under the RUN button's own progress bar (.progress-bar,
+   measured ≈249.59px wide at a 390px viewport). See .attempt-row,
+   .android-summary and .geom-guides below for the matching column/inset
+   changes — together they widen the plot band back out to 254px (T=68px
+   each side) while keeping the "0" axis exactly centered. */
+.android-log-scroll {
+  padding: 0 6px;
+}
+
+.attempt-log {
+  margin: 0;
+  display: block;
+}
+
+/* Attempt-log scrollbar (ported from AttemptLogScrollbar.kt, Alex 2026-08-14,
+   jerkiness fix 2026-08-15) — thin thumb + faint always-behind track, both
+   fade in/out together; visible only while the log is actively scrolling. */
+.log-scrollbar {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  bottom: 0;
+  width: 4px;
+  pointer-events: none;
+  z-index: 8;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+.log-scrollbar.visible {
+  opacity: 1;
+  transition: opacity .08s ease;
+}
+.log-scrollbar-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: .18;
+}
+.log-scrollbar-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  min-height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: .55;
+}
+
+/* Single date for the whole diagram — pinned to the very top of the log; a
+   single instance, rendered once, nothing ever replaces it, so it can never
+   move or get swapped out no matter how far you scroll. Sits at the SAME
+   sticky offset as .session-row (both top:0) so they visually read as one
+   line — a higher z-index plus a transparent background let the date's text
+   float on top of whichever session-row is currently pinned underneath it,
+   without ever being the thing that slides. */
+.log-date {
+  position: sticky;
+  top: 0;
+  z-index: 7;
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 0 0 16px;
+  /* Hard cap so a wide date string (long locale month name, etc.) truncates
+     instead of running into .session-row's text, which starts at 96px — this
+     is the safety net; app.js requests a compact "15 Aug '26" format so it
+     shouldn't get close to this limit in practice. Widened 16px→96px on
+     .session-row and 62px→78px here (2026-08-15, second pass) when the year
+     was added back into the date — re-measured the REAL rendered text width
+     this time ("Aug 15, 26" ≈ 55px in this browser's default locale) instead
+     of guessing, and left a real margin (not just enough to scrape by)
+     given this exact spot has broken twice already today. */
+  max-width: 78px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* BUG FIXED 2026-08-15, take 2 (Alex: "теперь вообще без даты" — my first
+     fix attempt, splitting overflow into -x/-y, did NOT actually fix this;
+     verified with an isolated minimal repro outside the app entirely).
+     Root cause was `height: 0` itself, not the overflow clipping: a
+     `position: sticky` element with height:0 sitting at the same `top:0`
+     anchor as another sticky sibling does NOT reliably paint above it by
+     z-index in Chromium, REGARDLESS of the overflow/clipping setup — the
+     zero-height box seems to lose the paint order fight even though nothing
+     in the spec says a taller z-index should lose to a lower one. Confirmed
+     via a 6-line standalone HTML file with nothing else on the page: the
+     z-index:7 text was invisible under the z-index:6 opaque sibling every
+     time height was 0, and visible every time height was a real non-zero
+     value. Fix: give it a REAL height matching line-height (22px) — that
+     alone fixes the paint order — and cancel the layout push with an equal
+     negative margin-bottom instead of relying on height:0 to do it. Net
+     effect on layout is identical (still doesn't push .session-row down),
+     but paint order is now correct. */
+  height: 22px;
+  margin-bottom: -22px;
+  line-height: 22px;
+  pointer-events: none;
+}
+
+/* Session/quest name — a SEPARATE sticky element per session (not merged
+   with the date), so the browser's native sticky positioning slides each
+   one in and out on its own as you scroll past session boundaries. It stays
+   opaque and full-width (the solid black backdrop for the whole line); its
+   own text is padded clear of the date so the two never visually collide. */
+.session-row {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 0 2px 96px;
+  border: 0;
+  color: rgba(255,255,255,.45);
+  background: #000;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.session-row span {
+  height: 1px;
+  background: rgba(255,255,255,.13);
+}
+
+.session-row b {
+  font-weight: 500;
+  white-space: nowrap;
+  color: rgba(255,255,255,.45);
+}
+
+.attempt-row {
+  position: relative;
+  display: grid;
+  /* 2026-08-23 width fix (Alex: "по ширине они должны быть не меньше
+     прогресбара"): the earlier coaxiality fix below (32px→70px on the scm
+     column) kept the "0" axis centered but shrank the shared plot band
+     under the progress bar's own width. Narrowed the num/time columns
+     (20/44 → 16/34 — measured real text-width slack via Playwright: worst
+     case "12" fits 16px, worst case "3.999"/"-2.988" fits 34px, both on
+     tabular-nums) and the scm/tries column (70 → 56, see .attempt-scm below)
+     so the whole row is narrower while staying exactly symmetric: left field
+     (16 num + 6 gap + 34 time + 6 gap = 62px) still equals the right field
+     (56 scm + 6 gap = 62px) — same coaxiality, smaller footprint. */
+  grid-template-columns: 16px 34px 1fr 56px;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 11px;
+}
+
+.attempt-row::before {
+  content: "";
+  position: absolute;
+  /* Left/right fields now equal (62px/62px) after the 2026-08-23 width fix
+     above — was 76px/76px before narrowing the num/time/scm columns. */
+  left: 62px;
+  right: 62px;
+  top: 3px;
+  bottom: 3px;
+  background: linear-gradient(90deg, rgba(222,66,100,.11) 0 50%, rgba(12,168,204,.09) 50% 100%);
+}
+
+.attempt-number,
+.attempt-time,
+.attempt-scm {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.attempt-number {
+  color: rgba(255,255,255,.55);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.attempt-time {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.attempt-scm {
+  color: rgba(255,255,255,.55);
+  text-align: center;
+  font-size: 10px;
+  /* The 32px column butts straight up against the row's right edge but has
+     a 6px grid-gap before it on the left — plain centering left the number
+     9px off on the right vs 15px on the left. This padding shifts the
+     centered text 3px left so both sides land equal (verified 12px/12px).
+     2026-08-23 coaxiality fix: column widened 32px→70px — padding-left
+     added, equal to the +38px added width, so the visible SC digits stay
+     pinned to the exact same on-screen spot.
+     2026-08-23 width fix (same day, follow-up): column narrowed back down
+     70px→56px (Δ=-14px) to widen the shared plot band under the progress
+     bar — padding-left reduced by the same 14px (38→24) so the visible SC
+     digits stay pinned to the exact same on-screen spot as before either
+     change; only the column's invisible left boundary moved again. */
+  padding-right: 6px;
+  padding-left: 24px;
+}
+
+/* Newest row's SC isn't final yet (retroactively computed once the next
+   attempt lands) — native shows the literal "SC" column header there instead
+   of a value: bolder, slightly brighter than a normal faint value. */
+.attempt-scm.scm-header {
+  color: rgba(255,255,255,.6);
+  font-weight: 700;
+}
+
+.attempt-graph {
+  position: relative;
+  z-index: 1;
+  min-height: 22px;
+}
+
+.axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  border-left: 1px dashed currentColor;
+  opacity: .8;
+}
+
+.axis.zero {
+  left: 50%;
+  color: #fff;
+  border-left-style: solid;
+}
+
+.axis.early-axis {
+  left: 35%;
+  color: var(--early);
+}
+
+.axis.late-axis {
+  left: 58%;
+  color: var(--late);
+}
+
+.hit-dot {
+  position: absolute;
+  left: calc(50% - 4.5px);
+  top: calc(50% - 4.5px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--win);
+  box-shadow: 0 0 0 2px rgba(142,255,81,.15);
+}
+
+.err-line {
+  position: absolute;
+  top: calc(50% - 1.25px);
+  height: 2.5px;
+  border-radius: 999px;
+}
+
+.err-line.early {
+  background: var(--early);
+}
+
+.err-line.late {
+  background: var(--late);
+}
+
+.attempt-graph em {
+  position: absolute;
+  top: calc(50% - 8px);
+  font-size: 10px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.android-empty {
+  height: 100%;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: rgba(255,255,255,.25);
+  font-size: 20px;
+}
+
+/* Columns/padding chosen so the middle chart column spans EXACTLY the same
+   horizontal band as the log row's .attempt-graph — they share one scale, so
+   the histogram's plot field must match .attempt-graph's own field, not the
+   text inside neighboring columns (reverted 2026-08-09 — an earlier pass
+   here aligned to the time/SC *text* edges instead, which was wrong).
+   2026-08-23 coaxiality fix: widened the scm-box column 32px→70px so both
+   sides totalled 92px (was 92 left / 54 right, which put the "0" axis off
+   the true screen center — same bug native's DistribChart.kt fixed via
+   CHART_LABEL_WIDTH/CHART_SC_PAD both = 64dp).
+   2026-08-23 width fix (same day, follow-up, Alex: "по ширине они должны
+   быть не меньше прогресбара"): that symmetric-but-wide 92/92 inset made the
+   shared plot band (390 − 2×92 = 206px) narrower than the RUN button's own
+   progress bar (≈249.59px). Narrowed container padding 16px→6px and the
+   scm/tries columns 70px→56px together (see .android-log-scroll and
+   .sb-count) so both insets shrink to 6 + 56 + 6 = 68px each — plot band is
+   now 390 − 2×68 = 254px, ~4.4px clear of the progress bar's width, "0" axis
+   still exactly centered (left inset = right inset). */
+.android-summary {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  grid-template-rows: auto 22px;
+  column-gap: 6px;
+  padding: 4px 6px 0;
+  background: #151117;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* Wraps the error diagram (scrolling log) + the histogram so the geom guide
+   lines can be one absolute overlay across both. */
+.diagram-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.diagram-stack > .android-log-wrap { flex: 1 1 auto; min-height: 0; }
+.diagram-stack > .android-summary { flex: 0 0 auto; }
+
+/* Hide the log scrollbar so the row width (and thus the plot band) is identical
+   on every platform and matches the histogram below. Scroll still works. */
+.android-log-scroll { scrollbar-width: none; }
+.android-log-scroll::-webkit-scrollbar { display: none; }
+
+/* Shared geom-mean guides — inset to the plot band, spanning the diagram all the
+   way down to the tip of each beak (so the dashed line emanates from the beak's
+   sharp point). Drawn on top (z-index) so the axis-value numbers can't break it. */
+.geom-guides {
+  position: absolute;
+  top: 0;
+  bottom: 32px;
+  left: 68px;
+  right: 68px; /* 2026-08-23 width fix: was 92px/92px (matched to the
+    .android-summary coaxiality fix) — narrowed to 68px/68px along with the
+    plot band above, so .geom-zero's left:50% still lands on the true screen
+    center, now inside a wider band. */
+  pointer-events: none;
+  z-index: 4;
+}
+.geom-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed currentColor;
+  transform: translateX(-0.5px);
+  opacity: .45;
+}
+.geom-guide.early { color: var(--early); }
+.geom-guide.late { color: var(--late); }
+.geom-guide.absolute { color: #fff; opacity: .6; z-index: 5; }
+
+/* Zero reference — white, larger dashes, down to the histogram 0-axis. */
+.geom-zero {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 15px;
+  width: 1px;
+  transform: translateX(-0.5px);
+  background: repeating-linear-gradient(to bottom, #fff 0 5px, transparent 5px 11px);
+  opacity: .55;
+  z-index: 4;
+}
+
+.tries-box,
+.scm-box {
+  color: rgba(255,255,255,.62);
+  font-size: 10px;
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+}
+
+.tries-box strong,
+.scm-box strong {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+/* Σtries / ΣSC value blocks are vertically centred against the 58px histogram. */
+.tb-count,
+.sb-count {
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Was a 32px column with the gap-vs-edge asymmetry running the other way
+   here: this row's own 16px right padding is real (not shared with a
+   sibling column), while the 6px grid-gap sits only on the left — plain
+   centering left 6px on the left vs 16px on the right. padding-left shifted
+   the centered value 5px right so both sides land equal (verified 11px/11px).
+   2026-08-23 coaxiality fix: column widened 32px→70px — padding-left bumped
+   by the same +38px so the visible coin+ΣSC value stays pinned to the exact
+   same on-screen spot.
+   2026-08-23 width fix (same day, follow-up): column narrowed back down
+   70px→56px (Δ=-14px, see .android-summary above) — padding-left reduced by
+   the same 14px (48→34) so the visible coin+ΣSC value stays pinned to the
+   exact same on-screen spot as before either change. */
+.sb-count {
+  align-items: center;
+  padding-left: 34px;
+}
+
+/* "Distrib." drops below, aligning with the axis value labels under the histogram. */
+.tb-distrib {
+  font-size: 11px;
+  color: rgba(255,255,255,.62);
+}
+
+.coin-ico { display: block; margin-bottom: 2px; }
+.coin-ico ellipse {
+  fill: var(--sand);
+  stroke: rgba(0,0,0,.4);
+  stroke-width: .8;
+}
+
+.summary-chart {
+  position: relative;
+  min-width: 0;
+}
+
+.histogram {
+  position: relative;
+  display: block;
+  height: 58px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  /* zone shading only (red early ← → blue late); gridlines are data-driven below */
+  background: linear-gradient(90deg, rgba(222,66,100,.10), rgba(255,255,255,.02), rgba(12,168,204,.10));
+}
+
+.hist-grid {
+  position: absolute;
+  left: 0;
+  right: 14px;
+  height: 1px;
+  background: rgba(255, 255, 255, .09);
+  z-index: 1;
+}
+
+.hist-tick {
+  position: absolute;
+  right: 0;
+  font-size: 7px;
+  line-height: 1;
+  color: rgba(255, 255, 255, .45);
+  font-variant-numeric: tabular-nums;
+  z-index: 2;
+}
+
+.hist-scale {
+  position: absolute;
+  top: 0;
+  color: rgba(255,255,255,.58);
+  font-size: 8px;
+  line-height: 8px;
+  font-variant-numeric: tabular-nums;
+  z-index: 2;
+}
+
+.hist-scale.left {
+  right: calc(100% + 4px);
+  text-align: right;
+}
+
+.hist-scale.right {
+  left: calc(100% + 4px);
+}
+
+.bar {
+  position: absolute;
+  bottom: 0;
+  min-width: .5px;
+  max-width: 3px;
+  border-radius: 2px 2px 0 0;
+}
+
+.geom-markers {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0; /* inset fallback, see .game-overlay */
+  inset: 0;
+  pointer-events: none;
+}
+
+/* One set of dashed guides — one per geom-mean beak — confined to the histogram
+   (top → the 0-axis). They do NOT run through the axis-value labels, so the
+   numbers can't break a line into two apparent segments. The beaks sit below. */
+.geom-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed currentColor;
+  opacity: .9;
+  z-index: 3;
+}
+
+.geom-marker.early {
+  color: var(--early);
+}
+
+.geom-marker.absolute {
+  color: #fff;
+  opacity: 1;
+  z-index: 4;
+}
+
+.geom-marker.late {
+  color: var(--late);
+}
+
+.geom-band {
+  position: relative;
+  height: 12px;
+  margin-top: 2px;
+}
+
+.geom-triangle {
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-bottom: 10px solid currentColor;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.geom-triangle.early {
+  color: var(--early);
+}
+
+.geom-triangle.absolute {
+  color: rgba(255,255,255,.9);
+}
+
+.geom-triangle.late {
+  color: var(--late);
+}
+
+.axis-labels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  color: rgba(255,255,255,.58);
+  font-size: 10px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.axis-labels span {
+  text-align: center;
+}
+
+.axis-labels span:first-child {
+  text-align: left;
+}
+
+.axis-labels span:last-child {
+  text-align: right;
+}
+
+.geom-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.28fr 1fr 1.28fr 1fr;
+  gap: 5px;
+  align-items: center;
+  color: rgba(255,255,255,.58);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.geom-strip b {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 400;
+}
+.geom-strip b.early { color: var(--early); }
+.geom-strip b.late { color: var(--late); }
+
+.period-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 20px 2px;
+  background: #000;
+}
+
+/* (Removed the collapsed single-value .period-toggle override — Analytics uses
+   the full Session/Today/Month/All time toggle defined earlier.) */
+
+.bottom-nav {
+  display: flex;
+  grid-template-columns: none;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 0;
+  background: var(--bg);
+  border: 0;
+  padding: 4px 4px 6px;
+}
+
+.bottom-nav .nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 0;
+  padding: 4px 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(242, 242, 242, .55);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
+}
+
+.bottom-nav .nav-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px; /* matches the tallest icon (the Play glyph, 18px) — was 16px, clipping it by 2px */
+}
+
+.bottom-nav .nav-ico svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.bottom-nav .nav-ico img {
+  height: 18px;
+  width: auto;
+  display: block;
+}
+
+/* Bumped 24×12 → 32×16 (native, Alex 2026-08-22: "попробовать сделать сам
+   индикатор крупнее, подпись — тем же размером") — the SVG's own viewBox
+   is 24×12 (2:1), same ratio as 32:16, so this just scales it up cleanly,
+   no distortion. */
+.bottom-nav .nav-ico .nav-balance {
+  width: 32px;
+  height: 16px;
+}
+
+.bottom-nav .nav-label {
+  display: block;
+  color: inherit;
+  font-size: 10px;
+  margin: 0;
+}
+
+.bottom-nav .nav-tab.active {
+  color: var(--accent);
+  background: rgba(230, 164, 64, .12);
+  font-weight: 600;
+}
+
+.overlay {
+  align-items: start;
+  padding: 70px 20px 20px;
+  background: #000;
+}
+
+.welcome-card {
+  width: min(100%, 532px);
+  margin: 0 auto;
+  max-height: calc(100vh - 90px);
+  max-height: calc(var(--vh100, 100vh) - 90px); /* not 100dvh — see .game-overlay .app-shell */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f7c52c;
+  color: #251b08;
+  border: 0;
+  border-radius: 20px;
+  padding: 34px 22px 24px;
+}
+
+.welcome-card h1 {
+  font-size: 28px;
+  color: #191306;
+}
+
+.welcome-card p {
+  color: #2b210b;
+  font-size: 20px;
+  line-height: 1.34;
+}
+
+.welcome-start,
+.take-next {
+  width: 100%;
+  min-height: 62px;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: #201604;
+  color: #f7c52c;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.completion-screen {
+  min-height: 100vh;
+  min-height: var(--vh100, 100vh); /* not 100dvh — see .game-overlay .app-shell */
+  background: #090909;
+  color: #f5f5f5;
+}
+
+.completion-content {
+  padding: 44px 22px 0;
+  text-align: center;
+}
+
+.party-icon {
+  position: relative;
+  width: 152px;
+  height: 140px;
+  margin: 0 auto 20px;
+}
+
+.party-icon span {
+  position: absolute;
+  left: 25px;
+  bottom: 22px;
+  width: 82px;
+  height: 70px;
+  background: #2bb4e8;
+  clip-path: polygon(0 100%, 32% 0, 100% 70%);
+  border: 4px solid #2e77a0;
+}
+
+.party-icon i,
+.party-icon b {
+  position: absolute;
+  right: 8px;
+  top: 18px;
+  width: 86px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f2a51b;
+  transform: rotate(-42deg);
+}
+
+.party-icon b {
+  right: 0;
+  top: 66px;
+  transform: rotate(-22deg);
+}
+
+.completion-content h1 {
+  color: var(--win);
+  font-size: 22px;
+}
+
+.completion-content p {
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.completion-card {
+  margin: 28px 0 22px;
+  padding: 14px 22px;
+  border-radius: 12px;
+  background: #1a1a1a;
+  text-align: left;
+}
+
+.completion-card div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 18px;
+}
+
+.completion-card span {
+  color: rgba(255,255,255,.7);
+}
+
+.completion-card em {
+  margin-left: 8px;
+  font-style: normal;
+}
+
+.completion-note {
+  color: rgba(255,255,255,.78);
+}
+
+.take-next {
+  background: #ff4e24;
+  color: #120804;
+  border-radius: 14px;
+}
+
+@media (max-width: 430px) {
+  .android-screen {
+    grid-template-rows: 54px 86px auto minmax(0, 1fr) auto 46px 72px;
+  }
+
+  .android-top {
+    grid-template-columns: 55px 1fr 74px 112px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .quest-strip {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .target-icon {
+    width: 33px;
+    height: 33px;
+  }
+
+  .fence {
+    width: 62px;
+    transform: scale(.88) skewX(-10deg);
+    transform-origin: left center;
+  }
+
+  .quest-copy strong {
+    font-size: 14px;
+  }
+
+  .timer-card {
+    height: 190px;
+  }
+
+  .time-display {
+    font-size: 80px;                        /* clamp() fallback, see .timer-card */
+    font-size: clamp(80px, 22vw, 112px);
+  }
+}
+
+/* ── Leaderboard ──────────────────────────────────────────────────────── */
+/* No "?" help button on this screen, unlike Analytics — drop the reserved
+   right padding and centre the sort toggle instead. */
+.leaderboard-screen .analytics-pill {
+  padding-right: 12px;
+  justify-content: center;
+}
+
+.lb-name-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lb-name-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.lb-name-row input::placeholder {
+  color: var(--muted);
+}
+
+.lb-rows {
+  display: grid;
+  gap: 2px;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.lb-row.mine {
+  background: var(--panel-2);
+  outline: 1px solid var(--accent);
+  /* Report entry moved to Analytics (Alex 2026-09-21 native, 2026-09-25 web)
+     -- own row no longer opens anything, so it no longer looks clickable. */
+  cursor: default;
+}
+
+.lb-rank {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.lb-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lb-row.mine .lb-name {
+  color: var(--accent);
+}
+
+.lb-metric {
+  font-size: 13px;
+  font-weight: 800;
+  /* tabular-nums removed (2026-09-04): on some Android OEM font stacks, enabling
+     the "tnum" OpenType feature via font-variant-numeric corrupts/zero-widths the
+     comma glyph next to digits, so the decimal separator silently disappears while
+     the digit spacing remains — exactly the "gap but no separator" bug reported. */
+  color: var(--sand);
+}
+
+/* Leaderboard tap-to-report / tap-to-compare (Alex 2026-09-17: "в лидборде
+   тюкаешь по себе - морды, тюкаешь по сапернику - сравнение"), porting
+   native LeaderboardScreen.kt's ComparePlayersDialog + ReportDialog. */
+.compare-dialog {
+  max-width: 340px;
+}
+
+.compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.compare-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.compare-x,
+.report-dialog-x {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.report-dialog-x {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+}
+
+.compare-names {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.compare-name {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.compare-name.mine {
+  color: var(--accent);
+}
+
+.compare-name.other {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-metric {
+  margin-bottom: 10px;
+}
+
+.compare-metric:last-child {
+  margin-bottom: 0;
+}
+
+.compare-metric-label {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.compare-metric-row {
+  display: flex;
+  align-items: center;
+}
+
+.compare-val {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.compare-val.better {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.compare-val.worse {
+  color: var(--muted);
+}
+
+.compare-vs {
+  width: 40px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Near-fullscreen, matches native ReportDialog's own "almost the whole
+   screen" sizing rather than the compact .dialog max-width used above. */
+.report-overlay {
+  padding: 10px;
+}
+
+.report-dialog {
+  width: 100%;
+  max-width: 480px;
+  height: calc(var(--vh100, 100vh) - 20px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.report-dialog-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 10px;
+}
+
+.report-dialog-body {
+  position: relative;
+  flex: 1;
+}
+
+.report-dialog-body iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #f4ead9;
+}
+
+.report-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-spinner::after {
+  content: "";
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent);
+  animation: report-spin 0.8s linear infinite;
+}
+
+@keyframes report-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* pot-logo animated brand mark (2026-08-15) — reusable, unscoped so it works in ANY container (About screen + homepage launcher-art) */
+
+  .pot-logo { position:relative; width:100%; height:100%; perspective: 900px; }
+  .pot-logo .pot-layer { position:absolute; inset:0; width:100%; height:100%; }
+
+  .pot-logo .pot-ring {
+    z-index: 0;
+    animation: pot-ring-spin 5s cubic-bezier(.34,1.56,.64,1) infinite;
+  }
+  @keyframes pot-ring-spin {
+    0%   { transform: rotate(0deg); }
+    8%   { transform: rotate(0deg); }
+    22%  { transform: rotate(372deg); }
+    30%  { transform: rotate(355deg); }
+    36%  { transform: rotate(360deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .pot-logo .pot-triangle {
+    z-index: 1;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50%;
+    animation: pot-tri-spin 3s linear infinite;
+  }
+  @keyframes pot-tri-spin {
+    0%   { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+  }
+
+  .pot-logo .pot-letter {
+    z-index: 2;
+    transform-style: preserve-3d;
+    transform-origin: 48.5% 50%;
+    animation: pot-letter-spin 3s linear infinite;
+  }
+  @keyframes pot-letter-spin {
+    0%   { transform: rotateY(0deg); }
+    100% { transform: rotateY(-360deg); }
+  }
+
+/* About-screen "tap the logo" fullscreen meditation view (Alex 2026-09-15,
+   native AboutScreen.kt MeditationFullscreen; ported to web 2026-09-18).
+   Spans the header+content rows of the .about-screen grid (see
+   grid-template-rows: auto 1fr auto) so the bottom nav stays visible,
+   matching native's own "the bottom nav bar is a sibling ... not something
+   a single page can cover" scoping. */
+.about-screen .meditation-fullscreen {
+  grid-row: 1 / span 2;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.about-screen .meditation-fullscreen .pot-logo {
+  width: min(70vw, 320px);
+  height: min(70vw, 320px);
+}
+.about-logo-tap { cursor: pointer; }
+
+/* Firework "salute" celebration (ported from SaluteCelebration.kt, Alex
+   2026-08-16/17) — replaces .party-icon on the post-quest greeting screen.
+   Canvas box is wider/taller than the 320-unit logo itself (measured
+   native margins: 60 each side, 170 top, 30 bottom) so burst particles that
+   fly outside the logo's own edges don't get clipped. Ring/triangle/letter
+   here are a SEPARATE instance from .pot-logo (own class names, no
+   animation: — their rotation is set frame-by-frame from JS in
+   startSalute(), locked to the same clock as the particles, not the
+   independent CSS @keyframes .pot-logo uses elsewhere). */
+  .salute-wrap {
+    position: relative;
+    width: 94%;
+    max-width: 420px;
+    aspect-ratio: 440 / 520;
+    margin: 8px auto 20px;
+  }
+  .salute-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .salute-logo {
+    position: absolute;
+    left: 13.6364%;
+    bottom: 5.7692%;
+    width: 72.7273%;
+    height: 61.5385%;
+    perspective: 900px;
+  }
+  .salute-logo .pot-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .salute-ring { z-index: 0; }
+  .salute-triangle {
+    z-index: 1;
+    transform-style: preserve-3d;
+  }
+  .salute-letter {
+    z-index: 2;
+    transform-style: preserve-3d;
+  }
+
+
+/* FAQ accordion (landing page, added 2026-09-01) — reuses existing site tokens
+   (--site-line/--site-text/--site-muted/--accent) and the same type scale as
+   .section p, so it needs no new colors or sizes of its own. */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--site-line);
+  padding: 14px 0;
+}
+
+.faq-item:first-child {
+  border-top: 1px solid var(--site-line);
+}
+
+.faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--site-text);
+  font-weight: 700;
+  font-size: 14px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(14px, 1.6vw, 16px);
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: "+";
+  flex-shrink: 0;
+  color: var(--accent);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.faq-item[open] summary::after {
+  content: "\2013";                         /* en dash, matches "+" weight */
+}
+
+/* Gated behind a real hover+precise-pointer check (not a bare :hover) —
+   on touch devices a tap sets :hover and it has no mouseout to clear it on,
+   so the summary text was staying orange after the item was closed again
+   (Alex found this on 2026-09-01). Desktop mouse users still get the
+   hover color; touch users no longer get a stuck one. */
+@media (hover: hover) and (pointer: fine) {
+  .faq-item summary:hover {
+    color: var(--accent);
+  }
+}
+
+.faq-item p {
+  margin: 10px 0 0;
+  max-width: 720px;
+  color: var(--site-muted);
+  font-size: 13px;                          /* clamp() fallback, see .timer-card */
+  font-size: clamp(13px, 1.4vw, 15px);
+  line-height: 1.58;
+}
+
+/* ── Analytics typography — designer spec (Alex 2026-10-05), same as native
+   StatScreen.kt: metric labels Roboto Medium 11 #7F7F7F, values Roboto
+   Medium 12 #FFFFFF, block titles Roboto SemiBold 12 #7F7F7F, above the card
+   and in normal case instead of caps. ── */
+.stat-block { margin-bottom: 10px; }
+
+.block-title {
+  margin: 0 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #7F7F7F;
+}
+
+.block-title .card-period {
+  color: #7F7F7F;
+  font-weight: 600;
+  letter-spacing: normal;
+  opacity: 1;
+}
+
+.analytics-screen .stat-label,
+.analytics-screen .sh-label {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #7F7F7F;
+}
+
+/* Early/Late keep their colour: here the colour carries the meaning. */
+.analytics-screen .stat-label.early { color: var(--early); }
+.analytics-screen .stat-label.late  { color: var(--late); }
+
+.analytics-screen .stat-value,
+.analytics-screen .sh-stat b {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+.analytics-screen .sh-stat b .win { color: var(--win); }
+
+.sh-left-card.sh-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+  align-items: start;
+}
+
+.sh-grid .sh-stat { min-width: 0; }
+.sh-grid .sh-label,
+.sh-grid .sh-stat b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-head .block-title { margin: 0; display: block; }
+.sh-grid .sh-stat b { display: flex; align-items: center; }
+.sh-grid .sh-stat b .coin-ico { flex: none; }
+
+/* Report close cross inside the page (native ReportDialog, Alex 2026-09-27):
+   top-right of the cream sheet, level with the page title, large and thin,
+   in the page's own ink colour. The dark strip above the page is gone. */
+.report-dialog-head { display: none; }
+.report-dialog-body .report-dialog-x {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2A1E00;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Total tries / Σ coins beside the histogram (Alex 2026-10-06, same as
+   native DiagramTotalsRow): label above the histogram axis, value below it,
+   so the split between them falls on the axis. Both sides get the same 16px
+   label slot — the coin used to sit lower than the "Total tries" text line,
+   pushing the right value out of line with the left one. Each block is
+   centred in its own black side field (the old 34px padding-left pinned the
+   coin to the right of its field's centre). The axis is 58px below the top
+   of the block: 58 − 3px half-gap − 16px slot = 39px. */
+.tb-count,
+.sb-count {
+  height: auto;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  padding: 39px 0 0;
+  gap: 6px;
+}
+.tb-count span { line-height: 16px; height: 16px; }
+.sb-count .coin-ico { margin: 0; }
+
+/* Help bubble: paragraphs, bold element names, long texts paged with
+   ‹ 1/2 › (Alex 2026-10-06, same as native HelpBubbleCard). */
+.help-bubble-body { flex: 1 1 auto; min-width: 0; }
+.help-bubble-text { font-size: 13px; line-height: 1.4; }
+.help-bubble-text p { margin: 0 0 6px; }
+.help-bubble-text p:last-child { margin-bottom: 0; }
+.help-bubble-text b { font-weight: 700; }
+.help-pager {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.help-page-num { font-size: 12px; font-weight: 500; }
+.help-page-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--help-text);
+  background: transparent;
+  color: var(--help-text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-page-btn:disabled { opacity: .25; cursor: default; }
