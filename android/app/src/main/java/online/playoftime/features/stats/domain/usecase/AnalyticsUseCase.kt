@@ -364,7 +364,7 @@ class AnalyticsUseCase(
             if (ordered.isEmpty()) return@run PaceChartSeries(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
             // Нарезка оси X — единое правило для всех графиков (Alex 2026-10-19):
             //   Session  — каждая попытка;
-            //   Today    — каждая сессия дня;
+            //   Today    — каждая сессия дня, подпись — её номер за день (#1, #2…);
             //   Week     — каждый день недели (7 столбиков, пустые дни — пусто);
             //   Month    — каждый день месяца (1–31);
             //   All time — недели, если история короче 9 месяцев, иначе месяцы.
@@ -424,10 +424,10 @@ class AnalyticsUseCase(
                     byCalendar(fromTime, toTime, Calendar.DAY_OF_YEAR, 1, SimpleDateFormat("d", Locale.ENGLISH))
                 PeriodFilter.WEEK ->
                     byCalendar(fromTime, toTime, Calendar.DAY_OF_YEAR, 1, SimpleDateFormat("EEE", Locale.ENGLISH))
-                PeriodFilter.TODAY -> {
-                    val fmt = SimpleDateFormat("HH:mm", Locale.ENGLISH)
-                    slotSeries(ordered.groupBy { it.sessionId }.values.map { g -> g to fmt.format(Date(g.first().startTime)) })
-                }
+                // День — по сессиям; под столбиком номер сессии за день, тот же,
+                // что в журнале и в «Session #N» (Alex 2026-10-20).
+                PeriodFilter.TODAY ->
+                    slotSeries(ordered.groupBy { it.sessionId }.map { (sid, g) -> g to "#${sessionNumberMap[sid] ?: sid}" })
                 PeriodFilter.SESSION  -> {
                     // Session — сырые точки по попыткам, не по календарю: пропусков
                     // тут нет по определению (последовательные попытки одной сессии),
