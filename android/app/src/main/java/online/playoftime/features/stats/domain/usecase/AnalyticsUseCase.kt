@@ -370,7 +370,7 @@ class AnalyticsUseCase(
             //   All time — недели, если история короче 9 месяцев, иначе месяцы.
             // Точка без данных (или меньше двух попыток для средних) — пустая,
             // место и подпись остаются: пропуск виден, линия не «склеивается».
-            fun slotSeries(slots: List<Pair<List<TryDatabaseModel>, String>>): PaceChartSeries {
+            fun slotSeries(slots: List<Pair<List<TryDatabaseModel>, String>>, tips: List<String>? = null): PaceChartSeries {
                 val v = slots.map { (g, _) ->
                     val scored = g.mapNotNull { att ->
                         att.scm?.takeIf { it > 0.0 }?.let { it / peakScmForAccuracy(att.accuracy) }
@@ -385,7 +385,8 @@ class AnalyticsUseCase(
                 val late  = slots.map { (g, _) -> if (g.size < 2) null else sideGeomMeanMs(g, aimTime, early = false) }
                 val happy = slots.map { (g, _) -> if (g.isEmpty()) null else happyIn(g) }
                 val sad   = slots.map { (g, _) -> if (g.isEmpty()) null else sadIn(g) }
-                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, slots.map { it.second })
+                val labels = slots.map { it.second }
+                return PaceChartSeries(v, hit, lucky, early, late, happy, sad, labels, tips ?: labels)
             }
             // Слоты по календарю: [границы[k], границы[k+1]) с шагом step единиц field.
             fun byCalendar(startMs: Long, endMs: Long, field: Int, step: Int, labFmt: SimpleDateFormat): PaceChartSeries {
@@ -425,9 +426,16 @@ class AnalyticsUseCase(
                 PeriodFilter.WEEK ->
                     byCalendar(fromTime, toTime, Calendar.DAY_OF_YEAR, 1, SimpleDateFormat("EEE", Locale.ENGLISH))
                 // День — по сессиям; под столбиком номер сессии за день, тот же,
-                // что в журнале и в «Session #N» (Alex 2026-10-20).
-                PeriodFilter.TODAY ->
-                    slotSeries(ordered.groupBy { it.sessionId }.map { (sid, g) -> g to "#${sessionNumberMap[sid] ?: sid}" })
+                // что в журнале и в «Session #N» (Alex 2026-10-20); в подсказке
+                // по удержанию — ещё и время начала сессии.
+                PeriodFilter.TODAY -> {
+                    val fmt = SimpleDateFormat("HH:mm", Locale.ENGLISH)
+                    val bySession = ordered.groupBy { it.sessionId }
+                    slotSeries(
+                        bySession.map { (sid, g) -> g to "#${sessionNumberMap[sid] ?: sid}" },
+                        tips = bySession.map { (sid, g) -> "#${sessionNumberMap[sid] ?: sid} · ${fmt.format(Date(g.first().startTime))}" }
+                    )
+                }
                 PeriodFilter.SESSION  -> {
                     // Session — сырые точки по попыткам, не по календарю: пропусков
                     // тут нет по определению (последовательные попытки одной сессии),
@@ -519,6 +527,7 @@ class AnalyticsUseCase(
             facesHappy                   = faceOf.values.count { it },
             facesSad                     = faceOf.values.count { !it },
             paceChartLabels              = paceChart.labels,
+            paceChartTips                = paceChart.tips,
             sessions                     = sessionsList,
             periodAttempts           = periodTotal,
             period                   = period,
@@ -541,7 +550,9 @@ class AnalyticsUseCase(
     private class PaceChartSeries(
         val values: List<Float?>, val hit: List<Float?>, val lucky: List<Float?>,
         val early: List<Float?>, val late: List<Float?>,
-        val happy: List<Float?>, val sad: List<Float?>, val labels: List<String>
+        val happy: List<Float?>, val sad: List<Float?>, val labels: List<String>,
+        // Подпись точки в подсказке по удержанию (у дня — номер и время сессии).
+        val tips: List<String> = labels
     )
 
     /**

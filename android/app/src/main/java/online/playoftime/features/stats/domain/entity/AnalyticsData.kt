@@ -132,6 +132,9 @@ data class AnalyticsData(
     val facesHappy               : Int = 0,
     val facesSad                 : Int = 0,
     val paceChartLabels          : List<String> = emptyList(),
+    // Подпись точки в подсказке по удержанию (Alex 2026-10-20: у дня — номер
+    // сессии и время её начала); пусто — берётся paceChartLabels.
+    val paceChartTips            : List<String> = emptyList(),
 
     // ── Quest tolerance (for histogram green zone) ───────────────────
     val toleranceMs : Double = 0.0,

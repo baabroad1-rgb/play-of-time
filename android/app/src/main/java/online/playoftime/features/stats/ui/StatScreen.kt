@@ -600,6 +600,7 @@ private fun AnalyticsContent(
                             values    = data.paceChartEarlyMs,
                             lineColor = resultRedColor,
                             xLabels   = data.paceChartLabels,
+                            tipLabels = data.paceChartTips,
                             formatY   = formatY,
                             legend    = "early",
                             values2   = data.paceChartLateMs,
@@ -613,6 +614,7 @@ private fun AnalyticsContent(
                             values    = data.paceChartHappy,
                             lineColor = FACE_HAPPY_COLOR,
                             xLabels   = data.paceChartLabels,
+                            tipLabels = data.paceChartTips,
                             formatY   = formatY,
                             legend    = "happy",
                             values2   = data.paceChartSad,
@@ -625,6 +627,7 @@ private fun AnalyticsContent(
                             values     = series,
                             lineColor  = accent.copy(alpha = 0.65f),
                             xLabels    = data.paceChartLabels,
+                            tipLabels  = data.paceChartTips,
                             formatY    = formatY,
                             legend     = metric.legend
                         )
@@ -2337,6 +2340,8 @@ private fun PaceSparklineChart(
     values   : List<Float?>,
     lineColor: Color,
     xLabels  : List<String> = emptyList(),
+    // Подпись точки в подсказке по удержанию; пусто — как под осью.
+    tipLabels: List<String> = emptyList(),
     formatY  : (Float) -> String = { "%.1f%%".format(it * 100) },
     legend   : String = "efficiency",
     // Второй ряд — столбик рядом с первым в той же точке (Mean error: ранние
@@ -2433,7 +2438,7 @@ private fun PaceSparklineChart(
                 // Подсказка над графиком: подпись точки и значение(я).
                 if (sel != null) {
                     val fmt = { v: Float? -> v?.let(formatY) ?: "—" }
-                    val head = xLabels.getOrElse(sel) { "" }.replace('\n', ' ')
+                    val head = (tipLabels.getOrNull(sel) ?: xLabels.getOrElse(sel) { "" }).replace('\n', ' ')
                     val v1 = values[sel]
                     val v2 = values2?.getOrNull(sel)
                     fun named(name: String, v: Float) = formatY(v).let { if (it.isBlank()) name else "$name $it" }
