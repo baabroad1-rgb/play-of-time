@@ -150,12 +150,18 @@ jobs:
                   -storepass android -alias androiddebugkey 2>/dev/null \
             | grep -i "SHA256:" || true
 
+      # Артефакт — только для удобства: тот же APK уходит в релиз GitHub и на
+      # хостинг ниже. 20.10.2026 сборка упала здесь на «Artifact storage quota
+      # has been hit» — APK собрался, но не выложился и версия не поднялась.
+      # Поэтому шаг не обязательный, а хранится артефакт сутки, чтобы квота
+      # не забивалась старыми APK по 27 МБ.
       - name: Сохранить APK как артефакт сборки
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ${{ steps.apk.outputs.name }}
           path: ${{ steps.apk.outputs.path }}
-          retention-days: 30
+          retention-days: 1
 
       - name: Вернуть увеличенный номер версии в репозиторий
         shell: bash
