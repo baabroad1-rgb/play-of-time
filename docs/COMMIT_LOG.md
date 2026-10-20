@@ -9,6 +9,10 @@
 
 ## 20 октября 2026
 
+### CI: сбой загрузки артефакта не валит сборку APK, артефакт хранится сутки
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/cb17342c63bd0d0c1da056206c183bc002c375ab)
+
 ### Analytics: на графике за день под столбиками номер сессии вместо времени
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ac143e27ff55b6439e01e139e9bbe3e2acf62194)
@@ -2177,4 +2181,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 129.
+Всего записей: 130.
