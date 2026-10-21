@@ -196,6 +196,14 @@ fun AboutScreen(
                             color    = AboutTextColor.copy(alpha = 0.5f)
                         )
                     )
+                    // Знак авторского права (Alex 2026-10-21).
+                    BasicText(
+                        text  = "© 2026 Alexandr Belyshkin",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color    = AboutTextColor.copy(alpha = 0.5f)
+                        )
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
