@@ -2213,14 +2213,14 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
     PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) })
 }
 
-// Цвета рожиц на графике Faces: весёлая — зелёная (как FaceIcon NICE),
-// грустная — красная (Alex 2026-10-19: «рожица либо зелёная, либо красная»).
+// Цвета рожиц на графике Faces: весёлая — зелёная, грустная — серая (как
+// FaceIcon NICE и SAD; Alex 2026-10-24: «зелёными и серыми вместо красных»).
 private val FACE_HAPPY_COLOR = Color(0xFF3FA864)
-private val FACE_SAD_COLOR   = Color(0xFFDE4264)
+private val FACE_SAD_COLOR   = Color(0xFFB8B8B8)
 
 /**
  * Faces за сессию: по маленькой рожице на каждую попытку, по порядку, с номером
- * попытки под ней (Alex 2026-10-19). Зелёная — весёлая, красная — грустная.
+ * попытки под ней (Alex 2026-10-19). Зелёная — весёлая, серая — грустная.
  * У первой попытки сессии рожицы нет (её не с чем сравнить) — тусклый кружок.
  */
 @Composable

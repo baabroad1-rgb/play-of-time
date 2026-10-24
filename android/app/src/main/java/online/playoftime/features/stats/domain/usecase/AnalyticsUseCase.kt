@@ -232,10 +232,22 @@ class AnalyticsUseCase(
         val scoredAttemptsCount = periodAttempts.count { (it.scm ?: 0.0) > 0.0 }
         val paceOfLearning = if (scoredAttemptsCount > 0) periodScm / scoredAttemptsCount else 0.0
 
-        // ── Practice Density (мин игры / день, всегда ALL_TIME) ──────────
-        val practiceDensity = if (daysSinceStart > 0)
-            (totalPlayTimeMs / 60_000.0) / daysSinceStart
-        else 0.0
+        // ── Practice Density (мин игры / игровой день за ВЫБРАННЫЙ период) ─
+        // Раньше всегда считалось за всё время и показывало одно число на всех
+        // периодах (Alex 2026-10-24: «конечно считать за выбранный период»).
+        // Смысл прежний — среднее время игры за день, в который играл: минуты
+        // игры периода (activeTimeMs его сессий) ÷ число разных дней с
+        // попытками внутри периода.
+        val practiceDensity = run {
+            val inRange = when (period) {
+                PeriodFilter.TODAY, PeriodFilter.WEEK, PeriodFilter.MONTH ->
+                    periodAttempts.filter { it.startTime in fromTime until toTime }
+                else -> periodAttempts
+            }
+            val dayFmt = SimpleDateFormat("yyyyMMdd", Locale.US)
+            val days = inRange.map { dayFmt.format(Date(it.startTime)) }.toSet().size
+            if (days > 0) (periodPlayMs / 60_000.0) / days else 0.0
+        }
 
         // ── Допуск квеста (для подсветки попыток в допуске) ──────────────
         val toleranceMs = localStorage.getQuestCurrentToleranceMs().toDouble()

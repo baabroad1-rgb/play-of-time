@@ -1606,7 +1606,14 @@
       // when the NEXT attempt lands), and counting it as a real 0 was dragging
       // this average down, especially on short periods (Session/Today).
       paceOfLearning: scoredAttemptsCount > 0 ? periodScm / scoredAttemptsCount : 0,
-      practiceDensityMinPerDay: daysSinceStart > 0 ? (totalPlayTimeMs / 60000) / daysSinceStart : 0
+      // Practice for the selected period (Alex 2026-10-24): play minutes of
+      // the period / days with attempts inside it -- it used to be all time
+      // whatever the period, as native.
+      practiceDensityMinPerDay: (() => {
+        const from = periodStart(period);
+        const days = new Set(attempts.filter((a) => a.startTime >= from).map((a) => new Date(a.startTime).toDateString())).size;
+        return days > 0 ? (periodPlayTimeMs / 60000) / days : 0;
+      })()
     };
   }
 
@@ -4324,7 +4331,7 @@
 
 
   // Faces in a session: a small face per attempt, in order, with the attempt
-  // number under it (Alex 2026-10-19) -- green happy, red sad; the first
+  // number under it (Alex 2026-10-19) -- green happy, grey sad; the first
   // attempt of a session has no face (nothing to compare with): a dim ring.
   function smallFaceSvg(happy, size = 16) {
     if (happy === null) return `<svg class="fs-face" width="${size}" height="${size}" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.2"/></svg>`;
@@ -5694,11 +5701,11 @@
     ],
     statPeriod: [
       "**Period** — what the cards below are counted for: the current **Session**, **Today**, a calendar **Week**, a **Month** or **All time**.\nA session that crossed midnight counts whole.",
-      "**Gauge** on the left — today's balance of early and late stops.\n**Not filtered:** the sessions log at the bottom always shows your whole history, and **Practice** in the top card is counted over all time."
+      "**Gauge** on the left — today's balance of early and late stops.\n**Not filtered:** the sessions log at the bottom always shows your whole history."
     ],
     statSummary: [
       "**Totals** for the selected period.\n**Play time** — time spent on the Play screen. **Attempts**, **Sessions** — how many. **Serenity coins** — earned in the period.\n**Wins/precise** — wins, eased quests included; after the slash, exact hits with no tolerance.",
-      "**Pace of play** — attempts per minute of play.\n**Practice** — your average play time per day you played, over all time.\n**Face** on the right sums up the period. Tap it for the full report; it needs at least 30 attempts."
+      "**Pace of play** — attempts per minute of play.\n**Practice** — your average play time per day you played in the period.\n**Face** on the right sums up the period. Tap it for the full report; it needs at least 30 attempts."
     ],
     statChance: [
       "**Chance of win** for the period.\n**Hit rate** — the share of attempts that won, eased quests included.\n**Attempts per win** — what one win costs you on average.",
@@ -5715,7 +5722,7 @@
     ],
     statPace: [
       "**Chart** — how your play changed over the period. Pick what it shows in the **list** at the top: Mean error, Faces, Lucky index, Hit rate or Pace of learning.\n**One bar:** session — one attempt as it is: hit or miss, an exact 3.000, its own error; today — one session, with its number under the bar; week — one day; month — one day; all time — a week, or a month once you have played for 9 months or more.\n**Tap and hold** a bar to see its value.",
-      "**Mean error** — the geometric mean of your early (red) and late (blue) errors, ms, the same as Geometric Mean below.\n**Faces** — how many happy (green) and sad (grey) faces you got: after each attempt the face smiles when you came closer than the attempt before or stayed as close, and turns sad when you went further. In a session: a small face for every attempt, green or red.",
+      "**Mean error** — the geometric mean of your early (red) and late (blue) errors, ms, the same as Geometric Mean below.\n**Faces** — how many happy (green) and sad (grey) faces you got: after each attempt the face smiles when you came closer than the attempt before or stayed as close, and turns sad when you went further. In a session: a small face for every attempt, green or grey.",
       "**Pace of learning** — how good your attempts were: the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. **SC/att** — the average Serenity per attempt.\n**Hit rate** — the share of attempts that won.\n**Lucky index** — how often you hit exactly 3.000, compared with chance."
     ],
     statSessions: [
