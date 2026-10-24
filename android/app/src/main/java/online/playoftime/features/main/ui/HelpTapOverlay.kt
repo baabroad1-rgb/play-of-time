@@ -105,7 +105,7 @@ fun helpPages(topic: HelpTopic): List<String> = when (topic) {
     )
     HelpTopic.STAT_SUMMARY -> listOf(
         "**Totals** for the selected period.\n**Play time** — time spent on the Play screen. **Attempts**, **Sessions** — how many. **Serenity coins** — earned in the period.\n**Wins/precise** — wins, eased quests included; after the slash, exact hits with no tolerance.",
-        "**Pace of play** — attempts per minute of play.\n**Practice** — your average play time per day you played in the period.\n**Face** on the right sums up the period. Tap it for the full report; it needs at least 30 attempts."
+        "**Pace of play** — attempts per minute of play.\n**Practice** — your average play time per day you played in the period.\n**Face** on the right sums up the period. Tap it for the full report; it needs at least 30 attempts, a session — at least 4."
     )
     HelpTopic.STAT_CHANCE -> listOf(
         "**Chance of win** for the period.\n**Hit rate** — the share of attempts that won, eased quests included.\n**Attempts per win** — what one win costs you on average.",

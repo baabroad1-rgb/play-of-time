@@ -44,6 +44,10 @@ import online.playoftime.ui_theme.accentColor
 
 /** Минимум попыток периода, при котором отчёт считается осмысленным. */
 private const val MIN_FACE_ATTEMPTS = 30
+// Морда сессии видна уже с 4 попыток (Alex 2026-10-24: «показывать морду
+// сессии при любом количестве попыток больше трёх») — иначе у брошенной на
+// середине сессии её не видно вовсе. Для дня, недели и т. д. порог прежний.
+internal const val MIN_FACE_ATTEMPTS_SESSION = 4
 
 private const val REPORT_URL = "https://playoftime.online/report.html"
 
@@ -68,7 +72,8 @@ private class PotFaceBridge(private val onReady: (Int) -> Unit) {
 internal fun ReportFaceCard(
     data: AnalyticsData,
     helpMode: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    minAttempts: Int = MIN_FACE_ATTEMPTS
 ) {
     val accent   = MaterialTheme.colorScheme.accentColor
     val storage  = koinInject<LocalStorageService>()
@@ -76,8 +81,8 @@ internal fun ReportFaceCard(
     val token    = remember { storage.getOrCreateSyncToken() }
 
     val query    = "playerId=$playerId&token=$token"
-    val faceUrl  = remember(data.periodFromMs, data.periodToMs) {
-        "$REPORT_URL?$query&mode=face&fromMs=${data.periodFromMs}&toMs=${data.periodToMs}&min=$MIN_FACE_ATTEMPTS"
+    val faceUrl  = remember(data.periodFromMs, data.periodToMs, minAttempts) {
+        "$REPORT_URL?$query&mode=face&fromMs=${data.periodFromMs}&toMs=${data.periodToMs}&min=$minAttempts"
     }
 
     var readyCount by remember(faceUrl) { mutableStateOf<Int?>(null) }
@@ -85,8 +90,8 @@ internal fun ReportFaceCard(
     var reportUrl by remember { mutableStateOf<String?>(null) }
 
     val count   = readyCount
-    val enough  = count == null || count >= MIN_FACE_ATTEMPTS
-    val missing = if (count == null) 0 else (MIN_FACE_ATTEMPTS - count).coerceAtLeast(0)
+    val enough  = count == null || count >= minAttempts
+    val missing = if (count == null) 0 else (minAttempts - count).coerceAtLeast(0)
 
     Box(
         modifier = modifier

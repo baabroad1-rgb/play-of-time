@@ -497,7 +497,10 @@ private fun AnalyticsContent(
         }
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
-                SummaryHeader(data, helpMode = helpMode)
+                SummaryHeader(
+                    data, helpMode = helpMode,
+                    minFaceAttempts = if (selectedPeriod == PeriodFilter.SESSION) MIN_FACE_ATTEMPTS_SESSION else 30
+                )
             }
         }
 
@@ -849,7 +852,7 @@ private fun AnalyticsContent(
 // ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
+private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false, minFaceAttempts: Int = 30) {
     // Две карточки в ряд: слева цифры (2/3 ширины), справа — кнопка отчёта
     // с мордочкой (1/3). Равной высоты (IntrinsicSize.Max).
     Row(
@@ -958,8 +961,9 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false) {
         }
 
         ReportFaceCard(
-            data     = data,
-            helpMode = helpMode,
+            data        = data,
+            helpMode    = helpMode,
+            minAttempts = minFaceAttempts,
             modifier = Modifier.weight(1f).fillMaxHeight()
         )
     }
