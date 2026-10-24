@@ -15,7 +15,8 @@ data class AttemptBarData(
     val errorMs    : Double,   // знак: < 0 = early, > 0 = late, ≈ 0 = win
     val isWin      : Boolean,  // true = попадание в окно точности квеста
     val durationMs : Long  = 0L,  // фактическая длительность попытки в мс
-    val accuracy   : Int   = 2    // кол-во знаков после запятой (2=центисек, 3=мс)
+    val accuracy   : Int   = 2,   // кол-во знаков после запятой (2=центисек, 3=мс)
+    val toleranceMs: Int   = 0    // допуск квеста в момент попытки — для Lucky (2026-10-24)
 )
 
 data class SessionTreeData(

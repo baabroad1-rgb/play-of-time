@@ -586,12 +586,13 @@ private fun AnalyticsContent(
                     Spacer(Modifier.height(6.dp))
                 } else if (series.size >= 2) {
                     // В сессии столбик — одна попытка, без усреднения (Alex
-                    // 2026-10-19). У Hit rate и Lucky там два состояния,
-                    // и подписи — словами, а не числами.
+                    // 2026-10-19). У Hit rate там два состояния — подписи
+                    // словами; у Lucky — шанс зелёной попытки.
                     val formatY: (Float) -> String = when {
                         !isSession                -> metric.formatY
                         metric == PaceMetric.HIT   -> { v -> if (v > 0f) "hit" else "miss" }
-                        metric == PaceMetric.LUCKY -> { v -> if (v > 0f) "3.000" else "—" }
+                        // Lucky попытки сессии — зелёная ÷ её шанс (1/шанс), промах — «—».
+                        metric == PaceMetric.LUCKY -> { v -> if (v > 0f) "%.1f".format(v) else "—" }
                         metric == PaceMetric.FACES -> { _ -> "" }
                         else                       -> metric.formatY
                     }
@@ -2709,38 +2710,14 @@ private fun geomLateMsOf(bars: List<online.playoftime.features.stats.domain.enti
     geometricMean(bars.filter { !it.isWin && it.errorMs > 0.0 }.map { it.errorMs })
 
 /**
- * Lucky index для набора попыток: отношение эмпирической вероятности победы
- * к теоретической (дисперсионной). Чем больше — тем лучше игрок.
- *   slotMs = 100 / 10 / 1 (по большинству попыток в наборе) — ширина слота
- *            совпадает с шириной окна «чистой тройки» числителя (Alex 2026-07-10)
- *   outcomeSlots = (range / slotMs) + 1
- *   dispersion = 1 / outcomeSlots     — теоретическая вероятность попасть в 0 наугад
- *   empirical  = luckyWins / bars.size
- *   lucky      = empirical / dispersion
- * 0.0, если чистых побед не было.
+ * Lucky index строки дерева — общая формула core/utils/LuckyIndex.kt (Alex
+ * 2026-10-24): зелёные попытки против их шанса по разбросу каждого уровня.
+ * 0.0 — ни одной зелёной («no luck»).
  */
-private fun luckyIndexOf(bars: List<online.playoftime.features.stats.domain.entity.AttemptBarData>): Double {
-    if (bars.isEmpty()) return 0.0
-    // Range = P3..P97 персентиль подписанных ошибок (Alex 2026-08-14: та же
-    // обрезка, что и headline Lucky на CHANCE OF WIN в AnalyticsUseCase.kt).
-    // Раньше здесь был буквальный max−min по всем попыткам — один аномальный
-    // выброс (например, случайно затянутый первый тап сессии) раздувал range,
-    // а с ним outcomeSlots и сам Lucky в разы относительно headline-метрики,
-    // которая от таких выбросов защищена персентильной обрезкой.
-    val errs = bars.map { it.errorMs }.sorted()
-    val loIdx = (errs.size * 0.03).toInt().coerceIn(0, errs.size - 1)
-    val hiIdx = (errs.size * 0.97).toInt().coerceIn(0, errs.size - 1)
-    val range = abs(errs[loIdx]) + abs(errs[hiIdx])
-    // Lucky ВСЕГДА в тысячных (Alex 2026-07-30): слот = 1 мс, «чистая тройка» =
-    // ровно 3.000 (±0.5 мс) на всех уровнях. Внутренняя нормировка, не влияет на
-    // att4win в дереве (там победы сессий — с допуском, как Attempts per win).
-    val slotMs = 1.0
-    val outcomeSlots = (range / slotMs).toLong().coerceAtLeast(1L) + 1L
-    val dispersion = 1.0 / outcomeSlots
-    val luckyWins = bars.count { abs(it.errorMs) < 0.5 }
-    val empirical = luckyWins.toDouble() / bars.size
-    return if (dispersion > 0) empirical / dispersion else 0.0
-}
+private fun luckyIndexOf(bars: List<online.playoftime.features.stats.domain.entity.AttemptBarData>): Double =
+    online.playoftime.core.utils.luckyIndex(
+        bars.map { online.playoftime.core.utils.LuckyAttempt(it.durationMs, it.accuracy, it.toleranceMs) }
+    )
 
 private fun SessionTreeData.geomEarlyMs(): Double = geomEarlyMsOf(attemptBars)
 private fun SessionTreeData.geomLateMs(): Double  = geomLateMsOf(attemptBars)

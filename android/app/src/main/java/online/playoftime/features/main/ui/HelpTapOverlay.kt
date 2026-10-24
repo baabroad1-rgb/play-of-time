@@ -109,7 +109,7 @@ fun helpPages(topic: HelpTopic): List<String> = when (topic) {
     )
     HelpTopic.STAT_CHANCE -> listOf(
         "**Chance of win** for the period.\n**Hit rate** — the share of attempts that won, eased quests included.\n**Attempts per win** — what one win costs you on average.",
-        "**Lucky Index** — how much more often you hit exactly 3.000 than blind chance would. Chance here is one millisecond out of the spread of your results.\n1 = no better than chance, above 1 = skill. It appears after your first exact 3.000."
+        "**Lucky Index** — how much more often your attempts are green than blind chance would make them. Chance here is the green window (with any easing) out of the spread of your results at that level.\n1 = no better than chance, above 1 = skill. It appears after your first green attempt."
     )
     HelpTopic.STAT_GEOM -> listOf(
         "**Geometric mean ÷ spread**, with the extreme 3% of results cut off at each end.\n**Early** — your typical early miss. **Late** — your typical late miss. **Absolute** — your overall lean: minus = early, plus = late.\nA geometric mean is swayed less by a few wild misses than an ordinary average.",
@@ -121,19 +121,19 @@ fun helpPages(topic: HelpTopic): List<String> = when (topic) {
         "**White ticks** — your most frequent miss on each side, written below as «0.020 × 6»: that miss, repeated 6 times.\nOnly misses repeated at least twice count."
     )
     HelpTopic.STAT_PACE -> listOf(
-        "**Chart** — how your play changed over the period. Pick what it shows in the **list** at the top: Mean error, Faces, Lucky index, Hit rate or Pace of learning.\n**One bar:** session — one attempt as it is: hit or miss, an exact 3.000, its own error; today — one session, with its number under the bar; week — one day; month — one day; all time — a week, or a month once you have played for 9 months or more.\n**Tap and hold** a bar to see its value.",
+        "**Chart** — how your play changed over the period. Pick what it shows in the **list** at the top: Mean error, Faces, Lucky index, Hit rate or Pace of learning.\n**One bar:** session — one attempt as it is: hit or miss, how unlikely its green was, its own error; today — one session, with its number under the bar; week — one day; month — one day; all time — a week, or a month once you have played for 9 months or more.\n**Tap and hold** a bar to see its value.",
         "**Mean error** — the geometric mean of your early (red) and late (blue) errors, ms, the same as Geometric Mean below.\n**Faces** — how many happy (green) and sad (grey) faces you got: after each attempt the face smiles when you came closer than the attempt before or stayed as close, and turns sad when you went further. In a session: a small face for every attempt, green or grey.",
-        "**Pace of learning** — how good your attempts were: the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. **SC/att** — the average Serenity per attempt.\n**Hit rate** — the share of attempts that won.\n**Lucky index** — how often you hit exactly 3.000, compared with chance."
+        "**Pace of learning** — how good your attempts were: the average share of the maximum Serenity an attempt can earn at its level, so levels compare fairly. **SC/att** — the average Serenity per attempt.\n**Hit rate** — the share of attempts that won.\n**Lucky index** — how often you are green, compared with chance."
     )
     HelpTopic.STAT_SESSIONS -> listOf(
-        "**Sessions log** — your whole history, whatever period is selected: year, month, week, day, session. Tap a row to unfold it.\n**lucky** — the Lucky Index of the row («no luck» = no exact 3.000 in the session). **mean** — typical early / late miss, ms. **att4win** — attempts per win.",
+        "**Sessions log** — your whole history, whatever period is selected: year, month, week, day, session. Tap a row to unfold it.\n**lucky** — the Lucky Index of the row («no luck» = no green attempt in the session). **mean** — typical early / late miss, ms. **att4win** — attempts per win.",
         "**Under each row:** play time · win %. Above the day, both are averages over the days you played.\n**Thumb up:** session — its quest was taken (eased too); day — at least one quest was taken; week, month, year — at least half of the days played are up.\n**👑** — a session whose quest was taken."
     )
     HelpTopic.RANKS_NAME -> listOf(
         "**Your name** in the leaderboard.\nType a name (up to 24 characters) and tap **Save**. Until you save, the automatic name is used; saving an empty field gives you a new automatic name."
     )
     HelpTopic.RANKS_TABLE -> listOf(
-        "**Leaderboard** — every player who has played.\n**Lvl** — the quest reached (level.task). **Coin** — all Serenity earned. **Acc%** — the share of winning attempts. **Luck** — how much more often than chance they hit exactly 3.000; above 1 = skill.",
+        "**Leaderboard** — every player who has played.\n**Lvl** — the quest reached (level.task). **Coin** — all Serenity earned. **Acc%** — the share of winning attempts. **Luck** — how much more often than chance their attempts are green; above 1 = skill.",
         "Tap a **column header** to sort by it, best first; tap it again to reverse. The highlighted column is the current sort.\nYour own row is **orange**. Tap **another player's row** to compare yourself with them."
     )
 }

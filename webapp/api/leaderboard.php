@@ -50,7 +50,7 @@ $attStmt = $pdo->prepare(
 $attStmt->execute();
 
 $errorsByPlayer = array();    // playerId => [error_ms, ...], for the P3/P97 range
-$strictTrueThree = array();   // playerId => count of error_ms === 0 (Lucky Index numerator)
+$luckyItems = array();        // playerId => [[accuracy, error_ms, tolerance_ms, isGreen], ...] (Lucky Index)
 $tolerantTrueThree = array(); // playerId => count passing is_true_three_win() (Hit Rate numerator)
 $firstAt = array();           // playerId => earliest recorded_at (Alex 2026-09-19: "как давно начал")
 $tiers = array();             // playerId => accuracyTier(1..3) => per-level accumulators (same-level comparison)
@@ -60,10 +60,8 @@ foreach ($attStmt->fetchAll() as $a) {
     if (!isset($players[$pid])) continue;
     $err = (int) $a["errorMs"];
     $errorsByPlayer[$pid][] = $err;
-    if ($err === 0) {
-        $strictTrueThree[$pid] = (isset($strictTrueThree[$pid]) ? $strictTrueThree[$pid] : 0) + 1;
-    }
     $isTolerantWin = is_true_three_win((int) $a["accuracy"], $err, (int) $a["toleranceMs"]);
+    $luckyItems[$pid][] = array((int) $a["accuracy"], $err, (int) $a["toleranceMs"], $isTolerantWin);
     if ($isTolerantWin) {
         $tolerantTrueThree[$pid] = (isset($tolerantTrueThree[$pid]) ? $tolerantTrueThree[$pid] : 0) + 1;
     }
@@ -74,12 +72,12 @@ foreach ($attStmt->fetchAll() as $a) {
     // Per-level (accuracy tier) accumulators — accuracy 1/2/3 == game level 1/2/3.
     $tk = (int) $a["accuracy"];
     if (!isset($tiers[$pid][$tk])) {
-        $tiers[$pid][$tk] = array("errors" => array(), "strict" => 0, "tol" => 0, "wins" => 0, "attempts" => 0, "sc" => 0.0, "first" => $rec);
+        $tiers[$pid][$tk] = array("errors" => array(), "items" => array(), "tol" => 0, "wins" => 0, "attempts" => 0, "sc" => 0.0, "first" => $rec);
     }
     $t =& $tiers[$pid][$tk];
     $t["errors"][] = $err;
+    $t["items"][] = array($tk, $err, (int) $a["toleranceMs"], $isTolerantWin);
     $t["attempts"]++;
-    if ($err === 0) $t["strict"]++;
     if ($isTolerantWin) $t["tol"]++;
     if ((int) $a["isWin"] === 1) $t["wins"]++;
     $t["sc"] += (float) $a["sc"];
@@ -89,20 +87,10 @@ foreach ($attStmt->fetchAll() as $a) {
 
 // Shared Hit Rate / Lucky Index math (same formulas the overall numbers use,
 // so a per-level number is directly comparable to the overall one).
-function lb_hit_and_lucky($errors, $attempts, $strictWins, $tolerantWins) {
-    sort($errors);
-    $n = count($errors);
-    $lo = 0; $hi = 0;
-    if ($n > 0) {
-        $lo = $errors[min($n - 1, max(0, (int) ($n * 0.03)))];
-        $hi = $errors[min($n - 1, max(0, (int) ($n * 0.97)))];
-    }
-    $span = abs($lo) + abs($hi);
-    $slots = max(1, (int) $span) + 1;
-    $empirical = $attempts > 0 ? $strictWins / $attempts : 0.0;
+function lb_hit_and_lucky($items, $attempts, $tolerantWins) {
     return array(
         $attempts > 0 ? round($tolerantWins / $attempts * 100, 1) : 0.0,
-        round($empirical / (1.0 / $slots), 2)
+        lucky_index($items)
     );
 }
 
@@ -130,7 +118,6 @@ foreach ($players as $pid => $p) {
     }
 
     $attemptsTotal = $p["attemptsTotal"];
-    $strictWins = isset($strictTrueThree[$pid]) ? $strictTrueThree[$pid] : 0;
     $tolerantWins = isset($tolerantTrueThree[$pid]) ? $tolerantTrueThree[$pid] : 0;
 
     // Hit Rate — matches Analytics' "CHANCE OF WIN" card's Hit rate row
@@ -145,21 +132,16 @@ foreach ($players as $pid => $p) {
     // quest's digit range).
     $p["combinedScore"] = $p["levelId"] * 1000 + $p["taskId"] * 100 + min(99, $p["scTotal"]);
 
-    $rangeSpanMs = abs($rangeEarlyMs) + abs($rangeLateMs);
-    // Matches (rangeSpanMs / slotMs).toLong().coerceAtLeast(1L) + 1L — a
-    // minimum of 2 slots even when every attempt landed at the same error,
-    // fixed 1ms slot (project-standard, see AnalyticsUseCase.kt).
-    $outcomeSlots = max(1, (int) $rangeSpanMs) + 1;
-    $dispersion = 1.0 / $outcomeSlots;
-    $empirical = $attemptsTotal > 0 ? $strictWins / $attemptsTotal : 0.0;
-    $p["luckyIndex"] = $dispersion > 0 ? round($empirical / $dispersion, 2) : 0.0;
+    // Lucky Index: green attempts against their chance by the spread of each
+    // level (Alex 2026-10-24, lucky_index() in _lib.php).
+    $p["luckyIndex"] = lucky_index(isset($luckyItems[$pid]) ? $luckyItems[$pid] : array());
 
     $p["firstAttemptAt"] = isset($firstAt[$pid]) ? lb_iso($firstAt[$pid]) : null;
 
     $tierOut = array();
     if (isset($tiers[$pid])) {
         foreach ($tiers[$pid] as $tk => $t) {
-            $hl = lb_hit_and_lucky($t["errors"], $t["attempts"], $t["strict"], $t["tol"]);
+            $hl = lb_hit_and_lucky($t["items"], $t["attempts"], $t["tol"]);
             $tierOut[(string) $tk] = array(
                 "attempts" => $t["attempts"],
                 "wins" => $t["wins"],

@@ -180,27 +180,16 @@ class GetQuestSummaryUseCase(private val database: TimeDatabase) {
     }
 
     /**
-     * Lucky index — та же формула, что на аналитике (AnalyticsUseCase / StatScreen.luckyIndexOf,
-     * выровнено 2026-08-14): range = P3..P97 персентиль подписанных ошибок (не буквальный
-     * max−min — иначе один выброс раздувает outcomeSlots и Lucky в разы), слот ВСЕГДА 1 мс
-     * («как level 3», не по точности попытки/большинства), «чистая тройка» числителя —
-     * ровно 3.000 (±0.5 мс). Раньше здесь был другой, ненормированный вариант (slot по
-     * большинству accuracy + max−min range) — давал другое число, чем аналитика, на тех же
-     * данных.
+     * Lucky index — общая формула core/utils/LuckyIndex.kt, та же, что на
+     * Analytics и в дереве (Alex 2026-10-24): зелёные попытки против их шанса
+     * по разбросу каждого уровня.
      */
-    private fun luckyIndex(attempts: List<TryDatabaseModel>): Double {
-        if (attempts.isEmpty()) return 0.0
-        val errs = attempts.map { errMs(it) }.sorted()
-        val loIdx = (errs.size * 0.03).toInt().coerceIn(0, errs.size - 1)
-        val hiIdx = (errs.size * 0.97).toInt().coerceIn(0, errs.size - 1)
-        val range = abs(errs[loIdx]) + abs(errs[hiIdx])
-        val slotMs = 1.0
-        val outcomeSlots = (range / slotMs).toLong().coerceAtLeast(1L) + 1L
-        val dispersion = 1.0 / outcomeSlots
-        val luckyWins = attempts.count { absErrMs(it) < 0.5 }
-        val empirical = luckyWins.toDouble() / attempts.size
-        return empirical / dispersion
-    }
+    private fun luckyIndex(attempts: List<TryDatabaseModel>): Double =
+        online.playoftime.core.utils.luckyIndex(
+            attempts.map {
+                online.playoftime.core.utils.LuckyAttempt(it.endTime - it.startTime, it.accuracy, it.toleranceMs)
+            }
+        )
 
     private fun ceilMinutes(ms: Double): Int =
         (((ms.toLong()) + 59_999L) / 60_000L).toInt()

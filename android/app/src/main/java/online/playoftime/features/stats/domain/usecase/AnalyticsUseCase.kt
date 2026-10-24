@@ -3,6 +3,9 @@ package online.playoftime.features.stats.domain.usecase
 import online.playoftime.core.data.LocalStorageService
 import online.playoftime.core.utils.PeriodFilter
 import online.playoftime.core.utils.resolutionFloorMs
+import online.playoftime.core.utils.LuckyAttempt
+import online.playoftime.core.utils.luckySpans
+import online.playoftime.core.utils.luckyIndex as computeLuckyIndex
 import online.playoftime.database.SessionDatabaseModel
 import online.playoftime.database.TimeDatabase
 import online.playoftime.database.TryDatabaseModel
@@ -194,23 +197,10 @@ class AnalyticsUseCase(
         val topLate  = topDeviations(lateRoundedMs,  negated = false)
 
         // ── Lucky Index ───────────────────────────────────────────────────
-        // Lucky = эмпирическая вероятность (чистые тройки / все попытки) ÷
-        // теоретическая (1 благоприятный слот / все слоты диапазона разброса).
-        // ВАЖНО (Alex 2026-07-30): Lucky ВСЕГДА считается «как на уровне 3» —
-        // и числитель, и знаменатель в тысячных, независимо от реального уровня
-        // попыток. Слот = 1 мс; «чистая тройка» числителя = ровно 3.000 (±0.5 мс).
-        // Это внутренняя нормировка (пользователю нигде больше не видна) — делает
-        // Lucky сравнимым между уровнями. Отдельный счёт luckyWins, чтобы НЕ задеть
-        // True Three Hit Rate (там тройка считается в точности своего уровня).
-        val luckyWins      = periodAttempts.count {
-            abs((it.endTime - it.startTime - aimTime).toDouble()) < 0.5
-        }
-        val slotMs         = 1.0
-        val rangeSpanMs    = abs(rangeEarlyMs) + abs(rangeLateMs)
-        val outcomeSlots   = (rangeSpanMs / slotMs).toLong().coerceAtLeast(1L) + 1L
-        val dispersionProb = 1.0 / outcomeSlots
-        val empiricalProb  = if (periodTotal > 0) luckyWins.toDouble() / periodTotal else 0.0
-        val luckyIndex     = if (dispersionProb > 0) empiricalProb / dispersionProb else 0.0
+        // Зелёные против их шанса по разбросу каждого уровня (Alex 2026-10-24,
+        // формула — core/utils/LuckyIndex.kt). Раньше: только «ровно 3.000»
+        // на сетке 1 мс на любом уровне, без учёта смягчения.
+        val luckyIndex = luckyIndexOf(periodAttempts, aimTime)
 
         // ── Pace of Play (попыток/мин за период) ─────────────────────────
         // Play Time = сумма activeTimeMs (только пока MainScreen был активен),
@@ -288,7 +278,8 @@ class AnalyticsUseCase(
                     errorMs    = errMs,
                     isWin      = isTrueThree || inTolerance,
                     durationMs = att.endTime - att.startTime,
-                    accuracy   = att.accuracy
+                    accuracy   = att.accuracy,
+                    toleranceMs = att.toleranceMs
                 )
             }
 
@@ -470,7 +461,13 @@ class AnalyticsUseCase(
                             ordered[i].scm?.takeIf { it > 0.0 }?.let { (it / peakScmForAccuracy(ordered[i].accuracy)).toFloat() }
                         },
                         hit    = idxs.map { i -> if (countTrueThree(listOf(ordered[i]), aimTime) > 0) 100f else 0f },
-                        lucky  = idxs.map { i -> if (abs(err(i)) < 0.5) 1f else 0f },
+                        // Lucky одной попытки — та же формула на одной попытке:
+                        // зелёная ÷ её шанс по разбросу уровня в этой сессии.
+                        lucky  = run {
+                            val la = ordered.map { it.toLucky(aimTime) }
+                            val spans = luckySpans(la)
+                            la.map { a -> if (a.isGreen) (1.0 / a.chance(spans.getValue(a.accuracy))).toFloat() else 0f }
+                        },
                         early  = idxs.map { i -> err(i).takeIf { it < 0 }?.let { abs(it).toFloat() } },
                         late   = idxs.map { i -> err(i).takeIf { it > 0 }?.toFloat() },
                         happy  = idxs.map { i -> if (faceOf[ordered[i]] == true) 1f else null },
@@ -596,15 +593,11 @@ class AnalyticsUseCase(
     }
 
     /** Lucky index набора попыток — та же формула, что headline Lucky выше. */
-    private fun luckyIndexOf(attempts: List<TryDatabaseModel>, aimTime: Int): Double {
-        if (attempts.isEmpty()) return 0.0
-        val errs = attempts.map { (it.endTime - it.startTime - aimTime).toDouble() }.sorted()
-        val lo = errs[(errs.size * 0.03).toInt().coerceIn(0, errs.size - 1)]
-        val hi = errs[(errs.size * 0.97).toInt().coerceIn(0, errs.size - 1)]
-        val slots = ((abs(lo) + abs(hi)) / 1.0).toLong().coerceAtLeast(1L) + 1L
-        val luckyWins = errs.count { abs(it) < 0.5 }
-        return luckyWins.toDouble() / errs.size * slots
-    }
+    private fun luckyIndexOf(attempts: List<TryDatabaseModel>, aimTime: Int): Double =
+        computeLuckyIndex(attempts.map { it.toLucky(aimTime) })
+
+    private fun TryDatabaseModel.toLucky(aimTime: Int) =
+        LuckyAttempt(endTime - startTime, accuracy, toleranceMs, aimTime)
 
     private fun countTrueThree(attempts: List<TryDatabaseModel>, aimTime: Int): Int {
         return attempts.count { attempt ->

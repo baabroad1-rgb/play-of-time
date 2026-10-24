@@ -106,6 +106,43 @@ function is_true_three_win($accuracyOrdinal, $errorMs, $toleranceMs) {
     return abs($roundedErrMs) <= $winTol + 0.5;
 }
 
+// Lucky Index (Alex 2026-10-24) -- the same formula as native
+// core/utils/LuckyIndex.kt and the web app's luckyIndexOf():
+//   theoretical probability of a green attempt = green window / whole range,
+//     green window = 2 * floor(tolerance / cell) + 1 cells of the level
+//     (tolerance = the quest's easing at that moment, 0 without easing),
+//     whole range  = floor(span / cell) + 1 cells, span = |P3| + |P97| of the
+//     signed errors of THAT level's attempts in the set;
+//   empirical probability = green attempts / all attempts;
+//   Lucky = empirical / average theoretical. 0 when nothing was green.
+// $items: list of [accuracyOrdinal, errorMs, toleranceMs, isGreen].
+function lucky_index($items) {
+    $n = count($items);
+    if ($n === 0) return 0.0;
+    $byAcc = array();
+    foreach ($items as $it) $byAcc[(int) $it[0]][] = (int) $it[1];
+    $span = array();
+    foreach ($byAcc as $acc => $errs) {
+        sort($errs);
+        $m = count($errs);
+        $lo = $errs[min($m - 1, max(0, (int) ($m * 0.03)))];
+        $hi = $errs[min($m - 1, max(0, (int) ($m * 0.97)))];
+        $span[$acc] = abs($lo) + abs($hi);
+    }
+    $greens = 0;
+    $sumP = 0.0;
+    foreach ($items as $it) {
+        $acc = (int) $it[0];
+        $cell = pow(10, 3 - $acc);
+        $k = 2 * (int) floor(max(0, (int) $it[2]) / $cell) + 1;
+        $all = (int) floor($span[$acc] / $cell) + 1;
+        $sumP += min(1.0, $k / $all);
+        if ($it[3]) $greens++;
+    }
+    if ($greens === 0 || $sumP <= 0) return 0.0;
+    return round(($greens / $n) / ($sumP / $n), 2);
+}
+
 // UUID-ish shape check on playerId — not a strict RFC4122 validator, just
 // enough to reject junk before it reaches a query.
 function looks_like_id($value) {
