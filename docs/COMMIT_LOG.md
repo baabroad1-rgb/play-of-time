@@ -9,6 +9,10 @@
 
 ## 25 октября 2026 — версия v15.31
 
+### behavioral_profile.py: 7 черт, пороги и утверждённые абзацы
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/aa8f0b91b449de4b4388e5287dfbbbeecaf6f645)
+
 ### Черты поведения: черновик 2 — два шаблона и компенсация
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b3f2aafb86bdabff2d723de6ef28a180aba61e13)
@@ -2235,4 +2239,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 142.
+Всего записей: 143.
