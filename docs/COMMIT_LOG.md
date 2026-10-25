@@ -9,6 +9,10 @@
 
 ## 25 октября 2026 — версия v15.31
 
+### Черты поведения: черновик 2 — два шаблона и компенсация
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b3f2aafb86bdabff2d723de6ef28a180aba61e13)
+
 ### Черты поведения: черновик порогов и 21 абзаца на утверждение
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/e20fba78a553cf59d2bbc1d3770effd719c0c880)
@@ -2231,4 +2235,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 141.
+Всего записей: 142.
