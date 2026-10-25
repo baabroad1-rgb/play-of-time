@@ -584,6 +584,11 @@ private fun AnalyticsContent(
                     // (Alex 2026-10-19).
                     SessionFacesStrip(data.paceChartHappy, data.paceChartSad)
                     Spacer(Modifier.height(6.dp))
+                } else if (metric == PaceMetric.HIT && isSession && series.isNotEmpty()) {
+                    // Hit rate в сессии — ряд кружков, по одному на попытку:
+                    // зелёный — попадание, серый — промах (Alex 2026-10-25).
+                    SessionHitStrip(data.paceChartHitRate)
+                    Spacer(Modifier.height(6.dp))
                 } else if (series.size >= 2) {
                     // В сессии столбик — одна попытка, без усреднения (Alex
                     // 2026-10-19). У Hit rate там два состояния — подписи
@@ -2265,6 +2270,52 @@ private fun SessionFacesStrip(happy: List<Float?>, sad: List<Float?>) {
         Spacer(Modifier.width(8.dp))
         SmallFace(false, 9.dp)
         BasicText("sad", style = labelStyle(8.sp, color = FACE_SAD_COLOR.copy(alpha = 0.8f)))
+    }
+}
+
+/**
+ * Hit rate за сессию: по кружку на каждую попытку, по порядку, с номером под
+ * ним (Alex 2026-10-25): зелёный — попадание, серый — промах.
+ */
+@Composable
+private fun SessionHitStrip(hits: List<Float?>) {
+    val textColor = MaterialTheme.colorScheme.baseTextColor
+    val cell = 22.dp
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val perRow = (maxWidth / cell).toInt().coerceAtLeast(1)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            hits.indices.chunked(perRow).forEach { rowIdx ->
+                Row {
+                    rowIdx.forEach { i ->
+                        Column(Modifier.width(cell), horizontalAlignment = Alignment.CenterHorizontally) {
+                            HitDot((hits[i] ?: 0f) > 0f, 14.dp)
+                            BasicText(
+                                "${i + 1}",
+                                style = labelStyle(7.sp, color = textColor.copy(alpha = 0.43f))
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Row(
+        modifier              = Modifier.padding(top = 4.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        HitDot(true, 9.dp)
+        BasicText("hit", style = labelStyle(8.sp, color = FACE_HAPPY_COLOR.copy(alpha = 0.8f)))
+        Spacer(Modifier.width(8.dp))
+        HitDot(false, 9.dp)
+        BasicText("miss", style = labelStyle(8.sp, color = FACE_SAD_COLOR.copy(alpha = 0.8f)))
+    }
+}
+
+@Composable
+private fun HitDot(hit: Boolean, size: Dp) {
+    Canvas(Modifier.size(size)) {
+        drawCircle(if (hit) FACE_HAPPY_COLOR else FACE_SAD_COLOR, this.size.minDimension / 2f)
     }
 }
 

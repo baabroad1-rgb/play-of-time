@@ -3083,3 +3083,12 @@ Alex: «сделать luck coefficient для индульгированных 
 **График за сессию:** у зелёной попытки столбик = 1 ÷ её шанс (насколько маловероятной была удача), у промаха пусто.
 
 Хелп (натив и веб): Lucky — «how much more often your attempts are green than blind chance would make them…», «no luck = no green attempt», Luck в лидерборде. Веб: app.20261024c.js.
+
+## 2026-10-25 — Расчистка бэклога: копирайт, Hit rate за сессию, выгрузка в Excel
+
+Шли по бэклогу вопрос за вопросом; решения — в `docs/TASKS.md`, раздел «Расчистка бэклога 25.10.2026».
+
+- **Копирайт** в About (натив и веб): «©baa, 2026» вместо «© 2026 Alexandr Belyshkin».
+- **Hit rate за сессию** — ряд кружков по порядку попыток с номерами: зелёный — попадание, серый — промах (как рожицы Faces). Хелп: «a green or grey dot for hit or miss».
+- **Выгрузка в Excel** — новые колонки после Hand: Serenity coins, Pause before (с, пауза перед попыткой в той же сессии, у первой пусто), Green (yes/no, с учётом смягчения, как Hit rate), Tolerance (мс, допуск в момент попытки), Session early misses и Session late misses (ранние и поздние промахи всей сессии; зелёные — не промахи). Натив: запрос `exportToExcel` берёт ещё startTime, endTime, scm, toleranceMs; колонки считает `ExportToExcelUseCase`; лист строит одна функция `buildStatWorkbook` для «Сохранить» и «Поделиться» (раньше было две копии кода). Веб: те же колонки в Excel и CSV.
+- Веб: app.20261025a.js, styles.20261025a.css. Проверено в Chromium: кружки за сессию, копирайт, заголовки и строки выгрузки.

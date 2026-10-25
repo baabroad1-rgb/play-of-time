@@ -55,18 +55,15 @@ fun writeExcelToDownloads(
     }
 }
 
-private fun buildStatWorkbook(dataList: List<ExcelStatisticState>): XSSFWorkbook {
+/**
+ * Лист выгрузки попыток — один для «Сохранить в Загрузки» и «Поделиться»
+ * (ExcelShareUtil): раньше у каждого была своя копия, и колонки расходились.
+ */
+fun buildStatWorkbook(dataList: List<ExcelStatisticState>): XSSFWorkbook {
     val workbook = XSSFWorkbook()
     val sheet    = workbook.createSheet("Data Sheet")
     val header   = sheet.createRow(0)
-    header.createCell(0).setCellValue(StatisticExcelFields.DATE.columnName)
-    header.createCell(1).setCellValue(StatisticExcelFields.TIME.columnName)
-    header.createCell(2).setCellValue(StatisticExcelFields.SESSION_NUMBER.columnName)
-    header.createCell(3).setCellValue(StatisticExcelFields.ATTEMPT_NUMBER.columnName)
-    header.createCell(4).setCellValue(StatisticExcelFields.ATTEMPT_RESULT.columnName)
-    header.createCell(5).setCellValue(StatisticExcelFields.ERROR_TIME.columnName)
-    header.createCell(6).setCellValue(StatisticExcelFields.ACCURACY.columnName)
-    header.createCell(7).setCellValue("Hand")
+    StatisticExcelFields.entries.forEachIndexed { c, f -> header.createCell(c).setCellValue(f.columnName) }
     dataList.forEachIndexed { index, entity ->
         val row = sheet.createRow(index + 1)
         row.createCell(0).setCellValue(entity.date)
@@ -77,6 +74,12 @@ private fun buildStatWorkbook(dataList: List<ExcelStatisticState>): XSSFWorkbook
         row.createCell(5).setCellValue(entity.errorTime.toDouble())
         row.createCell(6).setCellValue(entity.accuracy)
         row.createCell(7).setCellValue(entity.hand)
+        entity.sc?.let { row.createCell(8).setCellValue(it) }
+        entity.pauseSec?.let { row.createCell(9).setCellValue(it) }
+        row.createCell(10).setCellValue(if (entity.isGreen) "yes" else "no")
+        row.createCell(11).setCellValue(entity.toleranceMs.toDouble())
+        row.createCell(12).setCellValue(entity.sessionEarly.toDouble())
+        row.createCell(13).setCellValue(entity.sessionLate.toDouble())
     }
     return workbook
 }

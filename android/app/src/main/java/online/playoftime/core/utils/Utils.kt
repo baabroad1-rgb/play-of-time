@@ -86,7 +86,14 @@ enum class StatisticExcelFields(val columnName: String) {
     ATTEMPT_NUMBER("Attempt number"),
     ATTEMPT_RESULT("Attempt result, ms"),
     ERROR_TIME("Error time, ms"),
-    ACCURACY("Accuracy")
+    ACCURACY("Accuracy"),
+    HAND("Hand"),
+    SC("Serenity coins"),
+    PAUSE("Pause before, s"),
+    GREEN("Green"),
+    TOLERANCE("Tolerance, ms"),
+    SESSION_EARLY("Session early misses"),
+    SESSION_LATE("Session late misses")
 }
 
 fun formatTime(time: Long, accuracy: Accuracy): String {

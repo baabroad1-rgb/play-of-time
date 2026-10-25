@@ -51,29 +51,7 @@ suspend fun shareExcelAsync(
         // Android нет (NoClassDefFoundError). Остаёмся на XSSF.
         val file = withContext(Dispatchers.IO) {
             val data = exportUseCase()
-            val workbook = XSSFWorkbook().apply {
-                val sheet = createSheet("Data Sheet")
-                val header = sheet.createRow(0)
-                header.createCell(0).setCellValue(StatisticExcelFields.DATE.columnName)
-                header.createCell(1).setCellValue(StatisticExcelFields.TIME.columnName)
-                header.createCell(2).setCellValue(StatisticExcelFields.SESSION_NUMBER.columnName)
-                header.createCell(3).setCellValue(StatisticExcelFields.ATTEMPT_NUMBER.columnName)
-                header.createCell(4).setCellValue(StatisticExcelFields.ATTEMPT_RESULT.columnName)
-                header.createCell(5).setCellValue(StatisticExcelFields.ERROR_TIME.columnName)
-                header.createCell(6).setCellValue(StatisticExcelFields.ACCURACY.columnName)
-                header.createCell(7).setCellValue("Hand")
-                data.forEachIndexed { i, entity ->
-                    val row = sheet.createRow(i + 1)
-                    row.createCell(0).setCellValue(entity.date)
-                    row.createCell(1).setCellValue(entity.time)
-                    row.createCell(2).setCellValue(entity.sessionNumber.toDouble())
-                    row.createCell(3).setCellValue(entity.attemptNumber.toDouble())
-                    row.createCell(4).setCellValue(entity.attemptResult.toDouble())
-                    row.createCell(5).setCellValue(entity.errorTime.toDouble())
-                    row.createCell(6).setCellValue(entity.accuracy)
-                    row.createCell(7).setCellValue(entity.hand)
-                }
-            }
+            val workbook = online.playoftime.core.utils.buildStatWorkbook(data)
 
             val excelDir = File(context.cacheDir, "excel").apply { mkdirs() }
             val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())

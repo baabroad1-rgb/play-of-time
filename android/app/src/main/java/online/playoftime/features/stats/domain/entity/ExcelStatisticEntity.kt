@@ -8,5 +8,9 @@ data class ExcelStatisticEntity (
     val attemptResult: Long,
     val errorTime: Long,
     val accuracy: Int,
-    val hand: String
+    val hand: String,
+    val startTime: Long,
+    val endTime: Long,
+    val scm: Double?,
+    val toleranceMs: Int
 )

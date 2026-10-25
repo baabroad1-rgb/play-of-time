@@ -224,7 +224,10 @@ interface StatisticDao {
             "endTime - startTime attemptResult," +
             "(endTime - startTime) - :aimTime errorTime," +
             " accuracy accuracy," +
-            " hand hand" +
+            " hand hand," +
+            // Для новых колонок выгрузки (Alex 2026-10-25): пауза, SC, зелёная,
+            // допуск, баланс сессии — считаются в ExportToExcelUseCase.
+            " startTime startTime, endTime endTime, scm scm, toleranceMs toleranceMs" +
             " from TryDatabaseModel order by startTime")
     suspend fun exportToExcel(aimTime: Int): List<ExcelStatisticEntity>
 

@@ -196,9 +196,9 @@ fun AboutScreen(
                             color    = AboutTextColor.copy(alpha = 0.5f)
                         )
                     )
-                    // Знак авторского права (Alex 2026-10-21).
+                    // Знак авторского права (Alex 2026-10-21; текст — 2026-10-24).
                     BasicText(
-                        text  = "© 2026 Alexandr Belyshkin",
+                        text  = "©baa, 2026",
                         style = TextStyle(
                             fontSize = 12.sp,
                             color    = AboutTextColor.copy(alpha = 0.5f)
