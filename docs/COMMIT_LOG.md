@@ -9,6 +9,10 @@
 
 ## 25 октября 2026 — версия v15.31
 
+### Бэклог: чистка базы отложена до выкладки в Google Play
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/9e34354c12256d035b7947b28fed81f3a93c0550)
+
 ### behavioral_profile.py: 7 черт, пороги и утверждённые абзацы
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/aa8f0b91b449de4b4388e5287dfbbbeecaf6f645)
@@ -2239,4 +2243,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 143.
+Всего записей: 144.
