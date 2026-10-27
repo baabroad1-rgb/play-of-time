@@ -25,6 +25,8 @@ class ExportToExcelUseCase(
                 if (it.errorTime > 0) late[it.sessionNumber]  = (late[it.sessionNumber] ?: 0) + 1
             }
         }
+        val localDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val localTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US)
         val result = mutableListOf<ExcelStatisticState>()
         var attemptNumber = 1L
         val lastEnd = HashMap<Long, Long>()   // сессия → конец её предыдущей попытки
@@ -32,8 +34,10 @@ class ExportToExcelUseCase(
         for (i in list.indices) {
             val it = list[i]
             val item = ExcelStatisticState(
-                date = it.date,
-                time = it.time,
+                // Местное время телефона (Alex 2026-10-27), а не date()/time()
+                // из запроса — те в UTC, у московского игрока на 3 часа меньше.
+                date = localDate.format(java.util.Date(it.startTime)),
+                time = localTime.format(java.util.Date(it.startTime)),
                 sessionNumber = it.sessionNumber,
                 attemptNumber = attemptNumber,
                 attemptResult = it.attemptResult,

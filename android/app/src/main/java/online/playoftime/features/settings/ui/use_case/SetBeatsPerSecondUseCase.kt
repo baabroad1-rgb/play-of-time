@@ -6,6 +6,6 @@ class SetBeatsPerSecondUseCase (
     private val localStorage: LocalStorageService
 ) {
     operator fun invoke(beatsCount: Int) {
-        localStorage.putBeatsPerSecond(beatsCount)
+        localStorage.putBeatsPerSecond(beatsCount)   // внутри ограничивается 1..16
     }
 }

@@ -5,6 +5,7 @@ import online.playoftime.core.utils.Accuracy
 import online.playoftime.core.utils.Hand
 import online.playoftime.core.utils.PeriodFilter
 import online.playoftime.core.utils.defaultAimTime
+import online.playoftime.core.utils.beatsPerSecondLength
 import online.playoftime.core.utils.defaultBeatsPerSecond
 
 class LocalStorageException : Exception() {
@@ -212,13 +213,17 @@ class LocalStorageService(
     }
 
     override fun putBeatsPerSecond(value: Int) {
-        preferences.edit().putInt(beatsPerSecondKey, value).apply()
+        preferences.edit().putInt(beatsPerSecondKey, value.coerceIn(1, beatsPerSecondLength)).apply()
     }
 
 
     override fun getBeatsPerSecond(): Int {
         try {
+            // 1..16 (Alex 2026-10-27): поле в Settings пропускало 0, а StopWatch
+            // при создании делит на это значение 1000 — приложение падало при
+            // каждом запуске. Уже сохранённый 0 лечится здесь.
             return preferences.getInt(beatsPerSecondKey, defaultBeatsPerSecond)
+                .let { if (it < 1) defaultBeatsPerSecond else it.coerceAtMost(beatsPerSecondLength) }
         } catch (_: ClassCastException) {
             throw LocalStorageException()
         }

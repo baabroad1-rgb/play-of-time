@@ -246,7 +246,9 @@ fun SettingScreen(
                     value = state.beatsPerSecond,
                     onValueChange = {
                         if (it.isNotEmpty()) {
-                            if (it.last().isDigit() && it.toInt() <= beatsPerSecondLength) {
+                            // Только 1..16 (Alex 2026-10-27): «0» проходил и ронял
+                            // приложение при следующем запуске (StopWatch делит на него 1000).
+                            if ((it.toIntOrNull() ?: 0) in 1..beatsPerSecondLength) {
                                 setEvent(Event.ChangeBeatsPerSecond(it))
                             } else {
                                 it.dropLast(1)
