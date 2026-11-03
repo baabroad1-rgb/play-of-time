@@ -51,6 +51,10 @@ Precision tightens by level: tenths (L1) → hundredths (L2) → thousandths (L3
   Peaks: L1→0.99, L2→9.9, L3→99. Level factor is deliberate; keep it.
 - **Histogram green = only the exact-3.000 center bucket**, even inside indulged
   subquests. Other buckets red (early) / blue (late).
+- **Two win greens (Alex 2026-11-03).** Clean three (exactly 3 at the level's
+  precision) = bright `--win`; eased win (inside the indulgence tolerance, not
+  exactly 3) = pale `--win-soft` (`isEasedWin()`), everywhere a colour marks a
+  win. Native: `resultGreenSoftColor` / `winGreen()` / `ButtonResultType.EASED_THREE`.
 - **Indulgence: only ONE adaptation at a time.** IN_N quests adapt N (±33, cap
   {33,66,99}); ROW quests adapt t (±1 ms, cap {0,1,2,3} for most — L3.4/L3.5
   raised to cap {0..9} on 2026-08-08, mirror this per-quest, not globally).

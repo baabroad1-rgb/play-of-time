@@ -4,6 +4,15 @@ Maintained by Claude (Cowork). Generated from a direct read of both codebases
 (native `android` + web `webapp`, incl. `api/` backend), cross-checked
 against `CLAUDE.md`, `fixes_log.md`, and `PARITY_AUDIT.md` in both projects.
 
+## ⏳ Ждёт выкладки — Beget сломан (Алекс 03.11.2026)
+
+«Там бегет сломался… положить на сервер новую версию пока не получится.»
+Правки лежат в ветке `main-l59cnn`, в `main` НЕ отправлены: пуш в `main`
+запускает выкладку веба и APK на сервер. Когда Beget починят — `git push
+origin main-l59cnn:main` (после fetch/rebase) и проверить обе выкладки.
+- 03.11 — победы по смягчению блёклым зелёным, чистые тройки ярким
+  (натив + веб `app.20261103a.js`).
+
 ## Расчистка бэклога 25.10.2026 — решения Алекса (вопрос за вопросом)
 
 1. **[СДЕЛАНО 25.10] Копирайт «©baa, 2026»** в About, натив и веб.
