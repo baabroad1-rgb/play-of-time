@@ -73,3 +73,15 @@ jobs:
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           echo "--- чем подписан: ---"
           "$APKSIGNER" verify --print-certs "$APK" | grep -i "SHA-256" || true
+
+      # Алекс 03.11.2026: «а можешь сюда прям апк положить?» — Beget сломан,
+      # выкладка через main невозможна, а APK с ветки нужен на телефон.
+      # Шаг не обязательный и хранит сутки — по той же причине, что в
+      # build-apk.yml (квота артефактов, 20.10.2026).
+      - name: Сохранить APK как артефакт
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: apk-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 1
