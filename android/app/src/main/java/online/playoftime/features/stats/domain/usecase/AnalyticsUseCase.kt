@@ -472,7 +472,8 @@ class AnalyticsUseCase(
                         late   = idxs.map { i -> err(i).takeIf { it > 0 }?.toFloat() },
                         happy  = idxs.map { i -> if (faceOf[ordered[i]] == true) 1f else null },
                         sad    = idxs.map { i -> if (faceOf[ordered[i]] == false) 1f else null },
-                        labels = idxs.map { "#${it + 1}" }
+                        labels = idxs.map { "#${it + 1}" },
+                        hitClean = idxs.map { i -> ordered[i].toLucky(aimTime).copy(toleranceMs = 0).isGreen }
                     )
                 }
             }
@@ -526,6 +527,7 @@ class AnalyticsUseCase(
             sparklineSessionDates        = sparklineSessions.map { it.startTime },
             paceChartValues              = paceChart.values,
             paceChartHitRate             = paceChart.hit,
+            paceChartHitClean            = paceChart.hitClean,
             paceChartLucky               = paceChart.lucky,
             paceChartEarlyMs             = paceChart.early,
             paceChartLateMs              = paceChart.late,
@@ -561,7 +563,9 @@ class AnalyticsUseCase(
         val early: List<Float?>, val late: List<Float?>,
         val happy: List<Float?>, val sad: List<Float?>, val labels: List<String>,
         // Подпись точки в подсказке по удержанию (у дня — номер и время сессии).
-        val tips: List<String> = labels
+        val tips: List<String> = labels,
+        // Session: чистая ли тройка у попытки (для блёклого кружка Hit rate).
+        val hitClean: List<Boolean> = emptyList()
     )
 
     /**

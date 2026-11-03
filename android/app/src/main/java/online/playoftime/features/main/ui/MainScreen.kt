@@ -82,6 +82,7 @@ import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.baseTextStyle
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
+import online.playoftime.ui_theme.winGreen
 import online.playoftime.ui_theme.resultRedColor
 import online.playoftime.ui_theme.resultYellowColor
 
@@ -180,6 +181,7 @@ fun MainScreen(
     // растёт из падающих капель.
     var activeDropErrorMs by remember { mutableStateOf<Double?>(null) }
     var activeDropIsWin   by remember { mutableStateOf(false) }
+    var activeDropClean   by remember { mutableStateOf(false) }
     val dropProgress      = remember { androidx.compose.animation.core.Animatable(0f) }
     var newestRowBounds by remember {
         mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
@@ -228,6 +230,7 @@ fun MainScreen(
         if (!grew || newest == null) return@LaunchedEffect
         activeDropErrorMs = newest.error * 1000.0
         activeDropIsWin   = newest.isWin
+        activeDropClean   = kotlin.math.abs(newest.error) < 0.0005
         // Источник капли (Alex 2026-07-23): засечка «3» прогресс-бара. Сначала
         // от «3» до головки анимированно вырастает сегмент ошибки, затем капля
         // капает с головки вниз на гистограмму. Если бар выключен — как раньше,
@@ -432,7 +435,7 @@ fun MainScreen(
                                 .filter { !it.isSessionHeader }
                                 .map { a ->
                                     when {
-                                        a.isWin     -> resultGreenColor
+                                        a.isWin     -> winGreen(kotlin.math.abs(a.error) < 0.0005)
                                         a.error < 0.0 -> resultRedColor
                                         else        -> resultBlueColor
                                     }
@@ -952,7 +955,7 @@ fun MainScreen(
                 val endY = axisY - dropTarget.heightFrac * barAreaH
 
                 val color = when {
-                    activeDropIsWin -> resultGreenColor
+                    activeDropIsWin -> winGreen(activeDropClean)
                     dropE < 0       -> resultRedColor
                     else            -> resultBlueColor
                 }

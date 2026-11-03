@@ -1794,7 +1794,8 @@ class MainViewModel(
         val isWin = kotlin.math.abs(totalError * 1000.0) <= toleranceMs + 0.0005
 
         val resultType = when {
-            isWin        -> ButtonResultType.TRUE_THREE
+            isWin && kotlin.math.abs(tmpError) < 0.0005 -> ButtonResultType.TRUE_THREE
+            isWin        -> ButtonResultType.EASED_THREE
             totalError < 0.0 -> ButtonResultType.EARLY
             else         -> ButtonResultType.LATE
         }

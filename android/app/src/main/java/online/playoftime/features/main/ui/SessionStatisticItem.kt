@@ -36,6 +36,7 @@ import online.playoftime.ui_theme.baseBackgroundColor
 import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
+import online.playoftime.ui_theme.winGreen
 import online.playoftime.ui_theme.resultRedColor
 import online.playoftime.ui_theme.resultYellowColor
 import online.playoftime.ui_theme.statisticTextStyle
@@ -156,8 +157,11 @@ fun SessionStatisticItem(
     val isTrueThree = state.isWin                 // победа с учётом допуска T±t
     val isEarly     = state.error < 0.0
 
+    // Чистая тройка (ошибка 0 на точности уровня) — яркий зелёный; победа по
+    // смягчению (в допуске, но не ровно 3) — блёклый (Alex 2026-11-03).
+    val winColor = winGreen(abs(state.error) < 0.0005)
     val barColor = when {
-        isTrueThree -> resultGreenColor
+        isTrueThree -> winColor
         isEarly     -> resultRedColor
         else        -> resultBlueColor
     }
@@ -376,7 +380,7 @@ fun SessionStatisticItem(
             when {
                 isTrueThree -> {
                     drawCircle(
-                        color  = resultGreenColor,
+                        color  = winColor,
                         radius = dotR,
                         center = Offset(cx, cy)
                     )

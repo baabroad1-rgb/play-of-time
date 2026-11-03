@@ -64,6 +64,7 @@ import online.playoftime.ui_theme.Dimens
 import online.playoftime.ui_theme.darkGreyColor
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
+import online.playoftime.ui_theme.resultGreenSoftColor
 import online.playoftime.ui_theme.resultRedColor
 
 private val ButtonCardShape = RoundedCornerShape(24.dp)
@@ -171,8 +172,10 @@ private fun SecondsProgressBar(
             val zoneLeft  = innerLeft + innerW * zoneStartFrac.toFloat()
             val zoneRight = innerLeft + innerW * zoneEndFrac.toFloat()
             if (zoneRight > zoneLeft) {
+                // Блёклый зелёный (Alex 2026-11-03): зона ± допуска — это победы
+                // по смягчению; яркая засечка «3» остаётся за чистой тройкой.
                 drawRoundRect(
-                    color        = resultGreenColor.copy(alpha = 0.35f),
+                    color        = resultGreenSoftColor.copy(alpha = 0.45f),
                     topLeft      = androidx.compose.ui.geometry.Offset(zoneLeft, trackY - trackH / 2f),
                     size         = androidx.compose.ui.geometry.Size(zoneRight - zoneLeft, trackH),
                     cornerRadius = corner
@@ -424,6 +427,7 @@ fun StopWatchButton(
         ButtonResultType.EARLY      -> resultRedColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.LATE       -> resultBlueColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.TRUE_THREE -> resultGreenColor.copy(alpha = 0.22f).compositeOver(buttonBase)
+        ButtonResultType.EASED_THREE -> resultGreenSoftColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.NONE       -> buttonBase
     }
 
@@ -469,6 +473,7 @@ fun StopWatchButton(
             ButtonResultType.EARLY      -> resultRedColor
             ButtonResultType.LATE       -> resultBlueColor
             ButtonResultType.TRUE_THREE -> resultGreenColor
+            ButtonResultType.EASED_THREE -> resultGreenSoftColor
             else                        -> Color.White
         }
         state == StopWatchCycle.IS_RUNNING && elapsedSeconds >= 2.0 -> resultGreenColor
@@ -480,6 +485,7 @@ fun StopWatchButton(
             ButtonResultType.EARLY      -> resultRedColor
             ButtonResultType.LATE       -> resultBlueColor
             ButtonResultType.TRUE_THREE -> resultGreenColor
+            ButtonResultType.EASED_THREE -> resultGreenSoftColor
             else                        -> Color.White
         }
         else -> Color.White

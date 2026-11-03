@@ -27,4 +27,12 @@ val extraGreyVariantColor = Color(0xFFA9A9A9)
 val resultRedColor = Color(0xFFDE4264)    // Early — раньше цели
 val resultBlueColor = Color(0xFF0CA8CC)   // Late  — позже цели
 val resultGreenColor = Color(0xFF8EFF51)  // True Three — точное попадание
+// Победа по смягчению (Alex 2026-11-03): попытка засчитана в пределах допуска
+// индульгенции, но не ровно 3.0 / 3.00 / 3.000 на точности уровня — блёклый
+// зелёный (resultGreenColor наполовину смешан с серым). Яркий зелёный остаётся
+// только у чистых троек.
+val resultGreenSoftColor = Color(0xFF87BF68)
+
+/** Цвет победы: яркий для чистой тройки, блёклый — для победы по смягчению. */
+fun winGreen(clean: Boolean): Color = if (clean) resultGreenColor else resultGreenSoftColor
 val resultYellowColor = Color(0xFFE6A440) // Pending — 1.5 сек после остановки

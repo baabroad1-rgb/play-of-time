@@ -17,7 +17,12 @@ data class AttemptBarData(
     val durationMs : Long  = 0L,  // фактическая длительность попытки в мс
     val accuracy   : Int   = 2,   // кол-во знаков после запятой (2=центисек, 3=мс)
     val toleranceMs: Int   = 0    // допуск квеста в момент попытки — для Lucky (2026-10-24)
-)
+) {
+    /** Чистая тройка — ровно 3 на точности уровня (Alex 2026-11-03): яркий
+     *  зелёный; победа по смягчению (в допуске, не ровно 3) — блёклый. */
+    val isClean: Boolean
+        get() = isWin && online.playoftime.core.utils.LuckyAttempt(durationMs, accuracy, 0).isGreen
+}
 
 data class SessionTreeData(
     val sessionId       : Int,
@@ -118,6 +123,9 @@ data class AnalyticsData(
     val paceChartValues          : List<Float?> = emptyList(),
     // Те же бакеты, другие ряды (Alex 2026-10-07): Hit rate в %, Lucky index.
     val paceChartHitRate         : List<Float?> = emptyList(),
+    /** Session: попадание — чистая тройка (true) или победа по смягчению (false),
+     *  по попытке; для блёклого кружка Hit rate (Alex 2026-11-03). */
+    val paceChartHitClean        : List<Boolean> = emptyList(),
     val paceChartLucky           : List<Float?> = emptyList(),
     // Mean error (Alex 2026-10-18/19): геометрическое среднее ранних и поздних
     // ошибок в каждом бакете, мс, как карточка Geometric Mean; и то же за весь

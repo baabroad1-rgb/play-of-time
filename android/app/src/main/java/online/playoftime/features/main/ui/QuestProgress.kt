@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import online.playoftime.ui_lib.AnimatedLogo
 import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.resultGreenColor
+import online.playoftime.ui_theme.resultGreenSoftColor
 
 /**
  * Символическая индикация прогресса квеста: цель, мишени, характеристика
@@ -169,7 +170,9 @@ fun QuestProgress(
                             append(aimTimeStr)
                         }
                         if (toleranceStr.isNotEmpty()) {
-                            withStyle(SpanStyle(color = resultGreenColor.copy(alpha = 0.7f), fontWeight = FontWeight.Medium, fontSize = 12.sp)) {
+                            // Допуск — зона побед по смягчению: блёклый зелёный
+                            // (Alex 2026-11-03), яркий остаётся у «3.000».
+                            withStyle(SpanStyle(color = resultGreenSoftColor, fontWeight = FontWeight.Medium, fontSize = 12.sp)) {
                                 append(" $toleranceStr")
                             }
                         }

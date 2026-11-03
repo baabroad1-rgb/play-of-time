@@ -84,6 +84,8 @@ import online.playoftime.ui_theme.baseBackgroundColor
 import online.playoftime.ui_theme.baseTextColor
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
+import online.playoftime.ui_theme.resultGreenSoftColor
+import online.playoftime.ui_theme.winGreen
 import online.playoftime.ui_theme.resultRedColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -549,6 +551,7 @@ private fun AnalyticsContent(
                     lateMs     = data.rangeLateMs,
                     earlyCount = data.earlyCount,
                     greenCount = data.periodWins,
+                    preciseCount = data.periodPrecise,
                     lateCount  = data.lateCount,
                     topEarly   = data.topEarly,
                     topLate    = data.topLate
@@ -587,7 +590,7 @@ private fun AnalyticsContent(
                 } else if (metric == PaceMetric.HIT && isSession && series.isNotEmpty()) {
                     // Hit rate в сессии — ряд кружков, по одному на попытку:
                     // зелёный — попадание, серый — промах (Alex 2026-10-25).
-                    SessionHitStrip(data.paceChartHitRate)
+                    SessionHitStrip(data.paceChartHitRate, data.paceChartHitClean)
                     Spacer(Modifier.height(6.dp))
                 } else if (series.size >= 2) {
                     // В сессии столбик — одна попытка, без усреднения (Alex
@@ -936,9 +939,18 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false, minFac
             )
             pair(
                 "Wins/precise", {
-                    SummaryValue(
-                        "${formatNumber(data.periodWins.toString())}/${formatNumber(data.periodPrecise.toString())}",
-                        color = resultGreenColor
+                    // Победы (с учётом смягчения) — блёклым, если среди них есть
+                    // победы по смягчению; чистые тройки — ярким (Alex 2026-11-03).
+                    FitValueText(
+                        text  = androidx.compose.ui.text.buildAnnotatedString {
+                            pushStyle(androidx.compose.ui.text.SpanStyle(color = winGreen(data.periodWins <= data.periodPrecise)))
+                            append(formatNumber(data.periodWins.toString()))
+                            pop()
+                            pushStyle(androidx.compose.ui.text.SpanStyle(color = resultGreenColor))
+                            append("/" + formatNumber(data.periodPrecise.toString()))
+                            pop()
+                        },
+                        style = metricValueStyle(resultGreenColor)
                     )
                 },
                 "Pace of play", {
@@ -1077,6 +1089,29 @@ private fun FitValueText(
     )
 }
 
+@Composable
+private fun FitValueText(
+    text     : androidx.compose.ui.text.AnnotatedString,
+    style    : TextStyle,
+    modifier : Modifier = Modifier,
+    minSize  : androidx.compose.ui.unit.TextUnit = 8.sp
+) {
+    val startSize = style.fontSize
+    var size by remember(text, startSize) { mutableStateOf(startSize) }
+    BasicText(
+        text     = text,
+        modifier = modifier,
+        style    = style.copy(fontSize = size),
+        maxLines = 1,
+        softWrap = false,
+        onTextLayout = { result ->
+            if (result.didOverflowWidth && size.value > minSize.value) {
+                size = (size.value - 0.5f).sp
+            }
+        }
+    )
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 //  Period Pill
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1186,6 +1221,9 @@ private fun RangeBar(
     lateMs: Double,
     earlyCount: Long = 0L,
     greenCount: Long = 0L,
+    /** Из greenCount — чистые тройки (яркий сегмент); остальное — победы по
+     *  смягчению (блёклый сегмент), Alex 2026-11-03. */
+    preciseCount: Long = greenCount,
     lateCount: Long  = 0L,
     topEarly: List<online.playoftime.features.stats.domain.entity.TopDeviation> = emptyList(),
     topLate:  List<online.playoftime.features.stats.domain.entity.TopDeviation> = emptyList()
@@ -1243,6 +1281,7 @@ private fun RangeBar(
             val w = size.width
             val rW = w * redFrac
             val gW = w * grnFrac
+            val pW = if (greenCount > 0) gW * (preciseCount.coerceIn(0L, greenCount).toFloat() / greenCount) else 0f
             val bW = w * bluFrac
             val barPath = androidx.compose.ui.graphics.Path().apply {
                 addRoundRect(
@@ -1253,7 +1292,8 @@ private fun RangeBar(
             }
             clipPath(barPath) {
                 drawRect(resultRedColor,   topLeft = Offset(0f, 0f),         size = Size(rW, size.height))
-                drawRect(resultGreenColor, topLeft = Offset(rW, 0f),         size = Size(gW, size.height))
+                drawRect(resultGreenColor,     topLeft = Offset(rW, 0f),       size = Size(pW, size.height))
+                drawRect(resultGreenSoftColor, topLeft = Offset(rW + pW, 0f),  size = Size(gW - pW, size.height))
                 drawRect(resultBlueColor,  topLeft = Offset(rW + gW, 0f),    size = Size(bW, size.height))
             }
             // Inline counts (only if segment wide enough)
@@ -1266,9 +1306,16 @@ private fun RangeBar(
                 val ml = textMeasurer.measure(fmtCount(earlyCount), countStyle)
                 drawText(ml, topLeft = Offset(rW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
             }
-            if (greenCount > 0 && gW > 16f) {
-                val ml = textMeasurer.measure(fmtCount(greenCount), greenCountStyle)
-                drawText(ml, topLeft = Offset(rW + gW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
+            // Числа — отдельно у чистых троек и у побед по смягчению; если
+            // сегмент узок, число не рисуется (как раньше у общего зелёного).
+            val easedCount = greenCount - preciseCount.coerceIn(0L, greenCount)
+            if (preciseCount > 0 && pW > 16f) {
+                val ml = textMeasurer.measure(fmtCount(preciseCount), greenCountStyle)
+                drawText(ml, topLeft = Offset(rW + pW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
+            }
+            if (easedCount > 0 && gW - pW > 16f) {
+                val ml = textMeasurer.measure(fmtCount(easedCount), greenCountStyle)
+                drawText(ml, topLeft = Offset(rW + pW + (gW - pW) / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
             }
             if (lateCount > 0 && bW > 16f) {
                 val ml = textMeasurer.measure(fmtCount(lateCount), countStyle)
@@ -2014,7 +2061,7 @@ private fun AttemptBarRow(
     maxAbsMs : Double
 ) {
     val barColor = when {
-        bar.isWin       -> resultGreenColor
+        bar.isWin       -> winGreen(bar.isClean)
         bar.errorMs < 0 -> resultRedColor
         else            -> resultBlueColor
     }
@@ -2083,7 +2130,7 @@ private fun AttemptBarRow(
             )
 
             when {
-                bar.isWin -> drawCircle(resultGreenColor, radius = dotR, center = Offset(cx, cy))
+                bar.isWin -> drawCircle(winGreen(bar.isClean), radius = dotR, center = Offset(cx, cy))
 
                 bar.errorMs < 0 -> {
                     drawRoundRect(
@@ -2151,10 +2198,12 @@ private fun MiniHistogram(
     val bucketW = (2.0 * scaleMax) / bucketCount
     val counts  = IntArray(bucketCount)
     val wins    = IntArray(bucketCount)
+    val clean   = IntArray(bucketCount)
     bars.forEach { b ->
         val idx = ((b.errorMs - rangeMin) / bucketW).toInt().coerceIn(0, bucketCount - 1)
         counts[idx]++
         if (b.isWin) wins[idx]++
+        if (b.isClean) clean[idx]++
     }
     val maxCount = counts.max().coerceAtLeast(1)
 
@@ -2191,7 +2240,8 @@ private fun MiniHistogram(
                 val bucketCenter = rangeMin + (i + 0.5) * bucketW
                 val inTolerance  = toleranceMs > 0 && abs(bucketCenter) <= toleranceMs
                 val color = when {
-                    wins[i] > 0 || inTolerance -> resultGreenColor
+                    clean[i] > 0               -> resultGreenColor
+                    wins[i] > 0 || inTolerance -> resultGreenSoftColor
                     bucketCenter < 0.0         -> resultRedColor
                     else                       -> resultBlueColor
                 }
@@ -2227,6 +2277,9 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
 // FaceIcon NICE и SAD; Alex 2026-10-24: «зелёными и серыми вместо красных»).
 private val FACE_HAPPY_COLOR = Color(0xFF3FA864)
 private val FACE_SAD_COLOR   = Color(0xFFB8B8B8)
+// Блёклый вариант зелёного кружка — победа по смягчению (Alex 2026-11-03),
+// FACE_HAPPY_COLOR наполовину смешан с серым, как resultGreenSoftColor.
+private val FACE_HAPPY_SOFT_COLOR = Color(0xFF5F9472)
 
 /**
  * Faces за сессию: по маленькой рожице на каждую попытку, по порядку, с номером
@@ -2278,7 +2331,7 @@ private fun SessionFacesStrip(happy: List<Float?>, sad: List<Float?>) {
  * ним (Alex 2026-10-25): зелёный — попадание, серый — промах.
  */
 @Composable
-private fun SessionHitStrip(hits: List<Float?>) {
+private fun SessionHitStrip(hits: List<Float?>, clean: List<Boolean> = emptyList()) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     val cell = 22.dp
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -2288,7 +2341,7 @@ private fun SessionHitStrip(hits: List<Float?>) {
                 Row {
                     rowIdx.forEach { i ->
                         Column(Modifier.width(cell), horizontalAlignment = Alignment.CenterHorizontally) {
-                            HitDot((hits[i] ?: 0f) > 0f, 14.dp)
+                            HitDot((hits[i] ?: 0f) > 0f, 14.dp, clean.getOrElse(i) { true })
                             BasicText(
                                 "${i + 1}",
                                 style = labelStyle(7.sp, color = textColor.copy(alpha = 0.43f))
@@ -2307,15 +2360,24 @@ private fun SessionHitStrip(hits: List<Float?>) {
         HitDot(true, 9.dp)
         BasicText("hit", style = labelStyle(8.sp, color = FACE_HAPPY_COLOR.copy(alpha = 0.8f)))
         Spacer(Modifier.width(8.dp))
+        // Победы по смягчению — блёклым кружком; пункт легенды только если они есть.
+        if (hits.indices.any { (hits[it] ?: 0f) > 0f && !clean.getOrElse(it) { true } }) {
+            HitDot(true, 9.dp, clean = false)
+            BasicText("eased", style = labelStyle(8.sp, color = FACE_HAPPY_SOFT_COLOR.copy(alpha = 0.8f)))
+            Spacer(Modifier.width(8.dp))
+        }
         HitDot(false, 9.dp)
         BasicText("miss", style = labelStyle(8.sp, color = FACE_SAD_COLOR.copy(alpha = 0.8f)))
     }
 }
 
 @Composable
-private fun HitDot(hit: Boolean, size: Dp) {
+private fun HitDot(hit: Boolean, size: Dp, clean: Boolean = true) {
     Canvas(Modifier.size(size)) {
-        drawCircle(if (hit) FACE_HAPPY_COLOR else FACE_SAD_COLOR, this.size.minDimension / 2f)
+        drawCircle(
+            if (!hit) FACE_SAD_COLOR else if (clean) FACE_HAPPY_COLOR else FACE_HAPPY_SOFT_COLOR,
+            this.size.minDimension / 2f
+        )
     }
 }
 
