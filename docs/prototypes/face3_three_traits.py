@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Макеты «Морда 3.0» (Алекс 07.11.2026): три характеристики в одном лице и уши.
 
-Запуск: python3 face3_three_traits.py -> рядом face3_three_traits.html и face3_ears.html.
+Запуск: python3 face3_three_traits.py -> рядом face3_three_traits.html и face3_earrings.html.
 Формулы, пороги и данные — docs/FACE_V3_THREE_TRAITS.md. Это эскиз для
 обсуждения, не реализация: в report.html ничего не менялось."""
 import os
@@ -88,7 +88,35 @@ def ear(side, cy, flare, size, beads=None):
             X,Y=P(x,y)
             s.append(f'<circle cx="{X:.1f}" cy="{Y:.1f}" r="3.4" fill="{c}" stroke="#2a2420" stroke-width="0.9"/>')
     return ''.join(s)
-def face_eared(sigma=28,B=0.0,L=1.0,third=False,gate=False,size=170,flare=0.5,esize=1.0,beads=None):
+TWIN_COLOR = '#8EFF51'   # близнецы — зелёный овал в логе (resultGreenColor)
+NB_COLOR   = '#E6A440'   # соседи — жёлтый овал в логе (resultYellowColor натива)
+RINGS_CAP  = 16          # серёг на оба уха; больше — прореживание с той же пропорцией
+
+def ring_colors(tw, nb, cap=RINGS_CAP):
+    """Цвета колец: одно кольцо — одна пара; сверх потолка — с той же пропорцией.
+    Сначала близнецы, потом соседи: при раздаче на два уха по очереди в каждой
+    серьге сверху зелёные, снизу жёлтые — так проще посчитать."""
+    n = tw + nb
+    if n > cap:
+        tw = round(cap * tw / n); nb = cap - tw
+    return [TWIN_COLOR] * tw + [NB_COLOR] * nb
+
+def earrings(side, cy, flare, size, colors):
+    """Серьга-цепочка: кольца висят из мочки вниз, первое — в самой мочке."""
+    h=46*size; w=(13+30*flare)*size
+    ax=100+side*65
+    tilt=math.radians(side*(4+22*flare))
+    lx,ly=w*0.40,h*0.50                        # мочка в координатах уха
+    X0=ax+side*(lx*math.cos(tilt)-ly*math.sin(tilt)); Y0=cy+lx*math.sin(tilt)+ly*math.cos(tilt)
+    r=5.0; step=8.6
+    out=[]
+    for k,c in enumerate(colors):
+        X,Y=X0, Y0+r*0.7+k*step
+        out.append(f'<circle cx="{X:.1f}" cy="{Y:.1f}" r="{r}" fill="none" stroke="#2a2420" stroke-width="3.8"/>'
+                   f'<circle cx="{X:.1f}" cy="{Y:.1f}" r="{r}" fill="none" stroke="{c}" stroke-width="2.4"/>')
+    return ''.join(out)
+
+def face_eared(sigma=28,B=0.0,L=1.0,third=False,gate=False,size=170,flare=0.5,esize=1.0,beads=None,pairs=None):
     svg,stage=_face_base(sigma,B,L,third,gate,size)
     # remove old glued ears (ellipses with fill #efd2b2 rx=9)
     import re
@@ -99,11 +127,15 @@ def face_eared(sigma=28,B=0.0,L=1.0,third=False,gate=False,size=170,flare=0.5,es
     ears=''.join(ear(-1 if sl else 1, 104+drop(sl,8), flare, esize, (beads or {}).get('L' if sl else 'R')) for sl in (True,False))
     # insert ears right after the filter group opens, before head ellipse
     svg=svg.replace('<ellipse cx="100" cy="112" rx="70" ry="88" fill="#f3dcc0"/>', ears+'<ellipse cx="100" cy="112" rx="70" ry="88" fill="#f3dcc0"/>',1)
+    if pairs is not None:                     # серьги: поровну на оба уха, по очереди
+        cols=ring_colors(*pairs)
+        rings=''.join(earrings(-1 if sl else 1, 104+drop(sl,8), flare, esize, cols[(0 if sl else 1)::2]) for sl in (True,False))
+        svg=svg.replace('</g></svg>', rings+'</g></svg>',1)
     return svg,stage
 
 # ---- страница 1: три характеристики ----
 def face(**kw):
-    kw.setdefault('flare',0.5); kw.setdefault('esize',1.05)
+    kw.setdefault('flare',0.3); kw.setdefault('esize',1.1)
     return face_eared(**kw)
 def cell(svg,cap,sub=''):
     return f'<div class="cell">{svg}<div class="cap">{cap}</div><div class="sub">{sub}</div></div>'
@@ -133,38 +165,29 @@ for t,d,cells in rows:
     html.append(f'<div class="row"><h2>{t}</h2><div class="d">{d}</div><div class="cells">{"".join(cells)}</div></div>')
 open(os.path.join(HERE,'face3_three_traits.html'),'w',encoding='utf-8').write(''.join(html))
 
-# ---- страница 2: уши ----
-face=face_eared
-TW='#2f7fd8'; NB='#e0566c'
-def cell2(svg,cap,sub=''): return f'<div class="cell">{svg}<div class="cap">{cap}</div><div class="sub">{sub}</div></div>'
-def flare_of(r): return max(0,min(1,r/2))          # r = rate / median of top-5 on this level
-def size_of(r): return 0.8+0.25*max(0,min(2,r))
-rows=[]
-rows.append(('Вариант А — оттопыренность ← близнецы, размер ← соседи','оба уха одинаковые; 1.0 = как в обычный день у пятёрки лучших на этом уровне (L3: 3,7 близнеца и 1,9 соседа на 100 попыток; L2: 9,1 и 14,8)',
- [cell2(face(flare=flare_of(tw),esize=size_of(nb))[0],f'близнецы ×{tw:g} · соседи ×{nb:g}',d) for tw,nb,d in ((0,0,'ни одного'),(0.5,1,'мало близнецов'),(1,1,'как у лучших'),(2,1,'много близнецов'),(1,2,'много соседей'))]))
-rows.append(('Вариант Б — одно число: близнецы + соседи → оттопыренность','проще читать; на L3 программа сама превращает часть соседей в близнецов, сумма от этого не страдает',
- [cell2(face(flare=flare_of(r),esize=1.0)[0],f'×{r:g}',d) for r,d in ((0,'ни одного'),(0.5,'мало'),(1,'как у лучших'),(1.5,'много'),(2,'очень много'))]))
-def beads(tw,nb):
-    seq=[TW]*tw+[NB]*nb
-    # interleave, split across ears evenly (both ears carry the same mix)
-    L=seq[0::2]; R=seq[1::2]
-    return {'L':L,'R':R}
-rows.append(('Вариант В — серьги-бусины: каждая пара — бусина','синяя — близнец, красная — сосед; поровну на оба уха, до 8 на ухо (дальше прореживание)',
- [cell2(face(flare=0.55,beads=beads(tw,nb))[0],f'{tw} близн. · {nb} сос.',d) for tw,nb,d in ((0,0,'сеанс без повторов'),(2,1,'короткий сеанс'),(4,2,'сеанс L3, 100 попыток'),(6,8,'день L2'),(8,8,'потолок'))]))
-rows.append(('Вместе с тремя характеристиками (вариант А)','ухо не прячется размытием так сильно, как глаза, — его видно и на первом этапе',
- [cell2(face(sigma=93,B=-0.39,L=0.95,gate=True,flare=flare_of(0.4),esize=size_of(0.6))[0],'L1, новичок','σ 93 · B −0.39'),
-  cell2(face(sigma=52,B=-0.17,L=1.1,gate=True,flare=flare_of(1),esize=size_of(1))[0],'L2, обычный день лучших','σ 52 · B −0.17'),
-  cell2(face(sigma=31,B=0.03,L=1.05,gate=True,flare=flare_of(1),esize=size_of(1))[0],'L3, обычный день лучших','σ 31 · B +0.03'),
-  cell2(face(sigma=30,B=0.02,L=1.45,gate=True,flare=flare_of(1.8),esize=size_of(1.2))[0],'L3, удачный день','много близнецов'),
-  cell2(face(sigma=29,B=-0.05,L=1.6,third=True,gate=True,flare=flare_of(1.2),esize=size_of(1.6))[0],'L3, редкая удача','третий глаз')]))
+# ---- страница 2: серьги — близнецы и соседи ----
+EAR=dict(flare=0.3, esize=1.1)      # уши всегда одинаковые (Алекс 07.11: «примерно как в варианте Б, вторая морда»)
+def ecell(svg,cap,sub=''): return f'<div class="cell">{svg}<div class="cap">{cap}</div><div class="sub">{sub}</div></div>'
+def lbl(tw,nb): return f'<span style="color:#3d9a1e">●</span> {tw} близн. · <span style="color:#c98516">●</span> {nb} сос.'
+erows=[]
+erows.append(('Одно кольцо — одна пара', 'зелёное кольцо — близнец, жёлтое — сосед (те же цвета, что у овалов в логе); кольца висят из мочки цепочкой, поровну на оба уха, сверху близнецы',
+ [ecell(face_eared(pairs=(tw,nb),**EAR)[0], lbl(tw,nb), d) for tw,nb,d in ((0,0,'без повторов'),(1,0,'один близнец'),(0,1,'один сосед'),(2,1,'короткий сеанс'),(4,2,'L3, ~100 попыток'))]))
+erows.append(('Много пар: больше 16 колец — прореживание, пропорция та же', 'точное число — подписью под лицом',
+ [ecell(face_eared(pairs=(tw,nb),**EAR)[0], lbl(tw,nb), d) for tw,nb,d in ((6,2,'L3, ~150 попыток'),(5,8,'смешано'),(9,15,'L2, день лучших'),(20,8,'L3, неделя'),(12,2,'почти одни близнецы'))]))
+erows.append(('Вместе с тремя характеристиками', 'уши одинаковые всегда; меняются только серьги',
+ [ecell(face_eared(sigma=93,B=-0.39,L=0.95,gate=True,pairs=(1,2),**EAR)[0],'L1, новичок','σ 93 · B −0.39<br>'+lbl(1,2)),
+  ecell(face_eared(sigma=42,B=-0.30,L=1.06,gate=True,pairs=(9,15),**EAR)[0],'L2, спешит','σ 42 · B −0.30<br>'+lbl(9,15)),
+  ecell(face_eared(sigma=31,B=0.03,L=1.05,gate=True,pairs=(4,2),**EAR)[0],'L3, обычный день','σ 31 · B +0.03<br>'+lbl(4,2)),
+  ecell(face_eared(sigma=30,B=0.02,L=1.45,gate=True,pairs=(7,3),**EAR)[0],'L3, удачный день','× 1.45<br>'+lbl(7,3)),
+  ecell(face_eared(sigma=29,B=-0.05,L=1.6,third=True,gate=True,pairs=(5,2),**EAR)[0],'L3, редкая удача','третий глаз<br>'+lbl(5,2))]))
 html=['''<!doctype html><meta charset=utf-8><style>
 body{margin:0;background:#f4f3ef;color:#151515;font-family:Roboto,Arial,sans-serif;padding:22px;width:1000px}
 h1{font-size:22px;margin:0 0 4px}.lead{color:#555;margin:0 0 16px;font-size:14px}
 .row{background:#fff;border:1px solid #e2dfd6;border-radius:12px;padding:12px 16px 8px;margin-bottom:14px}
 .row h2{font-size:17px;margin:0}.row .d{color:#666;font-size:13px;margin:2px 0 6px}
 .cells{display:flex;justify-content:space-between}.cell{width:186px;text-align:center}
-.cap{font-weight:600;font-size:13px;margin-top:-6px}.sub{color:#777;font-size:12px;min-height:16px}
-</style><h1>Уши: торчащие, показывают близнецов и соседей</h1>
-<p class="lead">Оба уха всегда одинаковые: лево и право на лице уже означают «раньше» и «позже». Нормы — по пятёрке лучших игроков.</p>''']
-for t,d,cells in rows: html.append(f'<div class="row"><h2>{t}</h2><div class="d">{d}</div><div class="cells">{"".join(cells)}</div></div>')
-open(os.path.join(HERE,'face3_ears.html'),'w',encoding='utf-8').write(''.join(html))
+.cap{font-weight:600;font-size:13px;margin-top:-6px}.sub{color:#777;font-size:11.5px;min-height:16px}
+</style><h1>Серьги: близнецы и соседи</h1>
+<p class="lead">Уши всегда одинаковые, немного оттопыренные. Каждая пара повторов — кольцо своего цвета в серьге.</p>''']
+for t,d,cells in erows: html.append(f'<div class="row"><h2>{t}</h2><div class="d">{d}</div><div class="cells">{"".join(cells)}</div></div>')
+open(os.path.join(HERE,'face3_earrings.html'),'w',encoding='utf-8').write(''.join(html))
