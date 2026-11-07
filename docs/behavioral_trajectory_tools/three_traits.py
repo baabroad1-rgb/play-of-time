@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 three_traits.py — три характеристики игрока для лица (Алекс 07.11.2026):
-точность (кучность), баланс, везение. Формулы и смысл — docs/FACE_V3_THREE_TRAITS.md.
+точность (кучность), баланс, везение; плюс близнецы и соседи для ушей.
+Формулы и смысл — docs/FACE_V3_THREE_TRAITS.md.
 
-    python three_traits.py                # сводка по дням игроков: распределения, устойчивость, этапы
+Нормы считаются по ПЯТЁРКЕ ЛУЧШИХ (Алекс 07.11: «статистику надо брать не общую,
+а только у пятёрки наиболее лучших игроков»): лучшие — по продвижению в квестах
+(уровень, задание, сумма SC) из players.json. Это учётные записи, не люди.
+
+    python three_traits.py                # пятёрка лучших: распределения, устойчивость, этапы, уши
+    python three_traits.py --all          # то же по всем игрокам
     python three_traits.py --fetch        # сначала скачать свежие attempts.json/players.json
 
 Данные — attempts.json рядом со скриптом (формат api/research_raw_attempts.php,
@@ -13,11 +19,13 @@ import json, math, os, sys, collections, statistics as st
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ATT_PATH = os.path.join(HERE, "attempts.json")
+PLY_PATH = os.path.join(HERE, "players.json")
+TOP_N = 5
 CELL = {1: 100, 2: 10, 3: 1}      # ячейка уровня, мс: десятые / сотые / тысячные
 TRIM_MS = 1500                    # промах дальше полутора секунд — случайное нажатие, не считаем
 MIN_N, MIN_MISSES, MIN_E = 20, 12, 3.0
 LUCK_PRIOR = 3                    # сглаживание везения: (G + 3) / (E + 3)
-STAGE_SIGMA, STAGE_B = 50.0, 0.20 # этап 1 → 2 при σ ≤ 50 мс; этап 2 → 3 при |B| ≤ 0.20
+STAGE_SIGMA, STAGE_B = 45.0, 0.20 # этап 1 → 2 при σ ≤ 45 мс; этап 2 → 3 при |B| ≤ 0.20 (по пятёрке лучших на L3)
 
 
 def Phi(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
@@ -61,6 +69,39 @@ def traits(window):
     return dict(n=len(rows), sigma=sigma, median=med, B=B, G=G, E=E, luck=luck, third_eye=rare, stage=stage)
 
 
+def pairs(window):
+    """Близнецы и соседи, как в нативе (MainViewModel: twinShot / neighborShot): соседние
+    попытки одной сессии, обе не победы; |ошибка| на точности уровня совпала (близнец)
+    или отличается ровно на клетку (сосед). Возвращает (близнецы, соседи, ожидание
+    близнецов, ожидание соседей) — ожидание при случайном порядке тех же попыток."""
+    by = collections.defaultdict(list)
+    for r in window: by[(r["player_id"], r["epoch"], r["session_id"])].append(r)
+    tw = nb = 0; base = []
+    for v in by.values():
+        v.sort(key=lambda r: r["local_id"])
+        for a, b in zip(v, v[1:]):
+            if a["accuracy"] != b["accuracy"] or a["is_win"] or b["is_win"]: continue
+            ea, eb, c = abs(rounded_error(a)), abs(rounded_error(b)), CELL[b["accuracy"]]
+            base.append((round(ea), round(eb), b["accuracy"]))
+            if abs(ea - eb) <= 0.5: tw += 1
+            elif abs(abs(ea - eb) - c) <= 0.5: nb += 1
+    etw = enb = 0.0
+    for a, c in CELL.items():
+        lv = [x for x in base if x[2] == a]
+        if not lv: continue
+        cnt = collections.Counter(x[1] for x in lv); n = sum(cnt.values())
+        q = {k: v / n for k, v in cnt.items()}
+        etw += len(lv) * sum(p * p for p in q.values())
+        enb += len(lv) * sum(2 * q[k] * q.get(k + c, 0) for k in q)
+    return tw, nb, etw, enb
+
+
+def top_players(n=TOP_N):
+    P = json.load(open(PLY_PATH, encoding="utf-8"))["rows"]
+    P.sort(key=lambda p: (-(p["level_id"] or 0), -(p["task_id"] or 0), -(p["sc_total"] or 0)))
+    return [p["player_id"] for p in P[:n]]
+
+
 def icc(groups):
     groups = [g for g in groups if len(g) >= 3]
     if len(groups) < 2: return None
@@ -77,14 +118,21 @@ def main():
     if "--fetch" in sys.argv:
         sys.path.insert(0, HERE); import behavioral_profile; behavioral_profile.fetch_fresh()
     rows = json.load(open(ATT_PATH, encoding="utf-8"))["rows"]
+    if "--all" not in sys.argv:
+        top = set(top_players())
+        rows = [r for r in rows if r["player_id"] in top]
+        print("пятёрка лучших:", ", ".join(p[:8] for p in top_players()))
     days = collections.defaultdict(list)
     for r in rows: days[(r["player_id"], r["epoch"], r["recorded_at"][:10])].append(r)
     res = []
     for (pid, _, day), w in days.items():
         if len(w) < 30: continue
+        lvl = collections.Counter(r["accuracy"] for r in w).most_common(1)[0][0]
+        w = [r for r in w if r["accuracy"] == lvl]
         t = traits(w)
         if not t or t["B"] is None: continue
-        t.update(pid=pid[:8], day=day, lvl=collections.Counter(r["accuracy"] for r in w).most_common(1)[0][0])
+        tw, nb, etw, enb = pairs(w)
+        t.update(pid=pid[:8], day=day, lvl=lvl, tw=tw, nb=nb, etw=etw, enb=enb)
         res.append(t)
     print(f"попыток {len(rows)}, игровых дней (от 30 попыток) {len(res)}\n")
     for lv in (1, 2, 3):
@@ -104,7 +152,14 @@ def main():
             if v is not None: print(f"  ICC {name:<8} {v:.2f}  (доля различий между людьми, а не между днями)")
         D = [t for t in R if t["E"] >= MIN_E]
         if D: print("  разброс везения против чистого случая: %.2f (1 = случай)" % (sum((t["G"] - t["E"]) ** 2 / t["E"] for t in D) / len(D)))
-        print("  этапы 1/2/3: %s\n" % "/".join(str(sum(1 for t in R if t["stage"] == s)) for s in (1, 2, 3)))
+        print("  этапы 1/2/3: %s" % "/".join(str(sum(1 for t in R if t["stage"] == s)) for s in (1, 2, 3)))
+        tw100 = [100 * t["tw"] / t["n"] for t in R]; nb100 = [100 * t["nb"] / t["n"] for t in R]
+        print("  уши: близнецов на 100 попыток  ", pct(tw100))
+        print("       соседей на 100 попыток    ", pct(nb100))
+        Ttw, Tnb, Etw, Enb = (sum(t[k] for t in R) for k in ("tw", "nb", "etw", "enb"))
+        print("       против случайного порядка: близнецы ×%.2f, соседи ×%.2f, вместе ×%.2f" % (Ttw / Etw, Tnb / Enb, (Ttw + Tnb) / (Etw + Enb)))
+        ls = [math.log(t["sigma"]) for t in R]
+        if len(R) > 3: print("       связь с кучностью (r с log σ): близнецы %.2f, соседи %.2f\n" % (st.correlation(ls, tw100), st.correlation(ls, nb100)))
     D = [t for t in res if t["E"] >= MIN_E]
     print("третий глаз (шанс < 5%%): %d из %d дней" % (sum(1 for t in D if t["third_eye"]), len(D)))
     print("везение ≥ ×2: %d, ≥ ×3: %d" % (sum(1 for t in D if t["luck"] >= 2), sum(1 for t in D if t["luck"] >= 3)))
