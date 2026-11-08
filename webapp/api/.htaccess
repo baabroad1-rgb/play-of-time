@@ -2,7 +2,7 @@
 # directly by the browser. The rest are internal — deny direct access as a
 # defense-in-depth measure (they don't leak anything on their own, since none
 # of them echo output when run standalone, but there's no reason to allow it).
-<FilesMatch "^(config|db|_lib|migrate_002_rename_default_names)\.php$">
+<FilesMatch "^(config|db|_lib|migrate_002_rename_default_names|openrouter_key)\.php$">
   Require all denied
 </FilesMatch>
 

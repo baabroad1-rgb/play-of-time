@@ -32,3 +32,13 @@ and `webapp/CLAUDE.md` for the overall project brief.
   clients actually call (see `.htaccess` — everything else is blocked from
   direct access).
 - `schema.sql`, `migrate_001_add_seq.sql` — run once, in order, on a new DB.
+- `doppelganger_diary.php` — Doppelgänger's diary written by a language model
+  (Claude Haiku via OpenRouter, Alex 2026-11-08). The app POSTs one day's
+  facts + the rival's memory, gets `{entry, memory}`. System prompt —
+  `doppelganger_character.txt`. **Key**: `openrouter_key.php` with
+  `<?php return 'sk-or-…';`, created by hand on the server, never in git
+  (`.gitignore`) and never deployed over (`deploy-web.yml` exclude), like
+  `config.php`; without it the endpoint answers 503 and the app keeps its
+  rule-based notes. Limits: 10 per player and 2000 total per UTC day,
+  counted in `_dg_quota/` (created on first call, denied to the web by its
+  own `.htaccess`, excluded from deploy).
