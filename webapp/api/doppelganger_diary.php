@@ -110,6 +110,7 @@ if (function_exists('curl_init')) {
     ));
     $raw = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $netErr = $raw === false ? curl_error($ch) : '';
     curl_close($ch);
 } else {
     $ctx = stream_context_create(array('http' => array(
@@ -117,12 +118,23 @@ if (function_exists('curl_init')) {
         'timeout' => 50, 'ignore_errors' => true,
     )));
     $raw = @file_get_contents($url, false, $ctx);
+    $netErr = $raw === false ? 'stream request failed' : '';
     $code = 0;
     foreach ($http_response_header ?? array() as $h) {
         if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $code = (int) $m[1];
     }
 }
-if ($raw === false || $code !== 200) json_error('diary writer unavailable', 502);
+if ($raw === false || $code !== 200) {
+    // Why — the upstream code and OpenRouter's own short message (never the key):
+    // 401 = key wrong, 402 = no credits, 0 + network error = the host can't reach it.
+    $why = $netErr;
+    if ($raw !== false) {
+        $err = json_decode($raw, true);
+        $why = (string) ($err['error']['message'] ?? substr((string) $raw, 0, 200));
+    }
+    json_out(array('error' => 'diary writer unavailable', 'upstream' => $code,
+                   'reason' => dg_clean($why, 200)), 502);
+}
 
 $r = json_decode($raw, true);
 $text = trim((string) ($r['choices'][0]['message']['content'] ?? ''));
