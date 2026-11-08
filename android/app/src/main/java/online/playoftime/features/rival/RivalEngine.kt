@@ -51,7 +51,7 @@ import kotlin.math.ceil
  *     ([provideRivalDatabase], "doppelganger.db"); [AnalyticsUseCase] works on
  *     it unchanged, so every analytics card exists for him too;
  *   • his quest state and his mind ([MicroPlayer]) — SharedPreferences
- *     "doppelganger";
+ *     "doppelganger", his learned synapses — filesDir/doppelganger_brain.bin;
  *   • the diary — filesDir/doppelganger_diary.jsonl (one JSON object a line).
  *
  * Each rival attempt is stamped with the player's attempt time (start), so
@@ -74,6 +74,7 @@ class RivalEngine(
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val diaryFile = File(appContext.filesDir, DIARY_FILE)
+    private val brainFile = File(appContext.filesDir, BRAIN_FILE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
     private val calculateScm = CalculateScmUseCase()
@@ -129,6 +130,7 @@ class RivalEngine(
                 for (src in batch) playOne(st, player, src, notes)
             }
             saveState(st)
+            player.writeBrain(brainFile)
             appendDiary(notes)
             cursor = batch.last().id
         }
@@ -482,7 +484,9 @@ class RivalEngine(
         o.optString("sw").forEach { st.sessionWins += it == '1' }
         st.prev1 = Brief.of(o.optJSONObject("p1"))
         st.prev2 = Brief.of(o.optJSONObject("p2"))
-        st.player = o.optJSONObject("mind")?.let { runCatching { MicroPlayer.fromJson(it) }.getOrNull() }
+        st.player = o.optJSONObject("mind")
+            ?.let { runCatching { MicroPlayer.fromJson(it) }.getOrNull() }
+            ?.also { it.readBrain(brainFile) }
         return st
     }
 
@@ -507,6 +511,8 @@ class RivalEngine(
         private const val PREFS = "doppelganger"
         private const val KEY_STATE = "state"
         private const val DIARY_FILE = "doppelganger_diary.jsonl"
+        /** Его синапсы «клетки Кеньона → выходы» (MicroPlayer.writeBrain). */
+        private const val BRAIN_FILE = "doppelganger_brain.bin"
         private const val BATCH = 500
         private const val SESSION_BREAK_MS = 30 * 60_000L
         private const val MIN_PAUSE_MS = 400L
