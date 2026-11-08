@@ -9,6 +9,10 @@
 
 ## 8 ноября 2026 — версия v15.35
 
+### Бэклог: макет переключателя You/AI на экране аналитики и три вопроса по сопернику
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/662a5789b6f54fd19bc22bc4c2e330064b802ab9)
+
 ### ИИ-соперник: имя Doppelgänger, с умляутом
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a0ce396ba4dd1d9898935459833b33915a313b7b)
@@ -2354,4 +2358,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 165.
+Всего записей: 166.
