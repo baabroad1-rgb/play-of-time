@@ -55,6 +55,10 @@ Precision tightens by level: tenths (L1) → hundredths (L2) → thousandths (L3
   precision) = bright `--win`; eased win (inside the indulgence tolerance, not
   exactly 3) = pale `--win-soft` (`isEasedWin()`), everywhere a colour marks a
   win. Native: `resultGreenSoftColor` / `winGreen()` / `ButtonResultType.EASED_THREE`.
+  In Analytics an eased win also keeps its SIDE of the three (Alex 2026-11-08):
+  attempts ratio = early | eased-early | clean | eased-late | late
+  (`easedEarlyCount`), and in the tree an eased win is a pale line + tip dot on
+  its own side (`row.inTree`); the Play-screen log keeps the centred dot.
 - **Indulgence: only ONE adaptation at a time.** IN_N quests adapt N (±33, cap
   {33,66,99}); ROW quests adapt t (±1 ms, cap {0,1,2,3} for most — L3.4/L3.5
   raised to cap {0..9} on 2026-08-08, mirror this per-quest, not globally).

@@ -552,6 +552,7 @@ private fun AnalyticsContent(
                     earlyCount = data.earlyCount,
                     greenCount = data.periodWins,
                     preciseCount = data.periodPrecise,
+                    easedEarlyCount = data.easedEarlyCount,
                     lateCount  = data.lateCount,
                     topEarly   = data.topEarly,
                     topLate    = data.topLate
@@ -1224,6 +1225,10 @@ private fun RangeBar(
     /** Из greenCount — чистые тройки (яркий сегмент); остальное — победы по
      *  смягчению (блёклый сегмент), Alex 2026-11-03. */
     preciseCount: Long = greenCount,
+    /** Из побед по смягчению — ранние (ошибка < 0): блёклый сегмент СЛЕВА от
+     *  чистых троек; поздние — справа (Alex 2026-11-08: «если слева, то слева,
+     *  если справа, то справа»). */
+    easedEarlyCount: Long = 0L,
     lateCount: Long  = 0L,
     topEarly: List<online.playoftime.features.stats.domain.entity.TopDeviation> = emptyList(),
     topLate:  List<online.playoftime.features.stats.domain.entity.TopDeviation> = emptyList()
@@ -1281,7 +1286,13 @@ private fun RangeBar(
             val w = size.width
             val rW = w * redFrac
             val gW = w * grnFrac
-            val pW = if (greenCount > 0) gW * (preciseCount.coerceIn(0L, greenCount).toFloat() / greenCount) else 0f
+            // Зелёная часть: блёклые ранние | яркие чистые | блёклые поздние.
+            val precise   = preciseCount.coerceIn(0L, greenCount)
+            val easedEarly = easedEarlyCount.coerceIn(0L, greenCount - precise)
+            val easedLate  = greenCount - precise - easedEarly
+            val eW = if (greenCount > 0) gW * (easedEarly.toFloat() / greenCount) else 0f
+            val pW = if (greenCount > 0) gW * (precise.toFloat() / greenCount) else 0f
+            val lW = gW - eW - pW
             val bW = w * bluFrac
             val barPath = androidx.compose.ui.graphics.Path().apply {
                 addRoundRect(
@@ -1292,8 +1303,9 @@ private fun RangeBar(
             }
             clipPath(barPath) {
                 drawRect(resultRedColor,   topLeft = Offset(0f, 0f),         size = Size(rW, size.height))
-                drawRect(resultGreenColor,     topLeft = Offset(rW, 0f),       size = Size(pW, size.height))
-                drawRect(resultGreenSoftColor, topLeft = Offset(rW + pW, 0f),  size = Size(gW - pW, size.height))
+                drawRect(resultGreenSoftColor, topLeft = Offset(rW, 0f),           size = Size(eW, size.height))
+                drawRect(resultGreenColor,     topLeft = Offset(rW + eW, 0f),      size = Size(pW, size.height))
+                drawRect(resultGreenSoftColor, topLeft = Offset(rW + eW + pW, 0f), size = Size(lW, size.height))
                 drawRect(resultBlueColor,  topLeft = Offset(rW + gW, 0f),    size = Size(bW, size.height))
             }
             // Inline counts (only if segment wide enough)
@@ -1308,14 +1320,17 @@ private fun RangeBar(
             }
             // Числа — отдельно у чистых троек и у побед по смягчению; если
             // сегмент узок, число не рисуется (как раньше у общего зелёного).
-            val easedCount = greenCount - preciseCount.coerceIn(0L, greenCount)
-            if (preciseCount > 0 && pW > 16f) {
-                val ml = textMeasurer.measure(fmtCount(preciseCount), greenCountStyle)
-                drawText(ml, topLeft = Offset(rW + pW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
+            if (easedEarly > 0 && eW > 16f) {
+                val ml = textMeasurer.measure(fmtCount(easedEarly), greenCountStyle)
+                drawText(ml, topLeft = Offset(rW + eW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
             }
-            if (easedCount > 0 && gW - pW > 16f) {
-                val ml = textMeasurer.measure(fmtCount(easedCount), greenCountStyle)
-                drawText(ml, topLeft = Offset(rW + pW + (gW - pW) / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
+            if (precise > 0 && pW > 16f) {
+                val ml = textMeasurer.measure(fmtCount(precise), greenCountStyle)
+                drawText(ml, topLeft = Offset(rW + eW + pW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
+            }
+            if (easedLate > 0 && lW > 16f) {
+                val ml = textMeasurer.measure(fmtCount(easedLate), greenCountStyle)
+                drawText(ml, topLeft = Offset(rW + eW + pW + lW / 2f - ml.size.width / 2f, cy - ml.size.height / 2f))
             }
             if (lateCount > 0 && bW > 16f) {
                 val ml = textMeasurer.measure(fmtCount(lateCount), countStyle)
@@ -2072,7 +2087,9 @@ private fun AttemptBarRow(
     val timeStr = if (bar.durationMs > 0L)
         "%.${bar.accuracy}f".format(bar.durationMs / 1000.0) else ""
 
-    val errorText: String = if (!bar.isWin) {
+    // Победа по смягчению показывает своё отклонение, как промах: она стоит
+    // на своей стороне от тройки (Alex 2026-11-08). Чистая тройка — без числа.
+    val errorText: String = if (!bar.isWin || !bar.isClean) {
         val absVal = abs(bar.errorMs / 1000.0)
         val fmt    = when (bar.accuracy) { 3 -> "%.3f"; 1 -> "%.1f"; 0 -> "%.0f"; else -> "%.2f" }
         val raw    = fmt.format(absVal).removePrefix("0")
@@ -2129,20 +2146,27 @@ private fun AttemptBarRow(
                 strokeWidth = 0.8.dp.toPx()
             )
 
+            // Победа по смягчению (Alex 2026-11-08: «если слева, то слева, если
+            // справа, то справа») — блёклая линия на своей стороне, как у промаха,
+            // и точка на её конце: видно и что это победа, и куда она ушла.
+            val easedWin = bar.isWin && !bar.isClean
+            val tipDotR  = dotR * 0.75f
+            val tipGap   = if (easedWin) tipDotR else 0f
             when {
-                bar.isWin -> drawCircle(winGreen(bar.isClean), radius = dotR, center = Offset(cx, cy))
+                bar.isWin && bar.isClean -> drawCircle(resultGreenColor, radius = dotR, center = Offset(cx, cy))
 
                 bar.errorMs < 0 -> {
                     drawRoundRect(
-                        color        = resultRedColor,
+                        color        = if (easedWin) resultGreenSoftColor else resultRedColor,
                         topLeft      = Offset(cx - barLen, cy - barH / 2f),
                         size         = Size(barLen, barH),
                         cornerRadius = cornerR
                     )
+                    if (easedWin) drawCircle(resultGreenSoftColor, radius = tipDotR, center = Offset(cx - barLen, cy))
                     measuredText?.let { ml ->
                         val tw   = ml.size.width.toFloat()
                         val th   = ml.size.height.toFloat()
-                        val idealTx = cx - barLen - textGap - tw
+                        val idealTx = cx - barLen - tipGap - textGap - tw
                         val tx   = if (idealTx >= 0f) idealTx else (cx - barLen + textGap).coerceAtMost(cx - tw)
                         val ty   = cy - th / 2f
                         drawRect(bgColor, topLeft = Offset(tx - 1f, ty - 1f), size = Size(tw + 2f, th + 2f))
@@ -2152,15 +2176,16 @@ private fun AttemptBarRow(
 
                 else -> {
                     drawRoundRect(
-                        color        = resultBlueColor,
+                        color        = if (easedWin) resultGreenSoftColor else resultBlueColor,
                         topLeft      = Offset(cx, cy - barH / 2f),
                         size         = Size(barLen, barH),
                         cornerRadius = cornerR
                     )
+                    if (easedWin) drawCircle(resultGreenSoftColor, radius = tipDotR, center = Offset(cx + barLen, cy))
                     measuredText?.let { ml ->
                         val tw   = ml.size.width.toFloat()
                         val th   = ml.size.height.toFloat()
-                        val idealTx = cx + barLen + textGap
+                        val idealTx = cx + barLen + tipGap + textGap
                         val tx   = if (idealTx + tw <= w) idealTx else (cx + barLen - textGap - tw).coerceAtLeast(cx)
                         val ty   = cy - th / 2f
                         drawRect(bgColor, topLeft = Offset(tx - 1f, ty - 1f), size = Size(tw + 2f, th + 2f))

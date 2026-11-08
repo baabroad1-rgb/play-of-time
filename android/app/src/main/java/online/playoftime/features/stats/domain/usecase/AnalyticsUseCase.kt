@@ -505,6 +505,11 @@ class AnalyticsUseCase(
             periodPlayTimeMs         = periodPlayMs,
             periodWins               = trueThreeWins.toLong(),
             periodPrecise            = countPrecise(periodAttempts, aimTime).toLong(),
+            easedEarlyCount          = periodAttempts.count { att ->
+                (att.endTime - att.startTime - aimTime) < 0 &&
+                    countTrueThree(listOf(att), aimTime) == 1 &&
+                    countPrecise(listOf(att), aimTime) == 0
+            }.toLong(),
             periodFromMs             = periodAttempts.minOfOrNull { it.startTime } ?: 0L,
             periodToMs               = periodAttempts.maxOfOrNull { it.startTime } ?: 0L,
             periodSessionsCount      = periodSessions.size.toLong(),
