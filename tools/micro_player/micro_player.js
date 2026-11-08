@@ -49,6 +49,7 @@
     careful:  { label: "осторожный, тянет, учится медленно", bias: 140, cv0: 0.025, cvBest: 0.014, practiceTau: 800, motorMs: 5, drift: 1.0, strategy: "delta", alpha: 0.15 },
     kalman:   { label: "внимательный (Калман)", bias: -120, cv0: 0.025, cvBest: 0.009, practiceTau: 700, motorMs: 3, drift: 1.0, strategy: "kalman" },
     colour:   { label: "смотрит только на цвет", bias: 160, cv0: 0.025, cvBest: 0.010, practiceTau: 700, motorMs: 3, drift: 1.0, strategy: "colour", step: 80 },
+    fly:      { label: "муха: учится учиться (грибовидное тело)", bias: -120, cv0: 0.025, cvBest: 0.009, practiceTau: 700, motorMs: 3, drift: 1.0, strategy: "fly" },
     robot:    { label: "не учится (контроль)", bias: -60, cv0: 0.012, cvBest: 0.012, practiceTau: 1, motorMs: 3, drift: 0, strategy: "none" },
   };
 
@@ -130,6 +131,31 @@
           ? `I think I've got my bias: by nature I ${this.biasHat < 0 ? "rush" : "drag"} by about ${fmt(this.biasHat)}, give or take ${Math.round(Math.sqrt(this.P))} ms. Small corrections from here — what's left is spread, not bias.`
           : `Кажется, я понял свой сдвиг: от природы ${this.biasHat < 0 ? "спешу" : "тяну"} примерно на ${fmt(this.biasHat)}, плюс-минус ${Math.round(Math.sqrt(this.P))} мс. Дальше поправляюсь понемногу — остальное уже не сдвиг, а разброс.`);
       }
+      // «муха»: раз в 100 попыток — какие привычки поправляться у неё сложились
+      // (средний выбранный шаг за последние 100 попыток в трёх ситуациях).
+      // «Поменял» — только если сдвиг заметный (≥ 15 пунктов), иначе это шум выбора.
+      if (this.mb && n % 100 === 0) {
+        const hb = this.mb.habits(), was = this.habitsSaid || {};
+        const pc = (x) => x == null ? null : Math.round(x * 100);
+        const parts = [], changed = [];
+        const say = (key, ru, enT) => {
+          const v = pc(hb[key]); if (v == null) return;
+          parts.push(en ? `${enT} by ${v}%` : `${ru} на ${v}%`);
+          if (was[key] != null && Math.abs(v - was[key]) >= 15)
+            changed.push(en ? `${enT} by ${v}% instead of ${was[key]}%` : `${ru} на ${v}% вместо ${was[key]}%`);
+        };
+        say("repeat", "после второго промаха в ту же сторону", "after a second miss on the same side");
+        say("switched", "после перескока на другую сторону", "after jumping to the other side");
+        say("near", "в пределах клетки от тройки", "within a cell of three");
+        if (changed.length) {
+          out.push(en ? `I've changed how I learn: now I correct ${changed.join("; ")}.`
+                      : `Я поменял, как учусь: теперь поправляюсь ${changed.join("; ")}.`);
+        } else if (!this.habitsSaid && parts.length) {
+          out.push(en ? `How I learn so far: I correct ${parts.join("; ")} of the miss.`
+                      : `Как я пока учусь: поправляюсь ${parts.join("; ")} от промаха.`);
+        }
+        if (changed.length || !this.habitsSaid) this.habitsSaid = Object.fromEntries(Object.entries(hb).map(([k, v]) => [k, pc(v)]));
+      }
       // каждые 25 попыток — итог
       if (n % 25 === 0) {
         const w = h.slice(-25), hit = w.filter((x) => x.side === 0).length, e = w.filter((x) => x.side < 0).length, l = w.filter((x) => x.side > 0).length;
@@ -183,6 +209,13 @@
         this.P *= (1 - K);
       } else if (p.strategy === "delta") {
         this.biasHat += p.alpha * seenErr;
+      } else if (p.strategy === "fly") {
+        // «Муха» (mushroom_body.js): сама выбирает, на какую долю промаха
+        // поправиться, и учится этому выбору по дофамину.
+        if (!this.mb) { const { MushroomBody } = require("./mushroom_body.js"); this.mb = new MushroomBody(this.r, p); }
+        const cur = { err: seenErr, cell, side: seenErr < 0 ? -1 : seenErr > 0 ? 1 : 0 };
+        const out = this.mb.step([...this.hist.slice(-4), cur], colour === "win");
+        this.biasHat += out.correction;
       } else if (p.strategy === "colour") {
         const side = colour === "early" ? -1 : colour === "late" ? 1 : 0;
         if (side !== 0) {
