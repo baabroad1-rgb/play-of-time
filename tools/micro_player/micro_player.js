@@ -75,9 +75,13 @@
 
     write(text) { this.diary.push({ n: this.n, text }); return text; }
 
+    // Записи дневника — по-русски или по-английски (lang: "ru" | "en"; интерфейс игры английский).
     reflect(seenErr, cell, colour, stepMs) {
-      const h = this.hist, n = this.n, lv = { 100: "десятые", 10: "сотые", 1: "тысячные" }[cell] || "";
-      const fmt = (ms) => `${Math.round(Math.abs(ms))} мс`;
+      const en = this.p.lang === "en";
+      const h = this.hist, n = this.n;
+      const lv = en ? ({ 100: "tenths", 10: "hundredths", 1: "thousandths" }[cell] || "") : ({ 100: "десятые", 10: "сотые", 1: "тысячные" }[cell] || "");
+      const fmt = (ms) => `${Math.round(Math.abs(ms))} ${en ? "ms" : "мс"}`;
+      const sgn = (ms) => (ms > 0 ? "+" : "−") + fmt(ms);
       const side = seenErr < 0 ? -1 : seenErr > 0 ? 1 : 0;
       const prev = h.length > 1 ? h[h.length - 2] : null;
       const out = [];
@@ -85,45 +89,62 @@
       this.said = this.said || {};
       const once = (kind, gap, text) => { if (n - (this.said[kind] ?? -1e9) >= gap) { this.said[kind] = n; out.push(text); } };
       if (this.digits !== cell) {
-        if (this.digits != null) out.push(`Новая точность — ${lv}. Теперь «попал» значит уложиться в ±${cell / 2} мс; посмотрим, чего стоит моя рука.`);
-        else out.push(`Начинаю. Считаю до трёх как умею и смотрю, что покажет счётчик.`);
+        if (this.digits != null) out.push(en
+          ? `New precision: ${lv}. A hit now means landing within ±${cell / 2} ms. Let's see what my hand is worth.`
+          : `Новая точность — ${lv}. Теперь «попал» значит уложиться в ±${cell / 2} мс; посмотрим, чего стоит моя рука.`);
+        else out.push(en ? `Starting out. I count to three the way I can and watch what the counter says.`
+          : `Начинаю. Считаю до трёх как умею и смотрю, что покажет счётчик.`);
         this.digits = cell;
       }
       if (side === 0) {
         this.cleanTotal++;
-        if (this.cleanTotal === 1) out.push(`Ровно три! Первая чистая тройка — с ${n}-й попытки.`);
-        else if (this.sinceClean >= 25) out.push(`Наконец ровно три — после ${this.sinceClean} попыток мимо. Ничего не меняю.`);
+        if (this.cleanTotal === 1) out.push(en ? `Exactly three! My first clean three, on attempt ${n}.` : `Ровно три! Первая чистая тройка — с ${n}-й попытки.`);
+        else if (this.sinceClean >= 25) out.push(en ? `Exactly three at last, after ${this.sinceClean} misses. Changing nothing.` : `Наконец ровно три — после ${this.sinceClean} попыток мимо. Ничего не меняю.`);
         this.sinceClean = 0;
       } else this.sinceClean++;
       // серия с одной стороны
       const last3 = h.slice(-3);
       if (last3.length === 3 && last3.every((x) => x.side === side && side !== 0) && !(h.length > 3 && h[h.length - 4].side === side)) {
         const mean = last3.reduce((a, x) => a + x.err, 0) / 3;
-        once("streak", 15, `Третий раз подряд ${side < 0 ? "рано" : "поздно"}, в среднем на ${fmt(mean)}. Похоже, я ${side < 0 ? "спешу" : "тяну"} — ${side < 0 ? "держу дольше" : "отпускаю раньше"}.`);
+        once("streak", 15, en
+          ? `Third ${side < 0 ? "early" : "late"} in a row, ${fmt(mean)} on average. Looks like I ${side < 0 ? "rush" : "drag"}, so I'll ${side < 0 ? "hold longer" : "let go sooner"}.`
+          : `Третий раз подряд ${side < 0 ? "рано" : "поздно"}, в среднем на ${fmt(mean)}. Похоже, я ${side < 0 ? "спешу" : "тяну"} — ${side < 0 ? "держу дольше" : "отпускаю раньше"}.`);
       }
-      // перескок: поправился и улетел на другую сторону дальше, чем был
-      // (поправка, сделанная ПОСЛЕ прошлой попытки, должна быть заметной долей той ошибки —
-      // иначе это не перестарался, а просто шум)
+      // перескок: поправка, сделанная после прошлой попытки, заметная доля той ошибки —
+      // и улетел на другую сторону дальше, чем был (иначе это не перестарался, а шум)
       if (prev && prev.side !== 0 && side !== 0 && side !== prev.side && Math.abs(seenErr) > Math.abs(prev.err) * 1.3 &&
           Math.abs(prev.step) >= Math.max(cell, 0.4 * Math.abs(prev.err))) {
-        once("overshoot", 10, `Перестарался: после ${prev.err < 0 ? "раннего" : "позднего"} промаха поправился на ${fmt(prev.step)} и улетел на другую сторону (${seenErr > 0 ? "+" : "−"}${fmt(seenErr)}). Надо мельче.`);
+        once("overshoot", 10, en
+          ? `Overdid it: after an ${prev.err < 0 ? "early" : "late"} miss I corrected by ${fmt(prev.step)} and flew to the other side (${sgn(seenErr)}). Smaller steps.`
+          : `Перестарался: после ${prev.err < 0 ? "раннего" : "позднего"} промаха поправился на ${fmt(prev.step)} и улетел на другую сторону (${sgn(seenErr)}). Надо мельче.`);
       }
       // близнец: та же ошибка по модулю
       if (prev && side !== 0 && prev.side !== 0 && Math.abs(Math.abs(seenErr) - Math.abs(prev.err)) < 0.5) {
-        once("twin", 40, `Повторил прошлый промах в точности (${fmt(seenErr)}). Рука помнит — знать бы ещё, что именно.`);
+        once("twin", 40, en ? `Repeated my last miss exactly (${fmt(seenErr)}). The hand remembers — if only I knew what.`
+          : `Повторил прошлый промах в точности (${fmt(seenErr)}). Рука помнит — знать бы ещё, что именно.`);
       }
       // уверенность (только Калман)
       if (this.p.strategy === "kalman" && !this.confident && Math.sqrt(this.P) < 15) {
         this.confident = true;
-        out.push(`Кажется, я понял свой сдвиг: от природы ${this.biasHat < 0 ? "спешу" : "тяну"} примерно на ${fmt(this.biasHat)}, плюс-минус ${Math.round(Math.sqrt(this.P))} мс. Дальше поправляюсь понемногу — остальное уже не сдвиг, а разброс.`);
+        out.push(en
+          ? `I think I've got my bias: by nature I ${this.biasHat < 0 ? "rush" : "drag"} by about ${fmt(this.biasHat)}, give or take ${Math.round(Math.sqrt(this.P))} ms. Small corrections from here — what's left is spread, not bias.`
+          : `Кажется, я понял свой сдвиг: от природы ${this.biasHat < 0 ? "спешу" : "тяну"} примерно на ${fmt(this.biasHat)}, плюс-минус ${Math.round(Math.sqrt(this.P))} мс. Дальше поправляюсь понемногу — остальное уже не сдвиг, а разброс.`);
       }
       // каждые 25 попыток — итог
       if (n % 25 === 0) {
         const w = h.slice(-25), hit = w.filter((x) => x.side === 0).length, e = w.filter((x) => x.side < 0).length, l = w.filter((x) => x.side > 0).length;
         const errs = w.map((x) => x.err), m = errs.reduce((a, x) => a + x, 0) / w.length;
         const sd = Math.sqrt(errs.reduce((a, x) => a + (x - m) * (x - m), 0) / Math.max(1, w.length - 1));
-        const what = Math.abs(m) > sd / 2 ? `главное сейчас — сдвиг (${m < 0 ? "рано" : "поздно"} на ${fmt(m)})` : `сдвига почти нет, мешает разброс ±${fmt(sd)}`;
-        out.push(`Итог последних 25: ровно ${hit}, рано ${e}, поздно ${l}. ${what[0].toUpperCase() + what.slice(1)}.`);
+        const biasFirst = Math.abs(m) > sd / 2;
+        const lean = Math.max(e, l) >= 6 && Math.max(e, l) >= 2 * Math.max(1, Math.min(e, l));  // заметно чаще с одной стороны
+        const lateMore = l > e;
+        out.push(en
+          ? `Last 25: ${hit} exact, ${e} early, ${l} late. ${biasFirst ? `Bias is the main thing now (${m < 0 ? "early" : "late"} by ${fmt(m)}).`
+              : lean ? `More often ${lateMore ? "late" : "early"} — a slight ${lateMore ? "drag" : "rush"}, but the spread of ±${fmt(sd)} matters more.`
+              : `Hardly any bias — the spread of ±${fmt(sd)} is what holds me back.`}`
+          : `Итог последних 25: ровно ${hit}, рано ${e}, поздно ${l}. ${biasFirst ? `Главное сейчас — сдвиг (${m < 0 ? "рано" : "поздно"} на ${fmt(m)}).`
+              : lean ? `Чаще ${lateMore ? "поздно" : "рано"} — немного ${lateMore ? "тяну" : "спешу"}, но разброс ±${fmt(sd)} важнее.`
+              : `Сдвига почти нет, мешает разброс ±${fmt(sd)}.`}`);
       }
       return out.map((t) => this.write(t));
     }
