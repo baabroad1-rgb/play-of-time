@@ -18,6 +18,7 @@ import online.playoftime.core.telemetry.CrashReporter
 import online.playoftime.core.telemetry.NoOpAnalyticsReporter
 import online.playoftime.core.telemetry.NoOpCrashReporter
 import online.playoftime.database.TimeDatabase
+import online.playoftime.features.rival.RivalEngine
 import online.playoftime.features.main.ui.MainViewModel
 import online.playoftime.features.settings.ui.SettingsViewModel
 import online.playoftime.features.settings.ui.use_case.SetBeatsPerSecondUseCase
@@ -118,8 +119,41 @@ fun provideTimeDatabase(context: Context): TimeDatabase =
         ).build().also { timeDatabaseInstance = it }
     }
 
+/**
+ * База Doppelgänger'а (Alex 2026-11-08) — та же схема, отдельный файл. Его
+ * попытки не попадают ни в синк лидерборда, ни в Excel, ни в аналитику игрока;
+ * AnalyticsUseCase на ней работает без изменений. Миграции те же — когда схема
+ * TimeDatabase вырастет, обе базы поедут вместе.
+ */
+@Volatile
+private var rivalDatabaseInstance: TimeDatabase? = null
+
+fun provideRivalDatabase(context: Context): TimeDatabase =
+    rivalDatabaseInstance ?: synchronized(RivalEngine::class.java) {
+        rivalDatabaseInstance ?: Room.databaseBuilder(
+            context.applicationContext,
+            TimeDatabase::class.java,
+            "doppelganger.db"
+        ).addMigrations(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+            MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+        ).build().also { rivalDatabaseInstance = it }
+    }
+
 val appModule = module {
     single { provideTimeDatabase(androidApplication()) }
+
+    // Doppelgänger — ИИ-соперник. Его база НЕ регистрируется в Koin как
+    // TimeDatabase: иначе любой factoryOf(...) с параметром TimeDatabase мог бы
+    // получить не ту базу. Движок держит её сам.
+    single {
+        RivalEngine(
+            context      = androidApplication(),
+            playerDb     = get(),
+            rivalDb      = provideRivalDatabase(androidApplication()),
+            localStorage = get()
+        )
+    }
 
     singleOf(::LocalStorageService) {
         bind<LocalStorageServiceContract>()

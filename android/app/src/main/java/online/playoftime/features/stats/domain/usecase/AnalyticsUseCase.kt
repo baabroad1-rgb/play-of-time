@@ -36,7 +36,11 @@ class AnalyticsUseCase(
         // Сколько периодов НАЗАД от текущего листать (0 = текущий) — клювики
         // влево/вправо под фильтром на экране аналитики (Alex 2026-09-09).
         // Игнорируется для ALL_TIME.
-        offset: Int = 0
+        offset: Int = 0,
+        // Допуск текущего квеста для подсветки попыток «в допуске». null = квест
+        // игрока из LocalStorage; Doppelgänger (Alex 2026-11-08) передаёт свой —
+        // у него своя, независимая квестовая карьера.
+        currentToleranceMs: Int? = null
     ): AnalyticsData {
         val statDao    = database.statisticDao()
         val tryDao     = database.tryDao()
@@ -241,7 +245,7 @@ class AnalyticsUseCase(
         }
 
         // ── Допуск квеста (для подсветки попыток в допуске) ──────────────
-        val toleranceMs = localStorage.getQuestCurrentToleranceMs().toDouble()
+        val toleranceMs = (currentToleranceMs ?: localStorage.getQuestCurrentToleranceMs()).toDouble()
 
         // ── Per-day session numbering (Alex 2026-07-23): номер сессии
         // считается ВНУТРИ дня (первая сессия дня = #1), не сквозной по истории.

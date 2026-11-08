@@ -79,6 +79,19 @@ interface TryDao {
     @Insert
     suspend fun insert(value: TryDatabaseModel)
 
+    /** Doppelgänger (Alex 2026-11-08): вставка с возвратом id — для SCM соседей. */
+    @Insert
+    suspend fun insertReturningId(value: TryDatabaseModel): Long
+
+    /** Doppelgänger: попытки игрока после курсора, по id — для ответа «попытка на попытку». */
+    @Query("SELECT * FROM TryDatabaseModel WHERE id > :afterId ORDER BY id ASC LIMIT :limit")
+    suspend fun getAttemptsAfterId(afterId: Int, limit: Int): List<TryDatabaseModel>
+
+    /** Doppelgänger: в его базе `deflection` = id попытки игрока, на которую он
+     *  ответил (столбец больше ни для чего не используется) — максимум и есть курсор. */
+    @Query("SELECT COALESCE(MAX(deflection), 0) FROM TryDatabaseModel")
+    suspend fun getMaxDeflection(): Long
+
     @Query("SELECT * FROM TryDatabaseModel")
     suspend fun getAllAttempts(): List<TryDatabaseModel>
 
@@ -148,6 +161,10 @@ data class SyncAttemptRow(
 interface SessionDao {
     @Insert
     suspend fun insert(value: SessionDatabaseModel)
+
+    /** Doppelgänger (Alex 2026-11-08): вставка с возвратом id новой сессии. */
+    @Insert
+    suspend fun insertReturningId(value: SessionDatabaseModel): Long
 
     @Query("SELECT * FROM SessionDatabaseModel")
     suspend fun getAllSessions(): List<SessionDatabaseModel>

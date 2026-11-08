@@ -4,10 +4,14 @@ import online.playoftime.core.data.LocalStorageService
 import online.playoftime.core.utils.Hand
 import online.playoftime.database.TimeDatabase
 import online.playoftime.database.TryDatabaseModel
+import online.playoftime.features.rival.RivalEngine
 
 class AddAttemptUseCase(
     private val database: TimeDatabase,
-    private val localStorageService: LocalStorageService
+    private val localStorageService: LocalStorageService,
+    // Doppelgänger (Alex 2026-11-08): «каждую попытку, которую совершает игрок,
+    // совершает и ИИ» — после каждой записанной попытки соперник отвечает своей.
+    private val rival: RivalEngine
 ) {
     suspend operator fun invoke(
         sessionId: Int,
@@ -30,5 +34,6 @@ class AddAttemptUseCase(
         )
 
         database.tryDao().insert(value)
+        rival.requestSync()
     }
 }
