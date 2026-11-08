@@ -218,6 +218,7 @@ class StatsViewModel(
                 val key = event.key
                 val st = viewState.value
                 if (key in st.diaryWriting || key in st.diaryTooFew) return
+                if (st.diaryWriterDown && !event.retry) return
                 if (key in st.diaryFailed && !event.retry) return
                 setState { copy(diaryWriting = diaryWriting + key, diaryFailed = diaryFailed - key) }
                 viewModelScope.launch {
@@ -232,8 +233,9 @@ class StatsViewModel(
                                 diaryWriting = diaryWriting - key,
                                 diaryTooFew  = diaryTooFew + key)
                             RivalEngine.WriteResult.Failed -> copy(
-                                diaryWriting = diaryWriting - key,
-                                diaryFailed  = diaryFailed + key)
+                                diaryWriting    = diaryWriting - key,
+                                diaryFailed     = diaryFailed + key,
+                                diaryWriterDown = true)
                         }
                     }
                 }

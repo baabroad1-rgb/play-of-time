@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -219,25 +221,27 @@ internal fun RivalDiaryCard(
                     androidx.compose.runtime.LaunchedEffect(key) {
                         if (written == null || key == todayKey) onRequest(key, false)
                     }
+                    // Не вышло (сервер модели недоступен — до переезда хостинга так
+                    // и будет, Alex 08.11: «скрой, да пусть генерится шаблонами») —
+                    // ничего не пишем, остаются заметки игры. «Пишет…» — только если
+                    // ответ идёт дольше полутора секунд: быстрый отказ не мигает.
                     when {
-                        key in writing && written == null -> DiaryStatus("${RivalEngine.NAME} is writing…", spinner = true)
+                        key in writing && written == null -> DelayedWriting("${RivalEngine.NAME} is writing…")
                         written != null -> BasicText(
                             text     = written.entry,
                             modifier = Modifier.padding(start = 4.dp, end = 2.dp, bottom = 10.dp),
                             style    = TextStyle(fontSize = 13.5.sp, lineHeight = 19.sp,
                                                  color = Color.White.copy(alpha = 0.92f))
                         )
-                        key in failed -> DiaryStatus("Couldn’t reach his pen just now — tap to try again.") {
-                            onRequest(key, true)
-                        }
-                        else -> Unit                       // too few attempts that day — notes only
+                        else -> Unit                       // no entry: notes only
                     }
-                    if (written != null && key in writing) DiaryStatus("Rewriting today…", spinner = true)
+                    if (written != null && key in writing) DelayedWriting("Rewriting today…")
                     if (written != null) anyWritten = true
 
-                    // Заметки-шаблоны движка — под своей гармошкой, свёрнуты.
+                    // Заметки игры: под записью модели — свёрнуты; без записи —
+                    // раскрыты (это и есть дневник). Тап переключает.
                     val notesKey = "n:$key"
-                    val notesOpen = notesKey in expandedDays || (written == null && key in tooFew)
+                    val notesOpen = (notesKey in expandedDays) != (written == null)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -284,7 +288,18 @@ internal fun RivalDiaryCard(
     }
 }
 
-/** Строка состояния дня: «пишет…» со спиннером или «не вышло — тапни». */
+/** «Пишет…» — только если ответ идёт дольше 1,5 с. */
+@Composable
+private fun DelayedWriting(text: String) {
+    var show by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1500)
+        show = true
+    }
+    if (show) DiaryStatus(text, spinner = true)
+}
+
+/** Строка состояния дня: «пишет…» со спиннером. */
 @Composable
 private fun DiaryStatus(text: String, spinner: Boolean = false, onClick: (() -> Unit)? = null) {
     Row(

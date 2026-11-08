@@ -40,6 +40,9 @@ class StatsContract {
         val diaryWriting: Set<String> = emptySet(),
         val diaryFailed: Set<String> = emptySet(),
         val diaryTooFew: Set<String> = emptySet(),
+        /** Сервер модели не ответил — до перезапуска больше не просим (хостинг в
+         *  России, OpenRouter его не пускает; Alex 08.11: «пусть генерится шаблонами»). */
+        val diaryWriterDown: Boolean = false,
     ) : ViewState
 
     sealed class Event : ViewEvent {
