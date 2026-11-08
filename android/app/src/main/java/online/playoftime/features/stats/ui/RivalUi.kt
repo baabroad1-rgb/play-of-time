@@ -236,23 +236,34 @@ internal fun RivalDiaryCard(
                 )
             }
         }
+    }
+}
 
-        // Кто он такой (Alex 08.11: «надо как-то прокомментировать, что за
-        // доппельгангер, откуда взялся, указать автора модели»). Свёрнуто;
-        // по образцу подписи к мордам «Based on Chernoff faces (1973)».
-        val aboutOpen = ABOUT_KEY in expandedDays
+/**
+ * Кто он такой — в самом верху экрана в режиме AI, свёрнуто (Alex 08.11:
+ * «надо как-то прокомментировать, что за доппельгангер, откуда взялся,
+ * указать автора модели… не надо про мою идею писать, дай только на других
+ * ссылки. А текст про него в самый верх перенеси»). По образцу подписи к
+ * мордам «Based on Chernoff faces (Herman Chernoff, 1973)».
+ */
+@Composable
+internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: String?) {
+    Column(
+        modifier            = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onToggleDay(ABOUT_KEY) }
+                .clickable { onToggle() }
                 .padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
             BasicText(
-                text  = (if (aboutOpen) "▾ " else "▸ ") + "Who is ${RivalEngine.NAME}?",
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = rivalPurpleLight)
+                text  = (if (open) "▾ " else "▸ ") + "Who is ${RivalEngine.NAME}?",
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
             )
         }
-        if (aboutOpen) {
+        if (open) {
             val body = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.85f))
             Column(
                 modifier = Modifier
@@ -265,8 +276,7 @@ internal fun RivalDiaryCard(
                 BasicText(ABOUT_WHO, style = body)
                 BasicText(ABOUT_HOW, style = body)
                 BasicText(
-                    ABOUT_CREDITS + (if (llm.isNotEmpty())
-                        " Diary entries: ${modelCredit(llm.values.maxByOrNull { it.at }?.model.orEmpty())}." else ""),
+                    ABOUT_CREDITS + (diaryModel?.let { " Diary entries: ${modelCredit(it)}." } ?: ""),
                     style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, color = diaryLabelGray)
                 )
             }
@@ -274,7 +284,7 @@ internal fun RivalDiaryCard(
     }
 }
 
-private const val ABOUT_KEY = "about"
+internal const val RIVAL_ABOUT_KEY = "about"
 
 private const val ABOUT_WHO =
     "Doppelgänger (German for “double-goer”) is an artificial player — your double in this game. " +
@@ -288,7 +298,7 @@ private const val ABOUT_HOW =
     "cells and a dopamine signal that rewards a good correction. Nobody tells him the right answer."
 
 private const val ABOUT_CREDITS =
-    "Idea: Alex Belyshkin. Learning scheme after the mushroom body of Drosophila (Aso et al., eLife 2014) " +
+    "Learning scheme after the mushroom body of Drosophila (Aso et al., eLife 2014) " +
     "and the fly brain wiring map FlyWire (Dorkenwald et al., Nature 2024)."
 
 /** "anthropic/claude-haiku-5.5" → "Claude Haiku (Anthropic)"; otherwise the id as is. */

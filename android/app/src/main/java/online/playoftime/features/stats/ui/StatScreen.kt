@@ -545,6 +545,16 @@ private fun AnalyticsContent(
                 }
             }
         }
+        // ── WHO IS DOPPELGÄNGER? (режим AI, в самом верху — Alex 08.11) ────
+        if (showRival) {
+            item {
+                RivalAboutCard(
+                    open       = RIVAL_ABOUT_KEY in expandedDiaryDays,
+                    onToggle   = { onToggleDiaryDay(RIVAL_ABOUT_KEY) },
+                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model
+                )
+            }
+        }
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
                 SummaryHeader(
