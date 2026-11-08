@@ -331,7 +331,12 @@ fun StatScreen(
                         expandedDiaryDays = state.expandedDiaryDays,
                         onSelectWho      = { setEvent(Event.SelectWho(it)) },
                         onToggleDiary    = { setEvent(Event.ToggleDiary) },
-                        onToggleDiaryDay = { setEvent(Event.ToggleDiaryDay(it)) }
+                        onToggleDiaryDay = { setEvent(Event.ToggleDiaryDay(it)) },
+                        diaryLlm         = state.diaryLlm,
+                        diaryWriting     = state.diaryWriting,
+                        diaryFailed      = state.diaryFailed,
+                        diaryTooFew      = state.diaryTooFew,
+                        onRequestDiary   = { key, retry -> setEvent(Event.RequestDiaryEntry(key, retry)) }
                     )
 
                     else -> BasicText(
@@ -434,7 +439,12 @@ private fun AnalyticsContent(
     expandedDiaryDays: Set<String> = emptySet(),
     onSelectWho      : (Boolean) -> Unit = {},
     onToggleDiary    : () -> Unit = {},
-    onToggleDiaryDay : (String) -> Unit = {}
+    onToggleDiaryDay : (String) -> Unit = {},
+    diaryLlm         : Map<String, online.playoftime.features.rival.RivalEngine.LlmEntry> = emptyMap(),
+    diaryWriting     : Set<String> = emptySet(),
+    diaryFailed      : Set<String> = emptySet(),
+    diaryTooFew      : Set<String> = emptySet(),
+    onRequestDiary   : (String, Boolean) -> Unit = { _, _ -> }
 ) {
     val tree    = remember(data.sessions) { buildTree(data.sessions) }
     val accent  = MaterialTheme.colorScheme.accentColor
@@ -552,7 +562,12 @@ private fun AnalyticsContent(
                     expanded     = diaryExpanded,
                     expandedDays = expandedDiaryDays,
                     onToggle     = onToggleDiary,
-                    onToggleDay  = onToggleDiaryDay
+                    onToggleDay  = onToggleDiaryDay,
+                    llm          = diaryLlm,
+                    writing      = diaryWriting,
+                    failed       = diaryFailed,
+                    tooFew       = diaryTooFew,
+                    onRequest    = onRequestDiary
                 )
             }
         }

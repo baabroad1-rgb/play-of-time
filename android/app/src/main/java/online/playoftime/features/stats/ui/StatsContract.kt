@@ -34,6 +34,12 @@ class StatsContract {
         val rivalQuest: String = "",
         val diaryExpanded: Boolean = true,
         val expandedDiaryDays: Set<String> = emptySet(),
+        /** Записи языковой модели по дням (ключ yyyyMMdd). */
+        val diaryLlm: Map<String, online.playoftime.features.rival.RivalEngine.LlmEntry> = emptyMap(),
+        /** Дни, для которых запись сейчас пишется / не удалась / слишком мало попыток. */
+        val diaryWriting: Set<String> = emptySet(),
+        val diaryFailed: Set<String> = emptySet(),
+        val diaryTooFew: Set<String> = emptySet(),
     ) : ViewState
 
     sealed class Event : ViewEvent {
@@ -55,6 +61,9 @@ class StatsContract {
         data class SelectWho(val rival: Boolean) : Event()
         data object ToggleDiary : Event()
         data class ToggleDiaryDay(val key: String) : Event()
+        /** Открыт день дневника — попросить запись языковой модели (если её нет
+         *  или сегодняшняя устарела). Повтор после неудачи — тот же event. */
+        data class RequestDiaryEntry(val key: String, val retry: Boolean = false) : Event()
 
         sealed class Dialog : Event() {
             data class Display(val text: String) : Dialog()

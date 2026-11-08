@@ -137,6 +137,11 @@ internal fun RivalDiaryCard(
     expandedDays : Set<String>,
     onToggle     : () -> Unit,
     onToggleDay  : (String) -> Unit,
+    llm          : Map<String, RivalEngine.LlmEntry> = emptyMap(),
+    writing      : Set<String> = emptySet(),
+    failed       : Set<String> = emptySet(),
+    tooFew       : Set<String> = emptySet(),
+    onRequest    : (String, Boolean) -> Unit = { _, _ -> },
 ) {
     val titleStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
     val grayStyle  = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = diaryLabelGray)
@@ -182,6 +187,8 @@ internal fun RivalDiaryCard(
                 .toList()
                 .sortedByDescending { it.first }
             val newest = days.first().first
+            val todayKey = keyFmt.format(Date())
+            var anyWritten = false
             days.forEachIndexed { i, (key, list) ->
                 val open = (key in expandedDays) != (key == newest)
                 if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(diaryLine))
@@ -199,31 +206,100 @@ internal fun RivalDiaryCard(
                                           color = Color.White.copy(alpha = 0.86f))
                     )
                     BasicText(
-                        text  = "${list.size} " + if (list.size == 1) "entry" else "entries",
+                        text  = if (key in llm) "entry · ${list.size} notes" else "${list.size} notes",
                         style = TextStyle(fontSize = 11.5.sp, color = diaryLabelGray)
                     )
                 }
                 if (open) {
-                    list.asReversed().forEach { e ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 9.dp)
-                        ) {
-                            BasicText(
-                                text     = "#${e.n}",
-                                modifier = Modifier.width(44.dp),
-                                style    = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
-                                                     color = rivalPurpleText)
-                            )
-                            BasicText(
-                                text  = buildAnnotatedString {
-                                    withStyle(SpanStyle(color = Color.White.copy(alpha = 0.86f))) { append(e.text) }
-                                },
-                                style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
-                            )
+                    // Запись языковой модели — только когда день открыт: человек
+                    // зашёл почитать (Alex: «запросы генерятся… только если человек
+                    // зашёл и хочет почитать»). Сегодняшнюю движок перепишет сам,
+                    // если день с тех пор сильно вырос; прошлые пишутся один раз.
+                    val written = llm[key]
+                    androidx.compose.runtime.LaunchedEffect(key) {
+                        if (written == null || key == todayKey) onRequest(key, false)
+                    }
+                    when {
+                        key in writing && written == null -> DiaryStatus("${RivalEngine.NAME} is writing…", spinner = true)
+                        written != null -> BasicText(
+                            text     = written.entry,
+                            modifier = Modifier.padding(start = 4.dp, end = 2.dp, bottom = 10.dp),
+                            style    = TextStyle(fontSize = 13.5.sp, lineHeight = 19.sp,
+                                                 color = Color.White.copy(alpha = 0.92f))
+                        )
+                        key in failed -> DiaryStatus("Couldn’t reach his pen just now — tap to try again.") {
+                            onRequest(key, true)
+                        }
+                        else -> Unit                       // too few attempts that day — notes only
+                    }
+                    if (written != null && key in writing) DiaryStatus("Rewriting today…", spinner = true)
+                    if (written != null) anyWritten = true
+
+                    // Заметки-шаблоны движка — под своей гармошкой, свёрнуты.
+                    val notesKey = "n:$key"
+                    val notesOpen = notesKey in expandedDays || (written == null && key in tooFew)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggleDay(notesKey) }
+                            .padding(start = 4.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicText(
+                            text  = (if (notesOpen) "▾ " else "▸ ") + "${list.size} " +
+                                    (if (list.size == 1) "note" else "notes") + " from the game",
+                            style = TextStyle(fontSize = 11.5.sp, color = diaryLabelGray)
+                        )
+                    }
+                    if (notesOpen) {
+                        list.asReversed().forEach { e ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 9.dp)
+                            ) {
+                                BasicText(
+                                    text     = "#${e.n}",
+                                    modifier = Modifier.width(44.dp),
+                                    style    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                                         color = rivalPurpleText)
+                                )
+                                BasicText(
+                                    text  = buildAnnotatedString {
+                                        withStyle(SpanStyle(color = Color.White.copy(alpha = 0.7f))) { append(e.text) }
+                                    },
+                                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
+                                )
+                            }
                         }
                     }
                 }
             }
+            if (anyWritten) {
+                BasicText(
+                    text     = "Entries are written by a language model from his own numbers; notes come straight from the game.",
+                    modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
+                    style    = TextStyle(fontSize = 10.5.sp, color = diaryLabelGray)
+                )
+            }
         }
+    }
+}
+
+/** Строка состояния дня: «пишет…» со спиннером или «не вышло — тапни». */
+@Composable
+private fun DiaryStatus(text: String, spinner: Boolean = false, onClick: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(start = 4.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (spinner) androidx.compose.material3.CircularProgressIndicator(
+            modifier    = Modifier.size(12.dp),
+            color       = rivalPurpleLight,
+            strokeWidth = 1.5.dp
+        )
+        BasicText(text = text, style = TextStyle(fontSize = 12.5.sp, color = rivalPurpleLight))
     }
 }

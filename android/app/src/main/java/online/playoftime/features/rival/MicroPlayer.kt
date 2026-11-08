@@ -256,7 +256,8 @@ class MicroPlayer private constructor(
         return STEPS[j] * last.err
     }
 
-    private fun habits(): Map<String, Int?> {
+    /** How he corrects now (% of a miss) in three situations — over his last 100 attempts. */
+    fun habits(): Map<String, Int?> {
         fun avg(f: (Choice) -> Boolean): Int? {
             val x = recent.filter(f)
             return if (x.size >= 8) (x.sumOf { it.k } / x.size * 100).roundToInt() else null

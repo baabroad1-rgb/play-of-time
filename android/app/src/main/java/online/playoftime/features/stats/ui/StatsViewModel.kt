@@ -81,6 +81,7 @@ class StatsViewModel(
                                 else statUseCases.analyticsUseCase(period, offset)
                 val diary = if (showRival) diaryForPeriod(rival.diary(), analytics) else emptyList()
                 val quest = if (showRival) rival.questLabel() else ""
+                val llm = if (showRival) rival.llmEntries() else emptyMap()
                 if (generation != loadGeneration) return@launch
 
                 // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
@@ -98,6 +99,7 @@ class StatsViewModel(
                         analyticsIsRival = showRival,
                         rivalDiary       = diary,
                         rivalQuest       = quest,
+                        diaryLlm         = if (showRival) llm else diaryLlm,
                         analyticsLoading = false,
                         selectedPeriod   = period,
                         expandedYears    = if (applyDefault) years else expandedYears,
@@ -211,6 +213,31 @@ class StatsViewModel(
             }
 
             is Event.ToggleDiary -> setState { copy(diaryExpanded = !diaryExpanded) }
+
+            is Event.RequestDiaryEntry -> {
+                val key = event.key
+                val st = viewState.value
+                if (key in st.diaryWriting || key in st.diaryTooFew) return
+                if (key in st.diaryFailed && !event.retry) return
+                setState { copy(diaryWriting = diaryWriting + key, diaryFailed = diaryFailed - key) }
+                viewModelScope.launch {
+                    val res = runCatching { rival.writeDayEntry(key) }
+                        .getOrDefault(RivalEngine.WriteResult.Failed)
+                    setState {
+                        when (res) {
+                            is RivalEngine.WriteResult.Written -> copy(
+                                diaryWriting = diaryWriting - key,
+                                diaryLlm     = diaryLlm + (key to res.entry))
+                            RivalEngine.WriteResult.TooFew -> copy(
+                                diaryWriting = diaryWriting - key,
+                                diaryTooFew  = diaryTooFew + key)
+                            RivalEngine.WriteResult.Failed -> copy(
+                                diaryWriting = diaryWriting - key,
+                                diaryFailed  = diaryFailed + key)
+                        }
+                    }
+                }
+            }
 
             is Event.ToggleDiaryDay -> setState {
                 val days = if (event.key in expandedDiaryDays)

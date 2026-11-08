@@ -75,6 +75,10 @@ class RivalEngine(
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val diaryFile = File(appContext.filesDir, DIARY_FILE)
     private val brainFile = File(appContext.filesDir, BRAIN_FILE)
+    private val daysFile = File(appContext.filesDir, DAYS_FILE)
+    private val llmFile = File(appContext.filesDir, LLM_FILE)
+    private val llmMutex = Mutex()
+    private val writer = DiaryWriter()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
     private val calculateScm = CalculateScmUseCase()
@@ -105,15 +109,147 @@ class RivalEngine(
 
     /** Diary, oldest first. */
     suspend fun diary(): List<DiaryEntry> = withContext(Dispatchers.IO) {
-        mutex.withLock {
-            if (!diaryFile.exists()) return@withLock emptyList()
-            diaryFile.readLines().mapNotNull { line ->
-                runCatching {
-                    val o = JSONObject(line)
-                    DiaryEntry(o.getInt("n"), o.getLong("t"), o.getInt("s"), o.getString("x"))
-                }.getOrNull()
+        mutex.withLock { diaryUnlocked() }
+    }
+
+    // ── Diary by a language model (Alex 2026-11-08) ─────────────────────────
+    //
+    // One entry per day he played, written only when the player opens that
+    // day in the diary («запросы генерятся… только если человек зашёл и хочет
+    // почитать»). Today's entry is rewritten when the day has grown a lot
+    // since; past days are written once and kept. The model's memory chains
+    // from day to day: the memory it wrote for the latest earlier day.
+
+    data class LlmEntry(
+        val entry: String, val memBefore: String, val memAfter: String,
+        val attempts: Int, val at: Long, val model: String,
+    )
+
+    sealed class WriteResult {
+        data class Written(val entry: LlmEntry) : WriteResult()
+        /** Fewer than [MIN_ATTEMPTS_FOR_ENTRY] attempts that day — nothing to write about. */
+        data object TooFew : WriteResult()
+        /** Offline, server not configured, limit reached. */
+        data object Failed : WriteResult()
+    }
+
+    suspend fun llmEntries(): Map<String, LlmEntry> = llmMutex.withLock { withContext(Dispatchers.IO) { loadLlm() } }
+
+    suspend fun writeDayEntry(dayKey: String): WriteResult {
+        sync()
+        val facts = mutex.withLock { withContext(Dispatchers.IO) { runCatching { dayFacts(dayKey) }.getOrNull() } }
+            ?: return WriteResult.TooFew
+        val attempts = facts.optInt("attempts_today")
+        val existing = llmMutex.withLock { withContext(Dispatchers.IO) { loadLlm() } }
+        existing[dayKey]?.let { e ->
+            val today = dayKey == dayKey(System.currentTimeMillis())
+            val grown = attempts >= maxOf(e.attempts + 50, (e.attempts * 1.5).toInt())
+            if (!(today && grown)) return WriteResult.Written(e)
+        }
+        val memBefore = existing[dayKey]?.memBefore
+            ?: existing.filterKeys { it < dayKey }.maxByOrNull { it.key }?.value?.memAfter
+            ?: FIRST_MEMORY
+        val res = writer.write(localStorage.getOrCreatePlayerId(), dayKey, facts, memBefore)
+            ?: return WriteResult.Failed
+        val e = LlmEntry(res.entry, memBefore, res.memory.ifEmpty { memBefore }, attempts,
+            System.currentTimeMillis(), res.model)
+        llmMutex.withLock {
+            withContext(Dispatchers.IO) {
+                val all = loadLlm().toMutableMap()
+                all[dayKey] = e
+                saveLlm(all)
             }
         }
+        return WriteResult.Written(e)
+    }
+
+    /**
+     * Everything the model may say about one day — counted by the engine from
+     * his own attempts, his diary notes and his habit snapshots. The model
+     * gets nothing else to go on, so it has nothing to invent from.
+     */
+    private suspend fun dayFacts(dayKey: String): JSONObject? {
+        val from = dayStartMs(dayKey)
+        val to = Calendar.getInstance().apply { timeInMillis = from; add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        val upToDay = rivalDb.tryDao().getAttemptsInRange(0L, to)
+        val day = upToDay.filter { it.startTime >= from }
+        if (day.size < MIN_ATTEMPTS_FOR_ENTRY) return null
+        val aim = aimMs().toLong()
+        fun errCells(t: TryDatabaseModel) = roundedCells(t.endTime - t.startTime, t.accuracy) - roundedCells(aim, t.accuracy)
+        fun errMs(t: TryDatabaseModel) = errCells(t) * cellMs(Accuracy.values()[t.accuracy.coerceIn(0, 3)])
+        val errs = day.map { errMs(it).toDouble() }
+        val mean = errs.average()
+        val spread = kotlin.math.sqrt(errs.sumOf { (it - mean) * (it - mean) } / errs.size)
+        var run = 0
+        var bestRun = 0
+        day.forEach { if (errCells(it) == 0L) { run++; bestRun = maxOf(bestRun, run) } else run = 0 }
+        val precision = day.map { it.accuracy }.distinct().joinToString(", then ") {
+            when (it) { 1 -> "tenths (3.0)"; 2 -> "hundredths (3.00)"; 3 -> "thousandths (3.000)"; else -> "seconds" }
+        }
+        val lastSession = rivalDb.sessionDao().getAllSessions().firstOrNull { it.id == day.last().sessionId }
+        val questNow = lastSession?.let { getCurrentQuest(it.questLevelId, it.questTaskId) }
+        val days = loadDays()
+        val habitsNow = days.keys().asSequence().filter { it > dayKey }.minOrNull()
+            ?.let { days.optJSONObject(it) }
+            ?: habitsJson(loadState().player?.habits() ?: emptyMap())
+        val notes = diaryUnlocked().filter { it.time in from until to && !it.text.startsWith("Last 25") }
+        val events = notes.filter { QUEST_EVENT.containsMatchIn(it.text) }
+        val others = notes.filterNot { QUEST_EVENT.containsMatchIn(it.text) }
+        val moments = (events + others.takeLast(maxOf(0, 10 - events.size))).sortedBy { it.n }.takeLast(12)
+        return JSONObject()
+            .put("day", upToDay.map { dayKey(it.startTime) }.distinct().size)
+            .put("precision_today", precision)
+            .put("attempts_today", day.size)
+            .put("attempts_total", upToDay.size)
+            .put("exact_threes_today", day.count { errCells(it) == 0L })
+            .put("exact_threes_ever", upToDay.count { errCells(it) == 0L })
+            .put("early_today", day.count { errCells(it) < 0 })
+            .put("late_today", day.count { errCells(it) > 0 })
+            .put("average_miss_ms", Math.round(mean))
+            .put("spread_ms", Math.round(spread))
+            .put("longest_run_of_exact_today", bestRun)
+            .put("quest_at_end_of_day", questNow?.let { "${it.label()} — ${it.victoryText()}" } ?: "unknown")
+            .put("correction_habits_at_start_of_day", days.optJSONObject(dayKey)?.takeIf { it.length() > 0 } ?: "none yet")
+            .put("correction_habits_now", habitsNow)
+            .put("habits_legend", "share of a miss I correct: same_side = after a second miss on the same side; " +
+                "switched = after jumping to the other side; near = when within one step of three")
+            .put("notable_moments", org.json.JSONArray().apply { moments.forEach { put("attempt ${it.n}: ${it.text}") } })
+    }
+
+    private fun habitsJson(h: Map<String, Int?>): JSONObject = JSONObject().apply {
+        h.forEach { (k, v) -> if (v != null) put(if (k == "repeat") "same_side" else k, "$v%") }
+    }
+
+    private fun loadDays(): JSONObject =
+        runCatching { JSONObject(daysFile.readText()) }.getOrElse { JSONObject() }
+
+    private fun diaryUnlocked(): List<DiaryEntry> =
+        if (!diaryFile.exists()) emptyList()
+        else diaryFile.readLines().mapNotNull { line ->
+            runCatching {
+                val o = JSONObject(line)
+                DiaryEntry(o.getInt("n"), o.getLong("t"), o.getInt("s"), o.getString("x"))
+            }.getOrNull()
+        }
+
+    private fun loadLlm(): Map<String, LlmEntry> = runCatching {
+        val o = JSONObject(llmFile.readText())
+        o.keys().asSequence().associateWith { k ->
+            val e = o.getJSONObject(k)
+            LlmEntry(e.getString("entry"), e.optString("memBefore"), e.optString("memAfter"),
+                e.optInt("attempts"), e.optLong("at"), e.optString("model"))
+        }
+    }.getOrElse { emptyMap() }
+
+    private fun saveLlm(all: Map<String, LlmEntry>) {
+        val o = JSONObject()
+        all.forEach { (k, e) ->
+            o.put(k, JSONObject().put("entry", e.entry).put("memBefore", e.memBefore).put("memAfter", e.memAfter)
+                .put("attempts", e.attempts).put("at", e.at).put("model", e.model))
+        }
+        val tmp = File(llmFile.parentFile, llmFile.name + ".tmp")
+        tmp.writeText(o.toString())
+        tmp.renameTo(llmFile)
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -126,11 +262,19 @@ class RivalEngine(
             val st = loadState()
             val player = st.player ?: MicroPlayer.newborn(st.seed, aimMs()).also { st.player = it }
             val notes = mutableListOf<DiaryEntry>()
+            val days = loadDays()
             rivalDb.withTransaction {
-                for (src in batch) playOne(st, player, src, notes)
+                for (src in batch) {
+                    // How he corrected at the start of each day he played — for
+                    // the language-model diary ("habits at start of day / now").
+                    val dk = dayKey(src.startTime)
+                    if (!days.has(dk)) days.put(dk, habitsJson(player.habits()))
+                    playOne(st, player, src, notes)
+                }
             }
             saveState(st)
             player.writeBrain(brainFile)
+            daysFile.writeText(days.toString())
             appendDiary(notes)
             cursor = batch.last().id
         }
@@ -513,6 +657,19 @@ class RivalEngine(
         private const val DIARY_FILE = "doppelganger_diary.jsonl"
         /** Его синапсы «клетки Кеньона → выходы» (MicroPlayer.writeBrain). */
         private const val BRAIN_FILE = "doppelganger_brain.bin"
+        /** День → как он поправлялся в начале этого дня (для дневника модели). */
+        private const val DAYS_FILE = "doppelganger_days.json"
+        /** День → запись языковой модели + её память до и после. */
+        private const val LLM_FILE = "doppelganger_llm.json"
+        const val MIN_ATTEMPTS_FOR_ENTRY = 10
+        private const val FIRST_MEMORY = "Nothing yet. I have never played."
+        private val QUEST_EVENT = Regex("^(Quest|Level|Done|Didn't make|Another window)")
+
+        private fun dayKey(ms: Long): String =
+            java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date(ms))
+
+        private fun dayStartMs(key: String): Long =
+            java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).parse(key)?.time ?: 0L
         private const val BATCH = 500
         private const val SESSION_BREAK_MS = 30 * 60_000L
         private const val MIN_PAUSE_MS = 400L
