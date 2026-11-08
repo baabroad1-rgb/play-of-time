@@ -9,6 +9,9 @@ local.properties
 .env
 .env.*
 pot-secrets/
+# Ключ OpenRouter для дневника Doppelgänger'а — только на сервере (Alex 2026-11-08)
+webapp/api/openrouter_key.php
+webapp/api/_dg_quota/
 **/.claude/settings.local.json
 
 # ───── Сборка и генерируемое ─────

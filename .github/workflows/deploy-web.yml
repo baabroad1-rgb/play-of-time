@@ -52,5 +52,7 @@ jobs:
             downloads/**
             test_p2.js
             api/config.php
+            api/openrouter_key.php
+            api/_dg_quota/**
             api/.htaccess
             .htaccess

@@ -4,7 +4,7 @@
 //   node tools/micro_player/diary_llm.js anthropic/claude-haiku-5.5 /tmp/out
 //
 // Модель ничего не помнит между запросами, поэтому каждый раз получает:
-//   • «файл характера» — doppelganger_character.md (кто он, игра, как писать);
+//   • «файл характера» — webapp/api/doppelganger_character.txt (кто он, игра, как писать);
 //   • свою память — короткое «что я о себе знаю», которое она сама переписывает
 //     после каждой записи;
 //   • факты дня — только числа и события от движка («муха» в симуляторе).
@@ -20,7 +20,8 @@ const { MicroPlayer } = require("./micro_player.js");
 
 const model = process.argv[2] || "anthropic/claude-haiku-5.5";
 const outDir = process.argv[3] || null;
-const character = fs.readFileSync(path.join(__dirname, "doppelganger_character.md"), "utf8");
+// Тот же файл, что читает сервер (webapp/api/doppelganger_diary.php).
+const character = fs.readFileSync(path.join(__dirname, "../../webapp/api/doppelganger_character.txt"), "utf8");
 
 const CELL = { 1: 100, 2: 10, 3: 1 };
 const cells = (ms, a) => Math.floor((ms + CELL[a] / 2) / CELL[a]);
