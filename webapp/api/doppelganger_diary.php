@@ -26,6 +26,13 @@ require __DIR__ . '/_lib.php';
 const DG_MODEL = 'anthropic/claude-haiku-5.5';
 const DG_PER_PLAYER_PER_DAY = 10;
 const DG_TOTAL_PER_DAY = 2000;
+// ВЫКЛЮЧАТЕЛЬ. Хостинг пока в России, а OpenRouter Россию не обслуживает (403
+// «Access denied by security policy», 08.11.2026). Чтобы не слать ему с
+// российского IP отказ за отказом на ключе Алекса — до переезда на хостинг в
+// Швейцарии (Алекс: «чуть позже собираюсь переехать… пусть генерится
+// шаблонами») к модели не обращаемся: 503 «paused», приложение остаётся на
+// заметках игры. После переезда — false и перевыложить сайт.
+const DG_PAUSED = true;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_error('POST only', 405);
 
@@ -47,6 +54,7 @@ $factsJson = json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 if ($factsJson === false || strlen($factsJson) > 8000) json_error('facts too long', 413);
 $memory = dg_clean($in['memory'] ?? '', 900);
 if ($memory === '') $memory = 'Nothing yet. I have never played.';
+if (DG_PAUSED) json_error('diary writer paused', 503);
 
 // ── quota ────────────────────────────────────────────────────────────────────
 function dg_take_quota($who) {
