@@ -89,14 +89,14 @@ class GetSessionComparisonUseCase(private val database: TimeDatabase) {
 
     private fun isWin(attempt: TryDatabaseModel): Boolean {
         val factor = 10.0.pow(attempt.accuracy.toDouble())
-        val dur = ((attempt.endTime - attempt.startTime) / 1000.0 * factor).roundToLong()
-        val aim = (AIM_MS / 1000.0 * factor).roundToLong()
+        val dur = online.playoftime.core.utils.roundedCells(attempt.endTime - attempt.startTime, attempt.accuracy)
+        val aim = online.playoftime.core.utils.roundedCells(AIM_MS, attempt.accuracy)
         return dur == aim
     }
 
     private fun formatDuration(durationMs: Long, accuracyOrdinal: Int): String {
         val factor = 10.0.pow(accuracyOrdinal.toDouble())
-        val rounded = kotlin.math.round(durationMs / 1000.0 * factor) / factor
+        val rounded = online.playoftime.core.utils.roundedCells(durationMs, accuracyOrdinal) / factor
         return when (accuracyOrdinal) {
             0    -> "%.0f".format(rounded)
             1    -> "%.1f".format(rounded)

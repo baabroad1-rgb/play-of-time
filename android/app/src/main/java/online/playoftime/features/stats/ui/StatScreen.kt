@@ -594,7 +594,7 @@ private fun AnalyticsContent(
                 } else if (metric == PaceMetric.HIT && isSession && series.isNotEmpty()) {
                     // Hit rate в сессии — ряд кружков, по одному на попытку:
                     // зелёный — попадание, серый — промах (Alex 2026-10-25).
-                    SessionHitStrip(data.paceChartHitRate, data.paceChartHitClean)
+                    SessionHitStrip(data.paceChartHitRate, data.paceChartHitClean, data.paceChartEarlyMs.map { it != null })
                     Spacer(Modifier.height(6.dp))
                 } else if (series.size >= 2) {
                     // В сессии столбик — одна попытка, без усреднения (Alex
@@ -2308,6 +2308,10 @@ private val FACE_SAD_COLOR   = Color(0xFFB8B8B8)
 // Блёклый вариант зелёного кружка — победа по смягчению (Alex 2026-11-03),
 // FACE_HAPPY_COLOR наполовину смешан с серым, как resultGreenSoftColor.
 private val FACE_HAPPY_SOFT_COLOR = Color(0xFF5F9472)
+// Он же со стороны ошибки (Alex 2026-11-08): раньше 3 чуть краснее, позже чуть
+// синее — тот же поворот тона ±11° (OKLCH), что у resultGreenSoftEarly/LateColor.
+private val FACE_HAPPY_SOFT_EARLY_COLOR = Color(0xFF699269)
+private val FACE_HAPPY_SOFT_LATE_COLOR  = Color(0xFF56957C)
 
 /**
  * Faces за сессию: по маленькой рожице на каждую попытку, по порядку, с номером
@@ -2359,7 +2363,7 @@ private fun SessionFacesStrip(happy: List<Float?>, sad: List<Float?>) {
  * ним (Alex 2026-10-25): зелёный — попадание, серый — промах.
  */
 @Composable
-private fun SessionHitStrip(hits: List<Float?>, clean: List<Boolean> = emptyList()) {
+private fun SessionHitStrip(hits: List<Float?>, clean: List<Boolean> = emptyList(), early: List<Boolean> = emptyList()) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     val cell = 22.dp
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -2369,7 +2373,7 @@ private fun SessionHitStrip(hits: List<Float?>, clean: List<Boolean> = emptyList
                 Row {
                     rowIdx.forEach { i ->
                         Column(Modifier.width(cell), horizontalAlignment = Alignment.CenterHorizontally) {
-                            HitDot((hits[i] ?: 0f) > 0f, 14.dp, clean.getOrElse(i) { true })
+                            HitDot((hits[i] ?: 0f) > 0f, 14.dp, clean.getOrElse(i) { true }, early.getOrNull(i))
                             BasicText(
                                 "${i + 1}",
                                 style = labelStyle(7.sp, color = textColor.copy(alpha = 0.43f))
@@ -2400,10 +2404,16 @@ private fun SessionHitStrip(hits: List<Float?>, clean: List<Boolean> = emptyList
 }
 
 @Composable
-private fun HitDot(hit: Boolean, size: Dp, clean: Boolean = true) {
+private fun HitDot(hit: Boolean, size: Dp, clean: Boolean = true, early: Boolean? = null) {
     Canvas(Modifier.size(size)) {
         drawCircle(
-            if (!hit) FACE_SAD_COLOR else if (clean) FACE_HAPPY_COLOR else FACE_HAPPY_SOFT_COLOR,
+            when {
+                !hit          -> FACE_SAD_COLOR
+                clean         -> FACE_HAPPY_COLOR
+                early == true -> FACE_HAPPY_SOFT_EARLY_COLOR
+                early == false -> FACE_HAPPY_SOFT_LATE_COLOR
+                else          -> FACE_HAPPY_SOFT_COLOR
+            },
             this.size.minDimension / 2f
         )
     }

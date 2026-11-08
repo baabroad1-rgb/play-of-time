@@ -4841,3 +4841,22 @@ body.game-open .page iframe {
 .win.eased.e-early, .attempt-time.win.eased.e-early { color: var(--win-soft-early); }
 .win.eased.e-late,  .attempt-time.win.eased.e-late  { color: var(--win-soft-late); }
 .rd-ratio .seg.win.eased.e-early, .rd-ratio .seg.win.eased.e-late { color: #061000; }
+
+/* Eased win side tint EVERYWHERE (Alex 2026-11-08: «не только на странице
+   аналитики, а вообще везде, на всех экранах и во всех ситуациях»): Play screen
+   timer, progress bar, pips, attempt log, Hit-rate circles. Not by side: the
+   Wins/precise total, the tolerance zone and the «± 0.01» quest text. */
+.time-display.is-win.eased.e-early { color: var(--win-soft-early); }
+.time-display.is-win.eased.e-late  { color: var(--win-soft-late); }
+.timer-card.timer-win.eased.e-early { background: #242c15; color: var(--win-soft-early); }
+.timer-card.timer-win.eased.e-late  { background: #1b2e1c; color: var(--win-soft-late); }
+.pb-fill.is-win.eased.e-early { background: var(--win-soft-early); }
+.pb-fill.is-win.eased.e-late  { background: var(--win-soft-late); }
+.pb-beak.is-win.eased.e-early { border-top-color: var(--win-soft-early); }
+.pb-beak.is-win.eased.e-late  { border-top-color: var(--win-soft-late); }
+.run-button.result-win.eased.e-early { background: var(--win-soft-early); }
+.run-button.result-win.eased.e-late  { background: var(--win-soft-late); }
+.pip-win-soft-early { background: var(--win-soft-early); }
+.pip-win-soft-late  { background: var(--win-soft-late); }
+.hs-hit.hs-eased.hs-e-early { background: #699269; }
+.hs-hit.hs-eased.hs-e-late  { background: #56957c; }

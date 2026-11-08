@@ -577,12 +577,24 @@
     return QUESTS.filter((quest) => quest.levelId === levelId).length;
   }
 
+  // ONE rounding rule for "which cell of the level is this" (Alex 2026-11-08:
+  // the counter must never show 3.00 while the attempt is recorded as not
+  // clean). Native's counter is String.format, which rounds half UP on the
+  // decimal digits: 3005 ms at L2 -> "3.01", 3050 ms at L1 -> "3.1". toFixed
+  // rounds the binary value instead (3.005 is 3.00499.. -> "3.00") and
+  // Math.round(x/1000*factor) disagreed with both on some x5 values — so the
+  // web showed "3.00" for 3005 ms while isTrueThree() said "not clean" and the
+  // win was painted pale. Integers, half up: the same cell as native's screen.
+  function roundedCells(ms, accuracy) {
+    const cell = accuracy === 0 ? 1000 : accuracy === 1 ? 100 : accuracy === 2 ? 10 : 1;
+    return Math.floor((ms + cell / 2) / cell);
+  }
+
   function formatTime(ms, accuracy = db.settings.accuracy) {
-    const seconds = ms / 1000;
-    if (accuracy === ACCURACY.SECONDS) return String(Math.trunc(seconds));
-    if (accuracy === ACCURACY.DECISECONDS) return seconds.toFixed(1).padStart(3, "0");
-    if (accuracy === ACCURACY.CENTISECONDS) return seconds.toFixed(2).padStart(4, "0");
-    return seconds.toFixed(3);
+    if (accuracy === ACCURACY.SECONDS) return String(Math.trunc(ms / 1000));
+    const digits = accuracy === ACCURACY.DECISECONDS ? 1 : accuracy === ACCURACY.CENTISECONDS ? 2 : 3;
+    const text = (roundedCells(ms, accuracy) / Math.pow(10, digits)).toFixed(digits);
+    return digits === 1 ? text.padStart(3, "0") : digits === 2 ? text.padStart(4, "0") : text;
   }
 
   function accuracyStepMs(quest = getQuest()) {
@@ -590,11 +602,6 @@
     if (quest.accuracy === ACCURACY.DECISECONDS) return 100;
     if (quest.accuracy === ACCURACY.CENTISECONDS) return 10;
     return 1;
-  }
-
-  function roundToAccuracy(seconds, accuracy) {
-    const factor = accuracy === 0 ? 1 : accuracy === 1 ? 10 : accuracy === 2 ? 100 : 1000;
-    return Math.round(seconds * factor) / factor;
   }
 
   function signedErrorMs(attempt) {
@@ -611,8 +618,7 @@
 
   function isTrueThree(attempt) {
     const accuracy = attempt.accuracy;
-    return roundToAccuracy(AIM_TIME / 1000, accuracy) ===
-      roundToAccuracy((attempt.endTime - attempt.startTime) / 1000, accuracy);
+    return roundedCells(AIM_TIME, accuracy) === roundedCells(attempt.endTime - attempt.startTime, accuracy);
   }
 
   // Native AnalyticsUseCase.countTrueThree port (Alex 2026-09-25) -- the
@@ -624,8 +630,8 @@
   function countTrueThreeTol(attempts) {
     return attempts.filter((a) => {
       const factor = Math.pow(10, a.accuracy);
-      const aimRounded = Math.round(AIM_TIME / 1000 * factor);
-      const durRounded = Math.round((a.endTime - a.startTime) / 1000 * factor);
+      const aimRounded = roundedCells(AIM_TIME, a.accuracy);
+      const durRounded = roundedCells(a.endTime - a.startTime, a.accuracy);
       const roundedErrMs = (durRounded - aimRounded) * (1000 / factor);
       const winTol = a.toleranceMs || 0;
       return Math.abs(roundedErrMs) <= winTol + 0.5;
@@ -636,6 +642,12 @@
   // not exactly 3.0 / 3.00 / 3.000 at the level's precision — painted in a
   // pale green (--win-soft); the bright green stays for clean threes only.
   // Native: winGreen() / ButtonResultType.EASED_THREE.
+  // Side of an eased win (Alex 2026-11-08): "e-early" before 3 (a touch redder),
+  // "e-late" after 3 (a touch bluer) — everywhere an eased win is coloured.
+  function easedSideClass(attempt) {
+    return signedErrorMs(attempt) < 0 ? "e-early" : "e-late";
+  }
+
   function isEasedWin(attempt) {
     return isQuestWinAttempt(attempt) && !isTrueThree(attempt);
   }
@@ -2358,7 +2370,8 @@
     }).join("");
     const histAxis = histYAxis(maxBucket, HIST_H);
     const geomTriangles = geomTriangleLayer(metrics);
-    const easedMark = timer.resultType === "win" && timer.eased ? " eased" : "";
+    // Eased win also carries its side (Alex 2026-11-08): before 3 a touch redder, after 3 a touch bluer.
+    const easedMark = timer.resultType === "win" && timer.eased ? ` eased ${timer.easedSide || "e-late"}` : "";
     const timeClass = timer.resultType === "early" ? "is-early" : timer.resultType === "late" ? "is-late" : timer.resultType === "win" ? "is-win" + easedMark : "";
     const timerMode = timer.state === "ready" ? "neutral" : timer.resultType === "early" ? "early" : timer.resultType === "late" ? "late" : timer.resultType === "win" ? "win" + easedMark : "neutral";
     const statusText = timer.state === "running" ? "STOP" : timer.state === "ready" ? "RUN" : (awaitingHurray ? "HOORAY!" : "RESET");
@@ -2442,7 +2455,7 @@
   function buttonResultClass() {
     if (timer.resultType === "early") return "result-early";
     if (timer.resultType === "late") return "result-late";
-    if (timer.resultType === "win") return timer.eased ? "result-win eased" : "result-win";
+    if (timer.resultType === "win") return timer.eased ? `result-win eased ${timer.easedSide || "e-late"}` : "result-win";
     return "";
   }
 
@@ -2562,7 +2575,7 @@
   // phrasing: "точка над пространством между точками".
   const PIPS_COLS = 33;
   function pipResultClass(attempt) {
-    if (isQuestWinAttempt(attempt)) return isEasedWin(attempt) ? "win-soft" : "win";
+    if (isQuestWinAttempt(attempt)) return isEasedWin(attempt) ? (signedErrorMs(attempt) < 0 ? "win-soft-early" : "win-soft-late") : "win";
     return signedErrorMs(attempt) < 0 ? "early" : "late";
   }
   function renderPips(total, sessionAttempts) {
@@ -3049,7 +3062,7 @@
     const cls = isQuestWinAttempt(attempt) ? "win-row" : "";
     // Freehand marker oval around the run (drawn on its top row, spans groupHeight rows).
     const oval = (db.settings.twinOutlineOn && row.groupHeight) ? freehandOvalSvg(row.groupSeed, row.groupHeight, row.groupKind) : "";
-    const side = isQuestWinAttempt(attempt) ? (isEasedWin(attempt) ? "win eased" : "win") : error < 0 ? "early" : error > 0 ? "late" : "";
+    const side = isQuestWinAttempt(attempt) ? (isEasedWin(attempt) ? `win eased ${easedSideClass(attempt)}` : "win") : error < 0 ? "early" : error > 0 ? "late" : "";
     const dispErrMs = Math.round(error * 1000);          // = the bucket centre
     let width;
     // Capped well under the theoretical 50% half-width (was 50/48) — at the
@@ -3078,12 +3091,12 @@
       <div class="attempt-row ${cls}" data-err-ms="${dispErrMs}">
         ${oval}
         <span class="attempt-number">${row.number}</span>
-        <span class="attempt-time ${side}${eSide}">${formatTime(duration, attempt.accuracy)}</span>
+        <span class="attempt-time ${side}">${formatTime(duration, attempt.accuracy)}</span>
         <span class="attempt-graph">
           ${easedSide
             ? `<b class="err-line win eased${eSide}" style="width:${width}%;${rawErrMs < 0 ? "right:50%" : "left:50%"}"></b><b class="hit-dot eased tip${eSide}" style="left:calc(${rawErrMs < 0 ? 50 - width : 50 + width}% - 3.5px)"></b><em class="win eased${eSide}" style="${rawErrMs < 0 ? `right:calc(${50 + width}% + 5px)` : `left:calc(${50 + width}% + 5px)`}">${rawErrMs < 0 ? "−" : ""}${label}</em>`
             : isQuestWinAttempt(attempt)
-            ? `<b class="hit-dot${isEasedWin(attempt) ? " eased" : ""}"></b>`
+            ? `<b class="hit-dot${isEasedWin(attempt) ? ` eased ${easedSideClass(attempt)}` : ""}"></b>`
             : `<b class="err-line ${side}" style="width:${width}%;${rawErrMs < 0 ? "right:50%" : "left:50%"}"></b><em class="${side}" style="${rawErrMs < 0 ? `right:${50 + width}%` : `left:${50 + width}%`}">${rawErrMs < 0 ? "−" : ""}${label}</em>`}
         </span>
         <span class="attempt-scm${row.isNewest ? " scm-header" : ""}">${row.isNewest ? "SC" : attempt.scm ? formatComma(attempt.scm) : ""}</span>
@@ -3978,6 +3991,7 @@
     timer.state = "result";
     timer.resultType = isQuestWinAttempt(attempt) ? "win" : signedErrorMs(attempt) < 0 ? "early" : "late";
     timer.eased = isEasedWin(attempt);
+    timer.easedSide = easedSideClass(attempt);
     // Firm STOP/fixation pulse — UNCONDITIONAL (start/stop feedback). Fires after
     // stopMetronome()'s vibrate(0), so it is the last vibrate call and isn't cancelled.
     pressHaptic();
@@ -4483,7 +4497,7 @@
         else if (metric === "lucky") v = countTrueThreeTol([a]) ? 1 / luckyChance(a, sessionSpans[a.accuracy]) : 0;
         else if (metric === "mean") v = err < 0 ? { e: -err, l: null } : err > 0 ? { e: null, l: err } : null;
         else v = faces.has(a) ? (faces.get(a) ? { e: 1, l: null } : { e: null, l: 1 }) : null;
-        return { t: a.startTime, v, label: `#${idx + 1}`, eased: isEasedWin(a) };
+        return { t: a.startTime, v, label: `#${idx + 1}`, eased: isEasedWin(a), early: err < 0 };
       });
     }
     // X axis, one rule for every chart (Alex 2026-10-19): session -> each
@@ -4564,7 +4578,7 @@
     if (!series.length) return "";
     // Eased wins (inside the tolerance, not exactly 3) — a pale dot, with its
     // own legend item only when the session has any (native, 2026-11-03).
-    const cells = series.map((s, i) => `<div class="fs-cell"><span class="hs-dot ${s.v > 0 ? (s.eased ? "hs-hit hs-eased" : "hs-hit") : "hs-miss"}"></span><span>${i + 1}</span></div>`).join("");
+    const cells = series.map((s, i) => `<div class="fs-cell"><span class="hs-dot ${s.v > 0 ? (s.eased ? `hs-hit hs-eased ${s.early ? "hs-e-early" : "hs-e-late"}` : "hs-hit") : "hs-miss"}"></span><span>${i + 1}</span></div>`).join("");
     const anyEased = series.some((s) => s.v > 0 && s.eased);
     return `<div class="faces-strip">${cells}</div>
     <div class="pc-legend"><span class="hs-dot hs-hit"></span> hit ${anyEased ? `<span class="hs-dot hs-hit hs-eased pc-dot-2"></span> eased ` : ""}<span class="hs-dot hs-miss pc-dot-2"></span> miss</div>`;
@@ -5948,7 +5962,7 @@
   // formatTime()'s SECONDS branch, which truncates); kept separate on purpose.
   function ssFormatAttempt(durationMs, accuracyOrdinal) {
     const factor = Math.pow(10, accuracyOrdinal);
-    const rounded = Math.round(durationMs / 1000 * factor) / factor;
+    const rounded = roundedCells(durationMs, accuracyOrdinal) / factor;
     if (accuracyOrdinal === 0) return rounded.toFixed(0);
     if (accuracyOrdinal === 1) return rounded.toFixed(1);
     if (accuracyOrdinal === 2) return rounded.toFixed(2);

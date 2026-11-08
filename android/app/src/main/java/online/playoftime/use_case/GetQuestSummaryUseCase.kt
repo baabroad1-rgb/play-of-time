@@ -219,8 +219,8 @@ class GetQuestSummaryUseCase(private val database: TimeDatabase) {
 
     private fun isWin(attempt: TryDatabaseModel): Boolean {
         val factor = 10.0.pow(attempt.accuracy.toDouble())
-        val dur = ((attempt.endTime - attempt.startTime) / 1000.0 * factor).roundToLong()
-        val aim = (AIM_MS / 1000.0 * factor).roundToLong()
+        val dur = online.playoftime.core.utils.roundedCells(attempt.endTime - attempt.startTime, attempt.accuracy)
+        val aim = online.playoftime.core.utils.roundedCells(AIM_MS, attempt.accuracy)
         return dur == aim
     }
 

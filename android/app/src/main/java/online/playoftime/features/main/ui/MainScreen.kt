@@ -83,6 +83,7 @@ import online.playoftime.ui_theme.baseTextStyle
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
 import online.playoftime.ui_theme.winGreen
+import online.playoftime.ui_theme.easedGreen
 import online.playoftime.ui_theme.resultRedColor
 import online.playoftime.ui_theme.resultYellowColor
 
@@ -435,7 +436,7 @@ fun MainScreen(
                                 .filter { !it.isSessionHeader }
                                 .map { a ->
                                     when {
-                                        a.isWin     -> winGreen(kotlin.math.abs(a.error) < 0.0005)
+                                        a.isWin     -> if (kotlin.math.abs(a.error) < 0.0005) resultGreenColor else easedGreen(a.error)
                                         a.error < 0.0 -> resultRedColor
                                         else        -> resultBlueColor
                                     }
@@ -955,7 +956,7 @@ fun MainScreen(
                 val endY = axisY - dropTarget.heightFrac * barAreaH
 
                 val color = when {
-                    activeDropIsWin -> winGreen(activeDropClean)
+                    activeDropIsWin -> if (activeDropClean) resultGreenColor else easedGreen(dropE)
                     dropE < 0       -> resultRedColor
                     else            -> resultBlueColor
                 }

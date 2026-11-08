@@ -59,6 +59,15 @@ Precision tightens by level: tenths (L1) → hundredths (L2) → thousandths (L3
   attempts ratio = early | eased-early | clean | eased-late | late
   (`easedEarlyCount`), and in the tree an eased win is a pale line + tip dot on
   its own side (`row.inTree`); the Play-screen log keeps the centred dot.
+  Since 2026-11-08 the SIDE tint is everywhere an eased win is coloured: before 3
+  a touch redder `--win-soft-early` #9bba58, after 3 a touch bluer
+  `--win-soft-late` #71c379 (`easedSideClass()` → `e-early`/`e-late`). Native:
+  `easedGreen(error)`, `ButtonResultType.EASED_EARLY/LATE`.
+- **One rounding rule (2026-11-08).** The level cell of a duration is
+  `roundedCells(ms, accuracy)` = integers, half up — exactly native's counter.
+  formatTime, isTrueThree, countTrueThreeTol, wins, colours all go through it.
+  Never `toFixed` on ms/1000 or `Math.round(ms/1000*factor)`: they disagree on
+  x5 values (3005 ms at L2 showed "3.00" but was recorded not clean).
 - **Indulgence: only ONE adaptation at a time.** IN_N quests adapt N (±33, cap
   {33,66,99}); ROW quests adapt t (±1 ms, cap {0,1,2,3} for most — L3.4/L3.5
   raised to cap {0..9} on 2026-08-08, mirror this per-quest, not globally).

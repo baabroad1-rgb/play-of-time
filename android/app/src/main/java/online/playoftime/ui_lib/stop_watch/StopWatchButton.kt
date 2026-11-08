@@ -65,6 +65,8 @@ import online.playoftime.ui_theme.darkGreyColor
 import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
 import online.playoftime.ui_theme.resultGreenSoftColor
+import online.playoftime.ui_theme.resultGreenSoftEarlyColor
+import online.playoftime.ui_theme.resultGreenSoftLateColor
 import online.playoftime.ui_theme.resultRedColor
 
 private val ButtonCardShape = RoundedCornerShape(24.dp)
@@ -427,7 +429,8 @@ fun StopWatchButton(
         ButtonResultType.EARLY      -> resultRedColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.LATE       -> resultBlueColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.TRUE_THREE -> resultGreenColor.copy(alpha = 0.22f).compositeOver(buttonBase)
-        ButtonResultType.EASED_THREE -> resultGreenSoftColor.copy(alpha = 0.22f).compositeOver(buttonBase)
+        ButtonResultType.EASED_EARLY -> resultGreenSoftEarlyColor.copy(alpha = 0.22f).compositeOver(buttonBase)
+        ButtonResultType.EASED_LATE  -> resultGreenSoftLateColor.copy(alpha = 0.22f).compositeOver(buttonBase)
         ButtonResultType.NONE       -> buttonBase
     }
 
@@ -473,7 +476,8 @@ fun StopWatchButton(
             ButtonResultType.EARLY      -> resultRedColor
             ButtonResultType.LATE       -> resultBlueColor
             ButtonResultType.TRUE_THREE -> resultGreenColor
-            ButtonResultType.EASED_THREE -> resultGreenSoftColor
+            ButtonResultType.EASED_EARLY -> resultGreenSoftEarlyColor
+            ButtonResultType.EASED_LATE  -> resultGreenSoftLateColor
             else                        -> Color.White
         }
         state == StopWatchCycle.IS_RUNNING && elapsedSeconds >= 2.0 -> resultGreenColor
@@ -485,7 +489,8 @@ fun StopWatchButton(
             ButtonResultType.EARLY      -> resultRedColor
             ButtonResultType.LATE       -> resultBlueColor
             ButtonResultType.TRUE_THREE -> resultGreenColor
-            ButtonResultType.EASED_THREE -> resultGreenSoftColor
+            ButtonResultType.EASED_EARLY -> resultGreenSoftEarlyColor
+            ButtonResultType.EASED_LATE  -> resultGreenSoftLateColor
             else                        -> Color.White
         }
         else -> Color.White

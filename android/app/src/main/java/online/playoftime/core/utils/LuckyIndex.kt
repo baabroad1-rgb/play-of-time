@@ -36,8 +36,8 @@ data class LuckyAttempt(
     /** Зелёная: ошибка, округлённая до ячейки уровня, в пределах допуска — как countTrueThree. */
     val isGreen: Boolean get() {
         val factor = 10.0.pow(accuracy)
-        val durRounded = (durationMs / 1000.0 * factor).roundToLong()
-        val aimRounded = (aimMs / 1000.0 * factor).roundToLong()
+        val durRounded = roundedCells(durationMs, accuracy)
+        val aimRounded = roundedCells(aimMs.toLong(), accuracy)
         val roundedErrMs = (durRounded - aimRounded) * (1000.0 / factor)
         return abs(roundedErrMs) <= maxOf(toleranceMs, resolutionFloorMs(accuracy)) + 0.5
     }

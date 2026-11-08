@@ -73,6 +73,24 @@ fun resolutionFloorMs(accuracyOrdinal: Int): Int =
 
 fun resolutionFloorMs(accuracy: Accuracy): Int = resolutionFloorMs(accuracy.ordinal)
 
+/**
+ * Длительность в клетках точности уровня — ЕДИНОЕ правило округления
+ * (Alex 2026-11-08: «проверь, что на 1 и 2 уровнях не возникает ситуации, когда
+ * счётчик показывает 3.00, но записывается не чистым цветом»).
+ *
+ * Счётчик показывает [formatTime] — String.format, а он округляет половину ВВЕРХ
+ * по десятичной записи числа: 3005 мс на L2 → «3.01», 3050 мс на L1 → «3.1».
+ * Здесь то же самое, но на целых: (мс + клетка/2) / клетка. Прежняя формула
+ * (мс / 1000.0 * 10^уровень).roundToLong() на части значений с пятёркой на конце
+ * давала другую клетку из-за двоичного представления (2135 мс на L2: счётчик
+ * «2.14», аналитика 2.13). Все места, которые решают «какая это клетка»
+ * (чистая тройка, победа с допуском, Lucky, сводки), берут её отсюда.
+ */
+fun roundedCells(durationMs: Long, accuracyOrdinal: Int): Long {
+    val cell = when (accuracyOrdinal) { 0 -> 1000L; 1 -> 100L; 2 -> 10L; else -> 1L }
+    return if (cell == 1L) durationMs else Math.floorDiv(durationMs + cell / 2, cell)
+}
+
 enum class StopWatchCycle {
     ON_START,
     IS_RUNNING,

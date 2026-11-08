@@ -6,6 +6,7 @@ import online.playoftime.core.utils.resolutionFloorMs
 import online.playoftime.core.utils.LuckyAttempt
 import online.playoftime.core.utils.luckySpans
 import online.playoftime.core.utils.luckyIndex as computeLuckyIndex
+import online.playoftime.core.utils.roundedCells
 import online.playoftime.database.SessionDatabaseModel
 import online.playoftime.database.TimeDatabase
 import online.playoftime.database.TryDatabaseModel
@@ -596,8 +597,8 @@ class AnalyticsUseCase(
     /** Ошибка попытки, округлённая до точности её уровня, мс — как на экране. */
     private fun displayErrorMs(att: TryDatabaseModel, aimTime: Int): Double {
         val factor = 10.0.pow(att.accuracy)
-        val durRounded = ((att.endTime - att.startTime) / 1000.0 * factor).roundToLong()
-        val aimRounded = (aimTime / 1000.0 * factor).roundToLong()
+        val durRounded = roundedCells(att.endTime - att.startTime, att.accuracy)
+        val aimRounded = roundedCells(aimTime.toLong(), att.accuracy)
         return (durRounded - aimRounded) * (1000.0 / factor)
     }
 
@@ -612,8 +613,8 @@ class AnalyticsUseCase(
         return attempts.count { attempt ->
             val decimals   = attempt.accuracy
             val factor     = 10.0.pow(decimals)
-            val aimRounded = (aimTime / 1000.0 * factor).roundToLong()
-            val durRounded = ((attempt.endTime - attempt.startTime) / 1000.0 * factor).roundToLong()
+            val aimRounded = roundedCells(aimTime.toLong(), attempt.accuracy)
+            val durRounded = roundedCells(attempt.endTime - attempt.startTime, attempt.accuracy)
             // Округлённая до ячейки уровня ошибка в мс, сравниваем с допуском ИЛИ
             // полом разрешения (на L3 ±4 мс — точный 0 недостижим касанием).
             val roundedErrMs = (durRounded - aimRounded).toDouble() * (1000.0 / factor)
@@ -626,8 +627,8 @@ class AnalyticsUseCase(
     private fun countPrecise(attempts: List<TryDatabaseModel>, aimTime: Int): Int {
         return attempts.count { attempt ->
             val factor     = 10.0.pow(attempt.accuracy)
-            val aimRounded = (aimTime / 1000.0 * factor).roundToLong()
-            val durRounded = ((attempt.endTime - attempt.startTime) / 1000.0 * factor).roundToLong()
+            val aimRounded = roundedCells(aimTime.toLong(), attempt.accuracy)
+            val durRounded = roundedCells(attempt.endTime - attempt.startTime, attempt.accuracy)
             durRounded == aimRounded
         }
     }
