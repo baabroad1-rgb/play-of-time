@@ -56,14 +56,14 @@ class StatsViewModel(
      *  You/AI или период) отбрасывается. */
     private var loadGeneration = 0
 
-    /** Записи дневника, попадающие в выбранный период экрана. */
-    private fun diaryForPeriod(all: List<RivalEngine.DiaryEntry>, a: AnalyticsData): List<RivalEngine.DiaryEntry> =
+    /** Дни соперника, попадающие в выбранный период экрана. */
+    private fun daysForPeriod(all: List<RivalEngine.DayDigest>, a: AnalyticsData): List<RivalEngine.DayDigest> =
         when (a.period) {
             PeriodFilter.ALL_TIME -> all
-            PeriodFilter.SESSION  -> a.selectedSessionId?.let { sid -> all.filter { it.sessionId == sid } } ?: emptyList()
+            PeriodFilter.SESSION  -> a.selectedSessionId?.let { sid -> all.filter { sid in it.sessionIds } } ?: emptyList()
             else -> {
                 val (from, to) = a.period.rangeMsForOffset(a.periodOffset)
-                all.filter { it.time in from until to }
+                all.filter { it.startMs in from until to }
             }
         }
 
@@ -79,7 +79,8 @@ class StatsViewModel(
             runCatching {
                 val analytics = if (showRival) rival.analytics(period, offset)
                                 else statUseCases.analyticsUseCase(period, offset)
-                val diary = if (showRival) diaryForPeriod(rival.diary(), analytics) else emptyList()
+                val days = if (showRival) daysForPeriod(rival.dayDigests(), analytics) else emptyList()
+                val report = if (showRival) rival.reportJson() else null
                 val quest = if (showRival) rival.questLabel() else ""
                 val llm = if (showRival) rival.llmEntries() else emptyMap()
                 if (generation != loadGeneration) return@launch
@@ -97,7 +98,8 @@ class StatsViewModel(
                     copy(
                         analytics        = analytics,
                         analyticsIsRival = showRival,
-                        rivalDiary       = diary,
+                        rivalDays        = days,
+                        rivalReportJson  = report,
                         rivalQuest       = quest,
                         diaryLlm         = if (showRival) llm else diaryLlm,
                         analyticsLoading = false,

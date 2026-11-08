@@ -163,57 +163,200 @@ class RivalEngine(
         return WriteResult.Written(e)
     }
 
-    /**
-     * Everything the model may say about one day — counted by the engine from
-     * his own attempts, his diary notes and his habit snapshots. The model
-     * gets nothing else to go on, so it has nothing to invent from.
-     */
-    private suspend fun dayFacts(dayKey: String): JSONObject? {
-        val from = dayStartMs(dayKey)
-        val to = Calendar.getInstance().apply { timeInMillis = from; add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
-        val upToDay = rivalDb.tryDao().getAttemptsInRange(0L, to)
-        val day = upToDay.filter { it.startTime >= from }
-        if (day.size < MIN_ATTEMPTS_FOR_ENTRY) return null
+    // ── One entry per day (Alex 2026-11-08: «дневник не должен быть слишком
+    // подробным. Не надо каждую попытку комментировать — максимум одна по
+    // результатам дня»). The engine still keeps its running notes (diary file)
+    // as raw material; the screen shows one entry per day: the language
+    // model's when there is one, else [templateEntry] from the same facts.
+
+    /** One day of his play, counted once from his attempts. */
+    data class DayDigest(
+        val key: String, val startMs: Long,
+        val attempts: Int, val exact: Int, val early: Int, val late: Int,
+        val meanMs: Long, val spreadMs: Long, val bestRun: Int, val precisions: List<Int>,
+        val totalAttempts: Int, val exactEver: Int, val dayIndex: Int,
+        val sessionIds: Set<Int>, val questEnd: String?,
+        val questsDone: List<String>, val levelsDone: List<String>, val easedDone: List<String>,
+        val windowsFailed: Int, val habitsStart: JSONObject?, val habitsEnd: JSONObject?,
+        /** The day's entry written by the engine itself (2–4 sentences). */
+        val text: String = "",
+    )
+
+    /** All days he played, oldest first. */
+    suspend fun dayDigests(): List<DayDigest> {
+        sync()
+        return mutex.withLock {
+            withContext(Dispatchers.IO) { runCatching { buildDigests() }.getOrDefault(emptyList()) }
+        }
+    }
+
+    private suspend fun buildDigests(): List<DayDigest> {
+        val all = rivalDb.tryDao().getAllAttempts().sortedBy { it.startTime }
+        if (all.isEmpty()) return emptyList()
+        val sessions = rivalDb.sessionDao().getAllSessions().associateBy { it.id }
+        val notesByDay = diaryUnlocked().groupBy { dayKey(it.time) }
+        val snaps = loadDays()
+        val snapKeys = snaps.keys().asSequence().toList().sorted()
+        val habitsNow = habitsJson(loadState().player?.habits() ?: emptyMap())
         val aim = aimMs().toLong()
         fun errCells(t: TryDatabaseModel) = roundedCells(t.endTime - t.startTime, t.accuracy) - roundedCells(aim, t.accuracy)
         fun errMs(t: TryDatabaseModel) = errCells(t) * cellMs(Accuracy.values()[t.accuracy.coerceIn(0, 3)])
-        val errs = day.map { errMs(it).toDouble() }
-        val mean = errs.average()
-        val spread = kotlin.math.sqrt(errs.sumOf { (it - mean) * (it - mean) } / errs.size)
-        var run = 0
-        var bestRun = 0
-        day.forEach { if (errCells(it) == 0L) { run++; bestRun = maxOf(bestRun, run) } else run = 0 }
-        val precision = day.map { it.accuracy }.distinct().joinToString(", then ") {
-            when (it) { 1 -> "tenths (3.0)"; 2 -> "hundredths (3.00)"; 3 -> "thousandths (3.000)"; else -> "seconds" }
+        var total = 0
+        var exactEver = 0
+        var idx = 0
+        val out = mutableListOf<DayDigest>()
+        all.groupBy { dayKey(it.startTime) }.forEach { (key, day) ->
+            idx++
+            val errs = day.map { errMs(it).toDouble() }
+            val mean = errs.average()
+            val spread = kotlin.math.sqrt(errs.sumOf { (it - mean) * (it - mean) } / errs.size)
+            var run = 0
+            var bestRun = 0
+            day.forEach { if (errCells(it) == 0L) { run++; bestRun = maxOf(bestRun, run) } else run = 0 }
+            val exact = day.count { errCells(it) == 0L }
+            total += day.size
+            exactEver += exact
+            val notes = notesByDay[key].orEmpty().map { it.text }
+            val questEnd = sessions[day.last().sessionId]
+                ?.let { getCurrentQuest(it.questLevelId, it.questTaskId) }
+                ?.let { "${it.label()} — ${it.victoryText()}" }
+            val d = DayDigest(
+                key = key, startMs = dayStartMs(key),
+                attempts = day.size, exact = exact,
+                early = day.count { errCells(it) < 0 }, late = day.count { errCells(it) > 0 },
+                meanMs = Math.round(mean), spreadMs = Math.round(spread), bestRun = bestRun,
+                precisions = day.map { it.accuracy }.distinct(),
+                totalAttempts = total, exactEver = exactEver, dayIndex = idx,
+                sessionIds = day.map { it.sessionId }.toSet(), questEnd = questEnd,
+                questsDone = notes.mapNotNull { QUEST_DONE.find(it)?.groupValues?.get(1) },
+                levelsDone = notes.mapNotNull { LEVEL_DONE.find(it)?.groupValues?.get(1) },
+                easedDone = notes.mapNotNull { EASED_DONE.find(it)?.groupValues?.get(1) },
+                windowsFailed = notes.count { WINDOW_FAILED.containsMatchIn(it) },
+                habitsStart = snaps.optJSONObject(key),
+                habitsEnd = snapKeys.firstOrNull { it > key }?.let { snaps.optJSONObject(it) } ?: habitsNow,
+            )
+            out += d.copy(text = templateEntry(d))
         }
-        val lastSession = rivalDb.sessionDao().getAllSessions().firstOrNull { it.id == day.last().sessionId }
-        val questNow = lastSession?.let { getCurrentQuest(it.questLevelId, it.questTaskId) }
-        val days = loadDays()
-        val habitsNow = days.keys().asSequence().filter { it > dayKey }.minOrNull()
-            ?.let { days.optJSONObject(it) }
-            ?: habitsJson(loadState().player?.habits() ?: emptyMap())
-        val notes = diaryUnlocked().filter { it.time in from until to && !it.text.startsWith("Last 25") }
+        return out
+    }
+
+    /** The day's entry from the engine itself — one per day, 2–4 sentences, few numbers. */
+    private fun templateEntry(d: DayDigest): String {
+        val s = mutableListOf<String>()
+        fun threes(n: Int) = if (n == 1) "exact three" else "exact threes"
+        s += when {
+            d.attempts < 10 -> "Only ${d.attempts} ${if (d.attempts == 1) "attempt" else "attempts"} today" +
+                (if (d.exact > 0) ", ${d.exact} of them exactly three." else ".")
+            d.exact == 0 -> "${d.attempts} attempts today and not one exact three."
+            else -> {
+                val rate = d.exact.toDouble() / d.attempts
+                val share = if (rate >= 0.5) "more than half" else "about one in ${Math.round(1 / rate)}"
+                "${d.attempts} attempts today, ${d.exact} ${threes(d.exact)} — $share."
+            }
+        }
+        if (d.attempts >= 10) {
+            val e = d.early
+            val l = d.late
+            s += when {
+                e >= 6 && e >= 2 * maxOf(1, l) -> "Mostly early — I still rush."
+                l >= 6 && l >= 2 * maxOf(1, e) -> "Mostly late — I still drag."
+                else -> "My misses fell on both sides about evenly; what holds me back is the spread, about ${d.spreadMs} ms."
+            }
+        }
+        val prec = mapOf("1" to "hundredths", "2" to "thousandths")
+        when {
+            d.levelsDone.isNotEmpty() -> {
+                val lv = d.levelsDone.last()
+                s += "Finished level $lv" + (prec[lv]?.let { " — the counter now shows $it" } ?: "") + "."
+            }
+            d.questsDone.isNotEmpty() -> s += (if (d.questsDone.size == 1) "Got through quest ${d.questsDone[0]}"
+                else "Got through quests ${d.questsDone.joinToString(", ")}") +
+                (d.questEnd?.let { "; next is $it." } ?: ".")
+            d.easedDone.isNotEmpty() -> s += "Passed ${d.easedDone.last()} only on eased terms, so the game tightened it again."
+            d.windowsFailed > 0 -> s += "Didn't manage ${d.questEnd?.substringBefore(" —") ?: "my quest"} in its window" +
+                (if (d.windowsFailed > 1) " (${d.windowsFailed} times)" else "") + "; the game gave me more room."
+            d.questEnd != null && d.attempts >= 10 -> s += "Still on quest ${d.questEnd}."
+        }
+        // How he learns: the biggest change of a correction habit over the day.
+        val st = d.habitsStart
+        val en = d.habitsEnd
+        if (st != null && en != null) {
+            val names = mapOf("same_side" to "after a second miss on the same side",
+                "switched" to "after jumping to the other side", "near" to "within a step of three")
+            names.keys.mapNotNull { k ->
+                val a = st.optString(k).removeSuffix("%").toIntOrNull()
+                val b = en.optString(k).removeSuffix("%").toIntOrNull()
+                if (a != null && b != null && kotlin.math.abs(b - a) >= 15) Triple(k, a, b) else null
+            }.maxByOrNull { kotlin.math.abs(it.third - it.second) }?.let { (k, a, b) ->
+                s += "I've changed how I learn: ${names[k]} I now correct by $b% of a miss instead of $a%."
+            }
+        }
+        return s.joinToString(" ")
+    }
+
+    /**
+     * Everything the model may say about one day — the engine's digest of it
+     * plus its notable moments. The model gets nothing else to go on, so it
+     * has nothing to invent from.
+     */
+    private suspend fun dayFacts(dayKey: String): JSONObject? {
+        val d = buildDigests().firstOrNull { it.key == dayKey } ?: return null
+        if (d.attempts < MIN_ATTEMPTS_FOR_ENTRY) return null
+        val notes = diaryUnlocked().filter { dayKey(it.time) == dayKey && !it.text.startsWith("Last 25") }
         val events = notes.filter { QUEST_EVENT.containsMatchIn(it.text) }
         val others = notes.filterNot { QUEST_EVENT.containsMatchIn(it.text) }
         val moments = (events + others.takeLast(maxOf(0, 10 - events.size))).sortedBy { it.n }.takeLast(12)
         return JSONObject()
-            .put("day", upToDay.map { dayKey(it.startTime) }.distinct().size)
-            .put("precision_today", precision)
-            .put("attempts_today", day.size)
-            .put("attempts_total", upToDay.size)
-            .put("exact_threes_today", day.count { errCells(it) == 0L })
-            .put("exact_threes_ever", upToDay.count { errCells(it) == 0L })
-            .put("early_today", day.count { errCells(it) < 0 })
-            .put("late_today", day.count { errCells(it) > 0 })
-            .put("average_miss_ms", Math.round(mean))
-            .put("spread_ms", Math.round(spread))
-            .put("longest_run_of_exact_today", bestRun)
-            .put("quest_at_end_of_day", questNow?.let { "${it.label()} — ${it.victoryText()}" } ?: "unknown")
-            .put("correction_habits_at_start_of_day", days.optJSONObject(dayKey)?.takeIf { it.length() > 0 } ?: "none yet")
-            .put("correction_habits_now", habitsNow)
+            .put("day", d.dayIndex)
+            .put("precision_today", d.precisions.joinToString(", then ") {
+                when (it) { 1 -> "tenths (3.0)"; 2 -> "hundredths (3.00)"; 3 -> "thousandths (3.000)"; else -> "seconds" }
+            })
+            .put("attempts_today", d.attempts)
+            .put("attempts_total", d.totalAttempts)
+            .put("exact_threes_today", d.exact)
+            .put("exact_threes_ever", d.exactEver)
+            .put("early_today", d.early)
+            .put("late_today", d.late)
+            .put("average_miss_ms", d.meanMs)
+            .put("spread_ms", d.spreadMs)
+            .put("longest_run_of_exact_today", d.bestRun)
+            .put("quest_at_end_of_day", d.questEnd ?: "unknown")
+            .put("correction_habits_at_start_of_day", d.habitsStart?.takeIf { it.length() > 0 } ?: "none yet")
+            .put("correction_habits_now", d.habitsEnd ?: "none yet")
             .put("habits_legend", "share of a miss I correct: same_side = after a second miss on the same side; " +
                 "switched = after jumping to the other side; near = when within one step of three")
             .put("notable_moments", org.json.JSONArray().apply { moments.forEach { put("attempt ${it.n}: ${it.text}") } })
+    }
+
+    /**
+     * His attempts in the format of api/report_data.php — for his own face and
+     * report (Alex 2026-11-08: «а морда в аналитикс чья?» — the page drew the
+     * player's, from the server; his attempts live only on the phone). Same
+     * rule as the server: only his current precision tier.
+     */
+    suspend fun reportJson(): String = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val all = rivalDb.tryDao().getAllAttempts()
+                val acc = all.maxByOrNull { it.startTime }?.accuracy
+                val iso = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                    .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+                val aim = aimMs()
+                val counters = HashMap<Int, Int>()
+                val rows = org.json.JSONArray()
+                all.filter { it.accuracy == acc }
+                    .sortedWith(compareBy({ it.sessionId }, { it.startTime }))
+                    .forEach { t ->
+                        val n = (counters[t.sessionId] ?: 0) + 1
+                        counters[t.sessionId] = n
+                        rows.put(JSONObject().put("t", iso.format(java.util.Date(t.startTime)))
+                            .put("s", t.sessionId).put("n", n).put("e", t.endTime - t.startTime - aim))
+                    }
+                JSONObject().put("ok", true).put("displayName", NAME)
+                    .put("acc", when (acc) { 1 -> "ds"; 2 -> "cs"; 3 -> "ms"; else -> null })
+                    .put("attempts", rows).toString()
+            }.getOrDefault("""{"ok":true,"attempts":[]}""")
+        }
     }
 
     private fun habitsJson(h: Map<String, Int?>): JSONObject = JSONObject().apply {
@@ -664,6 +807,10 @@ class RivalEngine(
         const val MIN_ATTEMPTS_FOR_ENTRY = 10
         private const val FIRST_MEMORY = "Nothing yet. I have never played."
         private val QUEST_EVENT = Regex("^(Quest|Level|Done|Didn't make|Another window)")
+        private val QUEST_DONE = Regex("Quest (\\d+\\.\\d+) done")
+        private val LEVEL_DONE = Regex("^Level (\\d+) complete")
+        private val EASED_DONE = Regex("^Done (\\d+\\.\\d+) — but on eased terms")
+        private val WINDOW_FAILED = Regex("^(Didn't make|Another window)")
 
         private fun dayKey(ms: Long): String =
             java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date(ms))

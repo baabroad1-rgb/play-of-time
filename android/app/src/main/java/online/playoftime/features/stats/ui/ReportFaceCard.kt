@@ -73,15 +73,21 @@ internal fun ReportFaceCard(
     data: AnalyticsData,
     helpMode: Boolean,
     modifier: Modifier = Modifier,
-    minAttempts: Int = MIN_FACE_ATTEMPTS
+    minAttempts: Int = MIN_FACE_ATTEMPTS,
+    // Режим AI (Doppelgänger, Alex 2026-11-08: «а морда в аналитикс чья?»):
+    // его попытки в формате report_data.php — страница рисует ЕГО морду и
+    // отчёт по ним (?local=1), а не по попыткам игрока с сервера.
+    localReportJson: String? = null
 ) {
     val accent   = MaterialTheme.colorScheme.accentColor
     val storage  = koinInject<LocalStorageService>()
     val playerId = remember { storage.getOrCreatePlayerId() }
     val token    = remember { storage.getOrCreateSyncToken() }
 
-    val query    = "playerId=$playerId&token=$token"
-    val faceUrl  = remember(data.periodFromMs, data.periodToMs, minAttempts) {
+    val local    = localReportJson != null
+    val localJson = rememberUpdatedState(localReportJson)
+    val query    = if (local) "local=1&n=${localReportJson?.length ?: 0}" else "playerId=$playerId&token=$token"
+    val faceUrl  = remember(data.periodFromMs, data.periodToMs, minAttempts, query) {
         "$REPORT_URL?$query&mode=face&fromMs=${data.periodFromMs}&toMs=${data.periodToMs}&min=$minAttempts"
     }
 
@@ -126,6 +132,7 @@ internal fun ReportFaceCard(
                             overScrollMode = android.view.View.OVER_SCROLL_NEVER
                             setOnTouchListener { _, _ -> true }
                             addJavascriptInterface(PotFaceBridge { c -> onReady.value(c) }, "PotFace")
+                            addJavascriptInterface(online.playoftime.ui_lib.PotLocalBridge { localJson.value }, "PotLocal")
                         }
                     },
                     update = { wv ->
@@ -161,6 +168,6 @@ internal fun ReportFaceCard(
     }
 
     reportUrl?.let { url ->
-        ReportDialog(url = url, onDismiss = { reportUrl = null })
+        ReportDialog(url = url, onDismiss = { reportUrl = null }, localReportJson = localReportJson)
     }
 }

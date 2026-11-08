@@ -325,7 +325,8 @@ fun StatScreen(
                         onHelpToggle     = { helpTopic = null; helpMode = !helpMode },
                         onQuestionRect   = { helpQuestionRect = it },
                         showRival        = state.showRival,
-                        rivalDiary       = state.rivalDiary,
+                        rivalDays        = state.rivalDays,
+                        rivalReportJson  = state.rivalReportJson,
                         rivalQuest       = state.rivalQuest,
                         diaryExpanded    = state.diaryExpanded,
                         expandedDiaryDays = state.expandedDiaryDays,
@@ -433,7 +434,8 @@ private fun AnalyticsContent(
     onQuestionRect   : (androidx.compose.ui.geometry.Rect) -> Unit = {},
     // Doppelgänger (Alex 2026-11-08)
     showRival        : Boolean = false,
-    rivalDiary       : List<online.playoftime.features.rival.RivalEngine.DiaryEntry> = emptyList(),
+    rivalDays        : List<online.playoftime.features.rival.RivalEngine.DayDigest> = emptyList(),
+    rivalReportJson  : String? = null,
     rivalQuest       : String = "",
     diaryExpanded    : Boolean = true,
     expandedDiaryDays: Set<String> = emptySet(),
@@ -547,7 +549,9 @@ private fun AnalyticsContent(
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
                 SummaryHeader(
                     data, helpMode = helpMode,
-                    minFaceAttempts = if (selectedPeriod == PeriodFilter.SESSION) MIN_FACE_ATTEMPTS_SESSION else 30
+                    minFaceAttempts = if (selectedPeriod == PeriodFilter.SESSION) MIN_FACE_ATTEMPTS_SESSION else 30,
+                    // В режиме AI морда и отчёт — его, по его попыткам (Alex 08.11).
+                    localReportJson = if (showRival) rivalReportJson ?: "" else null
                 )
             }
         }
@@ -556,7 +560,7 @@ private fun AnalyticsContent(
         if (showRival) {
             item {
                 RivalDiaryCard(
-                    entries      = rivalDiary,
+                    days         = rivalDays,
                     questLabel   = rivalQuest,
                     periodLabel  = pl,
                     expanded     = diaryExpanded,
@@ -565,8 +569,6 @@ private fun AnalyticsContent(
                     onToggleDay  = onToggleDiaryDay,
                     llm          = diaryLlm,
                     writing      = diaryWriting,
-                    failed       = diaryFailed,
-                    tooFew       = diaryTooFew,
                     onRequest    = onRequestDiary
                 )
             }
@@ -928,7 +930,8 @@ private fun AnalyticsContent(
 // ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false, minFaceAttempts: Int = 30) {
+private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false, minFaceAttempts: Int = 30,
+                          localReportJson: String? = null) {
     // Две карточки в ряд: слева цифры (2/3 ширины), справа — кнопка отчёта
     // с мордочкой (1/3). Равной высоты (IntrinsicSize.Max).
     Row(
@@ -1049,7 +1052,8 @@ private fun SummaryHeader(data: AnalyticsData, helpMode: Boolean = false, minFac
             data        = data,
             helpMode    = helpMode,
             minAttempts = minFaceAttempts,
-            modifier = Modifier.weight(1f).fillMaxHeight()
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            localReportJson = localReportJson
         )
     }
 }

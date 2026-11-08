@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.MaterialTheme
@@ -26,11 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import online.playoftime.features.rival.RivalEngine
@@ -49,7 +45,6 @@ import java.util.Locale
 
 internal val rivalPurple      = Color(0xFF7C5CFF)
 internal val rivalPurpleLight = Color(0xFFC4B5FD)
-private val rivalPurpleText   = Color(0xFFA78BFA)
 private val toggleBg          = Color(0xFF1A1A1A)
 private val toggleBorder      = Color(0xFF333333)
 private val diaryLine         = Color(0xFF2A2A2A)
@@ -122,17 +117,20 @@ private fun PersonIcon(twin: Boolean, color: Color, modifier: Modifier) {
 }
 
 /**
- * Дневник Doppelgänger'а гармошкой (Alex: «а сам дневник сделай тоже
- * гармошкой»): заголовок сворачивает всю карточку, внутри — дни, новые
- * сверху, каждый день сворачивается. Самый свежий день раскрыт по умолчанию:
- * для него членство в [expandedDays] означает «свернуть», для остальных —
- * «раскрыть» (одно множество на оба случая, ViewModel только переключает ключ).
+ * Дневник Doppelgänger'а гармошкой по дням (Alex: «а сам дневник сделай тоже
+ * гармошкой»): заголовок сворачивает всю карточку, внутри дни, новые сверху.
+ * На день — ОДНА запись по итогам дня (Alex 08.11: «дневник не должен быть
+ * слишком подробным. Не надо каждую попытку комментировать — максимум одна по
+ * результатам дня»): запись языковой модели, если она есть, иначе запись,
+ * которую движок собрал сам ([RivalEngine.DayDigest.text]). Самый свежий
+ * день раскрыт по умолчанию: для него членство в [expandedDays] значит
+ * «свернуть», для остальных — «раскрыть».
  *
- * [entries] — записи выбранного периода, старые первыми.
+ * [days] — дни выбранного периода, старые первыми.
  */
 @Composable
 internal fun RivalDiaryCard(
-    entries      : List<RivalEngine.DiaryEntry>,
+    days         : List<RivalEngine.DayDigest>,
     questLabel   : String,
     periodLabel  : String,
     expanded     : Boolean,
@@ -141,8 +139,6 @@ internal fun RivalDiaryCard(
     onToggleDay  : (String) -> Unit,
     llm          : Map<String, RivalEngine.LlmEntry> = emptyMap(),
     writing      : Set<String> = emptySet(),
-    failed       : Set<String> = emptySet(),
-    tooFew       : Set<String> = emptySet(),
     onRequest    : (String, Boolean) -> Unit = { _, _ -> },
 ) {
     val titleStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
@@ -174,24 +170,21 @@ internal fun RivalDiaryCard(
                 .background(cardBg)
                 .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
-            if (entries.isEmpty()) {
+            if (days.isEmpty()) {
                 BasicText(
-                    text     = "No entries for this period yet. He writes when something happens — " +
-                               "a first clean three, a streak, a quest won or lost.",
+                    text     = "Nothing for this period yet. He writes one entry for each day he plays.",
                     modifier = Modifier.padding(vertical = 8.dp),
                     style    = TextStyle(fontSize = 12.5.sp, color = Color.White.copy(alpha = 0.6f))
                 )
                 return@Column
             }
-            val keyFmt = SimpleDateFormat("yyyyMMdd", Locale.US)
             val dayFmt = SimpleDateFormat("EEE, d MMM yyyy", Locale.ENGLISH)
-            val days = entries.groupBy { keyFmt.format(Date(it.time)) }
-                .toList()
-                .sortedByDescending { it.first }
-            val newest = days.first().first
-            val todayKey = keyFmt.format(Date())
+            val todayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+            val ordered = days.sortedByDescending { it.key }
+            val newest = ordered.first().key
             var anyWritten = false
-            days.forEachIndexed { i, (key, list) ->
+            ordered.forEachIndexed { i, d ->
+                val key = d.key
                 val open = (key in expandedDays) != (key == newest)
                 if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(diaryLine))
                 Row(
@@ -203,89 +196,108 @@ internal fun RivalDiaryCard(
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
                     BasicText(
-                        text  = (if (open) "▾ " else "▸ ") + dayFmt.format(Date(list.first().time)),
+                        text  = (if (open) "▾ " else "▸ ") + dayFmt.format(Date(d.startMs)),
                         style = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.Medium,
                                           color = Color.White.copy(alpha = 0.86f))
                     )
                     BasicText(
-                        text  = if (key in llm) "entry · ${list.size} notes" else "${list.size} notes",
+                        text  = "${d.attempts} " + if (d.attempts == 1) "attempt" else "attempts",
                         style = TextStyle(fontSize = 11.5.sp, color = diaryLabelGray)
                     )
                 }
                 if (open) {
-                    // Запись языковой модели — только когда день открыт: человек
-                    // зашёл почитать (Alex: «запросы генерятся… только если человек
-                    // зашёл и хочет почитать»). Сегодняшнюю движок перепишет сам,
-                    // если день с тех пор сильно вырос; прошлые пишутся один раз.
+                    // Запись языковой модели просится, только когда день открыт —
+                    // человек зашёл почитать. Пока её нет (или сервер модели не
+                    // отвечает — до переезда хостинга так и будет), стоит запись
+                    // движка: одна на день, по итогам дня.
                     val written = llm[key]
-                    androidx.compose.runtime.LaunchedEffect(key) {
-                        if (written == null || key == todayKey) onRequest(key, false)
-                    }
-                    // Не вышло (сервер модели недоступен — до переезда хостинга так
-                    // и будет, Alex 08.11: «скрой, да пусть генерится шаблонами») —
-                    // ничего не пишем, остаются заметки игры. «Пишет…» — только если
-                    // ответ идёт дольше полутора секунд: быстрый отказ не мигает.
-                    when {
-                        key in writing && written == null -> DelayedWriting("${RivalEngine.NAME} is writing…")
-                        written != null -> BasicText(
-                            text     = written.entry,
-                            modifier = Modifier.padding(start = 4.dp, end = 2.dp, bottom = 10.dp),
-                            style    = TextStyle(fontSize = 13.5.sp, lineHeight = 19.sp,
-                                                 color = Color.White.copy(alpha = 0.92f))
-                        )
-                        else -> Unit                       // no entry: notes only
-                    }
-                    if (written != null && key in writing) DelayedWriting("Rewriting today…")
-                    if (written != null) anyWritten = true
-
-                    // Заметки игры: под записью модели — свёрнуты; без записи —
-                    // раскрыты (это и есть дневник). Тап переключает.
-                    val notesKey = "n:$key"
-                    val notesOpen = (notesKey in expandedDays) != (written == null)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onToggleDay(notesKey) }
-                            .padding(start = 4.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BasicText(
-                            text  = (if (notesOpen) "▾ " else "▸ ") + "${list.size} " +
-                                    (if (list.size == 1) "note" else "notes") + " from the game",
-                            style = TextStyle(fontSize = 11.5.sp, color = diaryLabelGray)
-                        )
-                    }
-                    if (notesOpen) {
-                        list.asReversed().forEach { e ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 9.dp)
-                            ) {
-                                BasicText(
-                                    text     = "#${e.n}",
-                                    modifier = Modifier.width(44.dp),
-                                    style    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                                         color = rivalPurpleText)
-                                )
-                                BasicText(
-                                    text  = buildAnnotatedString {
-                                        withStyle(SpanStyle(color = Color.White.copy(alpha = 0.7f))) { append(e.text) }
-                                    },
-                                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
-                                )
-                            }
+                    if (d.attempts >= RivalEngine.MIN_ATTEMPTS_FOR_ENTRY) {
+                        androidx.compose.runtime.LaunchedEffect(key) {
+                            if (written == null || key == todayKey) onRequest(key, false)
                         }
                     }
+                    if (written != null) anyWritten = true
+                    BasicText(
+                        text     = written?.entry ?: d.text,
+                        modifier = Modifier.padding(start = 4.dp, end = 2.dp, bottom = 10.dp),
+                        style    = TextStyle(fontSize = 13.5.sp, lineHeight = 19.sp,
+                                             color = Color.White.copy(alpha = 0.92f))
+                    )
+                    if (key in writing) DelayedWriting(
+                        if (written == null) "${RivalEngine.NAME} is writing…" else "Rewriting today…")
                 }
             }
             if (anyWritten) {
+                val model = llm.values.maxByOrNull { it.at }?.model.orEmpty()
                 BasicText(
-                    text     = "Entries are written by a language model from his own numbers; notes come straight from the game.",
+                    text     = "Entries are written by ${modelCredit(model)} from his own numbers.",
                     modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
                     style    = TextStyle(fontSize = 10.5.sp, color = diaryLabelGray)
                 )
             }
         }
+
+        // Кто он такой (Alex 08.11: «надо как-то прокомментировать, что за
+        // доппельгангер, откуда взялся, указать автора модели»). Свёрнуто;
+        // по образцу подписи к мордам «Based on Chernoff faces (1973)».
+        val aboutOpen = ABOUT_KEY in expandedDays
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggleDay(ABOUT_KEY) }
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            BasicText(
+                text  = (if (aboutOpen) "▾ " else "▸ ") + "Who is ${RivalEngine.NAME}?",
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, color = rivalPurpleLight)
+            )
+        }
+        if (aboutOpen) {
+            val body = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.85f))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(cardBg)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                BasicText(ABOUT_WHO, style = body)
+                BasicText(ABOUT_HOW, style = body)
+                BasicText(
+                    ABOUT_CREDITS + (if (llm.isNotEmpty())
+                        " Diary entries: ${modelCredit(llm.values.maxByOrNull { it.at }?.model.orEmpty())}." else ""),
+                    style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, color = diaryLabelGray)
+                )
+            }
+        }
     }
+}
+
+private const val ABOUT_KEY = "about"
+
+private const val ABOUT_WHO =
+    "Doppelgänger (German for “double-goer”) is an artificial player — your double in this game. " +
+    "He started knowing nothing and caught up with you attempt for attempt: for every attempt you make, " +
+    "he makes one of his own, and he goes through the quests at his own pace."
+
+private const val ABOUT_HOW =
+    "He doesn’t see his time — only the counter and its colour, like you. His hand has its own bias and " +
+    "spread and gets steadier with practice. His head learns how much to correct after a miss the way a " +
+    "fruit fly learns: a small copy of the fly’s learning centre, the mushroom body — two thousand Kenyon " +
+    "cells and a dopamine signal that rewards a good correction. Nobody tells him the right answer."
+
+private const val ABOUT_CREDITS =
+    "Idea: Alex Belyshkin. Learning scheme after the mushroom body of Drosophila (Aso et al., eLife 2014) " +
+    "and the fly brain wiring map FlyWire (Dorkenwald et al., Nature 2024)."
+
+/** "anthropic/claude-haiku-5.5" → "Claude Haiku (Anthropic)"; otherwise the id as is. */
+private fun modelCredit(id: String): String = when {
+    id.contains("claude-haiku") -> "Claude Haiku (Anthropic)"
+    id.contains("claude-sonnet") -> "Claude Sonnet (Anthropic)"
+    id.contains("deepseek") -> "DeepSeek"
+    id.isBlank() -> "a language model"
+    else -> id
 }
 
 /** «Пишет…» — только если ответ идёт дольше 1,5 с. */

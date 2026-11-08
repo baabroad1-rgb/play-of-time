@@ -28,8 +28,10 @@ class StatsContract {
         val showRival: Boolean = false,
         /** Чьи данные сейчас в [analytics] — чтобы при переключении показать спиннер. */
         val analyticsIsRival: Boolean = false,
-        /** Записи дневника за выбранный период, старые первыми. */
-        val rivalDiary: List<online.playoftime.features.rival.RivalEngine.DiaryEntry> = emptyList(),
+        /** Дни соперника за выбранный период (одна запись на день), старые первыми. */
+        val rivalDays: List<online.playoftime.features.rival.RivalEngine.DayDigest> = emptyList(),
+        /** Его попытки для страницы отчёта (морда и отчёт — его, не игрока). */
+        val rivalReportJson: String? = null,
         /** Текущий квест соперника, "2.3". */
         val rivalQuest: String = "",
         val diaryExpanded: Boolean = true,

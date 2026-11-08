@@ -2966,7 +2966,10 @@ function chAnimateLegend(row){
 }
 function render(){
   const S = t();
-  document.getElementById("pageTitle").textContent = S.title;
+  // Отчёт Doppelgänger'а (?local=1, Alex 2026-11-08) — заголовок с его именем.
+  document.getElementById("pageTitle").textContent = OWNER_NAME
+    ? (state.lang === "ru" ? `Результат ${OWNER_NAME} в Play of Time` : `${OWNER_NAME}’s Play of Time Results`)
+    : S.title;
   document.getElementById("pageLede").textContent = S.lede;
   document.getElementById("sampleNote").textContent = S.sampleNote;
 
@@ -3266,6 +3269,9 @@ function renderFaceOnly(params){
   } catch (e){ /* нативная карточка останется со смайликом */ }
 }
 
+// Чей отчёт, если не игрока: имя из данных приложения при ?local=1 (Doppelgänger).
+let OWNER_NAME = null;
+
 async function loadReport(){
   // Title/lede are normally set inside render(), which never runs if we
   // bail out before DATA loads — apply them once up front so an error state
@@ -3285,19 +3291,31 @@ async function loadReport(){
     errEl.hidden = false;
   }
 
-  if (!playerId || !token){
-    showError(STR[state.lang].loadError);
-    return;
-  }
-
+  // Doppelgänger (Alex 2026-11-08: «а морда в аналитикс чья?»): его попыток на
+  // сервере нет — они живут только в телефоне. С ?local=1 страница берёт
+  // попытки у приложения (window.PotLocal.reportData() — тот же формат, что у
+  // report_data.php), а не с сервера; дальше всё как обычно.
   let json;
-  try {
-    const resp = await fetch(`/api/report_data.php?playerId=${encodeURIComponent(playerId)}&token=${encodeURIComponent(token)}`);
-    if (!resp.ok) throw new Error("bad status " + resp.status);
-    json = await resp.json();
-  } catch (e){
-    showError(STR[state.lang].loadError);
-    return;
+  if (params.get("local") === "1"){
+    try {
+      json = JSON.parse(window.PotLocal && window.PotLocal.reportData ? window.PotLocal.reportData() : "");
+    } catch (e){
+      showError(STR[state.lang].loadError);
+      return;
+    }
+  } else {
+    if (!playerId || !token){
+      showError(STR[state.lang].loadError);
+      return;
+    }
+    try {
+      const resp = await fetch(`/api/report_data.php?playerId=${encodeURIComponent(playerId)}&token=${encodeURIComponent(token)}`);
+      if (!resp.ok) throw new Error("bad status " + resp.status);
+      json = await resp.json();
+    } catch (e){
+      showError(STR[state.lang].loadError);
+      return;
+    }
   }
 
   if (!json || !json.ok || !Array.isArray(json.attempts) || json.attempts.length === 0){
@@ -3306,6 +3324,7 @@ async function loadReport(){
   }
 
   DATA = { me: { label: json.displayName || "", acc: json.acc, attempts: json.attempts } };
+  if (params.get("local") === "1" && json.displayName) OWNER_NAME = json.displayName;
 
   if (params.get("mode") === "face"){ renderFaceOnly(params); return; }
 

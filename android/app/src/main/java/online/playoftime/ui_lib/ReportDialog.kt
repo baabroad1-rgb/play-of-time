@@ -44,7 +44,7 @@ import online.playoftime.ui_theme.baseTextColor
 // небольшие поля) — отчёту нужно реальное место под диаграмму и текст,
 // не компактный попап как у ComparePlayersDialog.
 @Composable
-fun ReportDialog(url: String, onDismiss: () -> Unit) {
+fun ReportDialog(url: String, onDismiss: () -> Unit, localReportJson: String? = null) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     var loading by remember { mutableStateOf(true) }
 
@@ -100,6 +100,11 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
                             setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            // Отчёт Doppelgänger'а (Alex 2026-11-08): его попыток на
+                            // сервере нет — страница с ?local=1 берёт их отсюда.
+                            if (localReportJson != null) {
+                                addJavascriptInterface(PotLocalBridge { localReportJson }, "PotLocal")
+                            }
                             webViewClient = object : android.webkit.WebViewClient() {
                                 override fun onPageFinished(view: android.webkit.WebView, finishedUrl: String) {
                                     loading = false
@@ -143,3 +148,14 @@ fun ReportDialog(url: String, onDismiss: () -> Unit) {
         }
     }
 }
+
+/**
+ * Попытки, которые страница отчёта (report.html?local=1) берёт не с сервера, а
+ * у приложения — в формате api/report_data.php. Нужно для Doppelgänger'а: его
+ * попытки живут только в телефоне (Alex 2026-11-08: «а морда в аналитикс чья?»).
+ */
+internal class PotLocalBridge(private val json: () -> String?) {
+    @android.webkit.JavascriptInterface
+    fun reportData(): String = json() ?: ""
+}
+
