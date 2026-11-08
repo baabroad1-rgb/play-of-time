@@ -38,7 +38,10 @@ and `webapp/CLAUDE.md` for the overall project brief.
   `doppelganger_character.txt`. **Key**: `openrouter_key.php` with
   `<?php return 'sk-or-…';`, created by hand on the server, never in git
   (`.gitignore`) and never deployed over (`deploy-web.yml` exclude), like
-  `config.php`; without it the endpoint answers 503 and the app keeps its
+  `config.php` — or, without the hosting's file manager, put the key into the
+  repo secret `OPENROUTER_KEY`: «Выложить сайт на хостинг» then uploads this
+  one file by FTPS on every deploy (and checks the endpoint sees it);
+  without it the endpoint answers 503 and the app keeps its
   rule-based notes. Limits: 10 per player and 2000 total per UTC day,
   counted in `_dg_quota/` (created on first call, denied to the web by its
   own `.htaccess`, excluded from deploy).

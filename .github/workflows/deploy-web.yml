@@ -56,3 +56,39 @@ jobs:
             api/_dg_quota/**
             api/.htaccess
             .htaccess
+
+      # Ключ OpenRouter для дневника Doppelgänger'а (Alex 2026-11-08): файл
+      # api/openrouter_key.php не живёт в git и исключён из выкладки выше, как
+      # config.php. Обычно его кладут руками файловым менеджером Beget; когда
+      # тот недоступен («не могу сейчас пробиться к ним их файлменеджером») или
+      # ключ меняется — его кладёт этот шаг из секрета репозитория
+      # OPENROUTER_KEY (Settings → Secrets and variables → Actions). Нет
+      # секрета — шаг ничего не делает. Один файл по FTPS, теми же секретами.
+      - name: Положить ключ OpenRouter (если задан секрет OPENROUTER_KEY)
+        env:
+          KEY: ${{ secrets.OPENROUTER_KEY }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.LOGIN }}
+          FTP_PASS: ${{ secrets.PASSWORD }}
+        run: |
+          set -u
+          if [ -z "$KEY" ]; then echo "Секрета OPENROUTER_KEY нет — ключ на сервере не трогаю"; exit 0; fi
+          case "$KEY" in *[!A-Za-z0-9_-]*) echo "В OPENROUTER_KEY неожиданные символы — скопирован целиком и без пробелов?"; exit 1;; esac
+          umask 077
+          printf "<?php return '%s';\n" "$KEY" > openrouter_key.php
+          # %2F — путь от корня FTP, как server-dir: / шагом выше.
+          url="ftp://$FTP_HOST/%2Fapi/openrouter_key.php"
+          if ! curl -sS --ssl-reqd --user "$FTP_USER:$FTP_PASS" -T openrouter_key.php "$url"; then
+            # Шаг выше (FTP-Deploy-Action) сертификат FTPS не сверяет (security: loose) —
+            # если строгая проверка не прошла, делаем так же, как он.
+            echo "Строгая проверка сертификата FTPS не прошла — заливаю как шаг выше, без неё"
+            curl -sS --ssl-reqd --insecure --user "$FTP_USER:$FTP_PASS" -T openrouter_key.php "$url" || { rm -f openrouter_key.php; exit 1; }
+          fi
+          rm -f openrouter_key.php
+          code=$(curl -s -o body.txt -w '%{http_code}' -X POST https://playoftime.online/api/doppelganger_diary.php -d '{}')
+          echo "Проверка дневника: HTTP $code $(cat body.txt)"
+          case "$code" in
+            400) echo "Ключ на месте (на пустой запрос дневник и должен ответить 400 «bad playerId»)";;
+            503) echo "Дневник выложен, но ключа не видит"; exit 1;;
+            *)   echo "Неожиданный ответ дневника"; exit 1;;
+          esac
