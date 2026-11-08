@@ -86,6 +86,9 @@ import online.playoftime.ui_theme.resultBlueColor
 import online.playoftime.ui_theme.resultGreenColor
 import online.playoftime.ui_theme.resultGreenSoftColor
 import online.playoftime.ui_theme.winGreen
+import online.playoftime.ui_theme.easedGreen
+import online.playoftime.ui_theme.resultGreenSoftEarlyColor
+import online.playoftime.ui_theme.resultGreenSoftLateColor
 import online.playoftime.ui_theme.resultRedColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -1303,9 +1306,9 @@ private fun RangeBar(
             }
             clipPath(barPath) {
                 drawRect(resultRedColor,   topLeft = Offset(0f, 0f),         size = Size(rW, size.height))
-                drawRect(resultGreenSoftColor, topLeft = Offset(rW, 0f),           size = Size(eW, size.height))
-                drawRect(resultGreenColor,     topLeft = Offset(rW + eW, 0f),      size = Size(pW, size.height))
-                drawRect(resultGreenSoftColor, topLeft = Offset(rW + eW + pW, 0f), size = Size(lW, size.height))
+                drawRect(resultGreenSoftEarlyColor, topLeft = Offset(rW, 0f),           size = Size(eW, size.height))
+                drawRect(resultGreenColor,          topLeft = Offset(rW + eW, 0f),      size = Size(pW, size.height))
+                drawRect(resultGreenSoftLateColor,  topLeft = Offset(rW + eW + pW, 0f), size = Size(lW, size.height))
                 drawRect(resultBlueColor,  topLeft = Offset(rW + gW, 0f),    size = Size(bW, size.height))
             }
             // Inline counts (only if segment wide enough)
@@ -2076,7 +2079,7 @@ private fun AttemptBarRow(
     maxAbsMs : Double
 ) {
     val barColor = when {
-        bar.isWin       -> winGreen(bar.isClean)
+        bar.isWin       -> if (bar.isClean) resultGreenColor else easedGreen(bar.errorMs)
         bar.errorMs < 0 -> resultRedColor
         else            -> resultBlueColor
     }
@@ -2157,12 +2160,12 @@ private fun AttemptBarRow(
 
                 bar.errorMs < 0 -> {
                     drawRoundRect(
-                        color        = if (easedWin) resultGreenSoftColor else resultRedColor,
+                        color        = if (easedWin) resultGreenSoftEarlyColor else resultRedColor,
                         topLeft      = Offset(cx - barLen, cy - barH / 2f),
                         size         = Size(barLen, barH),
                         cornerRadius = cornerR
                     )
-                    if (easedWin) drawCircle(resultGreenSoftColor, radius = tipDotR, center = Offset(cx - barLen, cy))
+                    if (easedWin) drawCircle(resultGreenSoftEarlyColor, radius = tipDotR, center = Offset(cx - barLen, cy))
                     measuredText?.let { ml ->
                         val tw   = ml.size.width.toFloat()
                         val th   = ml.size.height.toFloat()
@@ -2176,12 +2179,12 @@ private fun AttemptBarRow(
 
                 else -> {
                     drawRoundRect(
-                        color        = if (easedWin) resultGreenSoftColor else resultBlueColor,
+                        color        = if (easedWin) resultGreenSoftLateColor else resultBlueColor,
                         topLeft      = Offset(cx, cy - barH / 2f),
                         size         = Size(barLen, barH),
                         cornerRadius = cornerR
                     )
-                    if (easedWin) drawCircle(resultGreenSoftColor, radius = tipDotR, center = Offset(cx + barLen, cy))
+                    if (easedWin) drawCircle(resultGreenSoftLateColor, radius = tipDotR, center = Offset(cx + barLen, cy))
                     measuredText?.let { ml ->
                         val tw   = ml.size.width.toFloat()
                         val th   = ml.size.height.toFloat()
@@ -2266,7 +2269,7 @@ private fun MiniHistogram(
                 val inTolerance  = toleranceMs > 0 && abs(bucketCenter) <= toleranceMs
                 val color = when {
                     clean[i] > 0               -> resultGreenColor
-                    wins[i] > 0 || inTolerance -> resultGreenSoftColor
+                    wins[i] > 0 || inTolerance -> easedGreen(bucketCenter)
                     bucketCenter < 0.0         -> resultRedColor
                     else                       -> resultBlueColor
                 }

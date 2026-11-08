@@ -35,4 +35,17 @@ val resultGreenSoftColor = Color(0xFF87BF68)
 
 /** Цвет победы: яркий для чистой тройки, блёклый — для победы по смягчению. */
 fun winGreen(clean: Boolean): Color = if (clean) resultGreenColor else resultGreenSoftColor
+
+// В аналитике победа по смягчению ещё и со своей стороны от тройки (Alex
+// 2026-11-08: «зелёный слева чуть покраснее, а справа чуть посинее»): тот же
+// блёклый, повёрнутый по тону на ±11° (OKLCH) к красному раннему / синему позднему.
+val resultGreenSoftEarlyColor = Color(0xFF9BBA58)
+val resultGreenSoftLateColor  = Color(0xFF71C379)
+
+/** Блёклый зелёный победы по смягчению с оттенком своей стороны: раньше 3 — к красному, позже — к синему. */
+fun easedGreen(errorMs: Double): Color = when {
+    errorMs < 0 -> resultGreenSoftEarlyColor
+    errorMs > 0 -> resultGreenSoftLateColor
+    else        -> resultGreenSoftColor
+}
 val resultYellowColor = Color(0xFFE6A440) // Pending — 1.5 сек после остановки
