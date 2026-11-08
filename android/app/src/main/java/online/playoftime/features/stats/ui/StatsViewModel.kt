@@ -11,6 +11,8 @@ import online.playoftime.core.utils.excelFileName
 import online.playoftime.core.utils.orientationMode
 import online.playoftime.core.utils.portraitMode
 import online.playoftime.core.utils.PeriodFilter
+import online.playoftime.features.rival.RivalEngine
+import online.playoftime.features.stats.domain.entity.AnalyticsData
 import online.playoftime.features.stats.domain.usecase.StatUseCases
 import online.playoftime.features.stats.ui.StatsContract.Effect
 import online.playoftime.features.stats.ui.StatsContract.Event
@@ -22,7 +24,8 @@ class StatsViewModel(
     private val context: ContextUseCase,
     private val statUseCases: StatUseCases,
     private val recalculateScm: RecalculateScmUseCase,
-    private val localStorage: LocalStorageService
+    private val localStorage: LocalStorageService,
+    private val rival: RivalEngine
 ) : BaseViewModel<Event, State, Effect>() {
 
 
@@ -44,16 +47,41 @@ class StatsViewModel(
         viewModelScope.launch {
             recalculateScm()
         }
+        // Doppelgänger догоняет историю игрока в фоне сразу при старте — к
+        // первому переключению на AI ему почти нечего переигрывать.
+        rival.requestSync()
     }
 
+    /** Номер последней загрузки: ответ устаревшей (игрок успел переключить
+     *  You/AI или период) отбрасывается. */
+    private var loadGeneration = 0
+
+    /** Записи дневника, попадающие в выбранный период экрана. */
+    private fun diaryForPeriod(all: List<RivalEngine.DiaryEntry>, a: AnalyticsData): List<RivalEngine.DiaryEntry> =
+        when (a.period) {
+            PeriodFilter.ALL_TIME -> all
+            PeriodFilter.SESSION  -> a.selectedSessionId?.let { sid -> all.filter { it.sessionId == sid } } ?: emptyList()
+            else -> {
+                val (from, to) = a.period.rangeMsForOffset(a.periodOffset)
+                all.filter { it.time in from until to }
+            }
+        }
+
     private fun loadAnalytics(period: PeriodFilter, offset: Int = 0) {
+        val generation = ++loadGeneration
+        val showRival = viewState.value.showRival
         viewModelScope.launch {
             // Полноэкранный спиннер — только на самой первой загрузке.
             // При Refresh (каждый выход экрана на передний план) старые данные
             // остаются видимыми, пока считаются новые — без мигания.
-            setState { copy(analyticsLoading = analytics == null) }
+            // Переключение You/AI — тоже спиннер: на экране чужие данные.
+            setState { copy(analyticsLoading = analytics == null || analyticsIsRival != showRival) }
             runCatching {
-                val analytics = statUseCases.analyticsUseCase(period, offset)
+                val analytics = if (showRival) rival.analytics(period, offset)
+                                else statUseCases.analyticsUseCase(period, offset)
+                val diary = if (showRival) diaryForPeriod(rival.diary(), analytics) else emptyList()
+                val quest = if (showRival) rival.questLabel() else ""
+                if (generation != loadGeneration) return@launch
 
                 // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
                 // годы развёрнуты, месяцы видны, ниже — свёрнуто. Делается только
@@ -67,6 +95,9 @@ class StatsViewModel(
                     val applyDefault = !treeDefaultApplied && years.isNotEmpty()
                     copy(
                         analytics        = analytics,
+                        analyticsIsRival = showRival,
+                        rivalDiary       = diary,
+                        rivalQuest       = quest,
                         analyticsLoading = false,
                         selectedPeriod   = period,
                         expandedYears    = if (applyDefault) years else expandedYears,
@@ -74,7 +105,7 @@ class StatsViewModel(
                     )
                 }
             }.onFailure {
-                setState { copy(analyticsLoading = false) }
+                if (generation == loadGeneration) setState { copy(analyticsLoading = false) }
             }
         }
     }
@@ -165,6 +196,26 @@ class StatsViewModel(
                 val sessions = if (event.sessionId in expandedSessions)
                     expandedSessions - event.sessionId else expandedSessions + event.sessionId
                 copy(expandedSessions = sessions)
+            }
+
+            is Event.SelectWho -> {
+                if (event.rival != viewState.value.showRival) {
+                    setState { copy(showRival = event.rival) }
+                    // Дни/недели/месяцы у обоих одни и те же — листание сохраняем;
+                    // сессии у соперника свои — для SESSION начинаем с последней.
+                    val period = viewState.value.selectedPeriod
+                    val offset = if (period == PeriodFilter.SESSION) 0
+                                 else viewState.value.analytics?.periodOffset ?: 0
+                    loadAnalytics(period, offset)
+                }
+            }
+
+            is Event.ToggleDiary -> setState { copy(diaryExpanded = !diaryExpanded) }
+
+            is Event.ToggleDiaryDay -> setState {
+                val days = if (event.key in expandedDiaryDays)
+                    expandedDiaryDays - event.key else expandedDiaryDays + event.key
+                copy(expandedDiaryDays = days)
             }
 
             is Event.Dialog.Display -> setState {

@@ -23,6 +23,17 @@ class StatsContract {
         val displayExportToExcelResultDialog: Boolean = false,
         val exportToExcelResultDialogText: String = "",
         val displayAppSpinner: Boolean = false,
+        // ── Doppelgänger (Alex 2026-11-08) ──────────────────────────────────
+        /** Переключатель You | AI: true — весь экран показывает соперника. */
+        val showRival: Boolean = false,
+        /** Чьи данные сейчас в [analytics] — чтобы при переключении показать спиннер. */
+        val analyticsIsRival: Boolean = false,
+        /** Записи дневника за выбранный период, старые первыми. */
+        val rivalDiary: List<online.playoftime.features.rival.RivalEngine.DiaryEntry> = emptyList(),
+        /** Текущий квест соперника, "2.3". */
+        val rivalQuest: String = "",
+        val diaryExpanded: Boolean = true,
+        val expandedDiaryDays: Set<String> = emptySet(),
     ) : ViewState
 
     sealed class Event : ViewEvent {
@@ -40,6 +51,10 @@ class StatsContract {
         data class ToggleWeek(val key: String) : Event()
         data class ToggleDay(val key: String) : Event()
         data class ToggleSession(val sessionId: Int) : Event()
+        /** You | AI (Doppelgänger). */
+        data class SelectWho(val rival: Boolean) : Event()
+        data object ToggleDiary : Event()
+        data class ToggleDiaryDay(val key: String) : Event()
 
         sealed class Dialog : Event() {
             data class Display(val text: String) : Dialog()

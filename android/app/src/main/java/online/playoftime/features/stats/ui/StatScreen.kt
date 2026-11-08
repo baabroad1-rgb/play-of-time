@@ -289,8 +289,17 @@ fun StatScreen(
                         ) else Modifier
                     )
             ) {
+                // Переключение You | AI (Doppelgänger): старые данные остаются на
+                // экране под спиннером, пока считаются данные другого — иначе
+                // вместе с контентом пропал бы и сам переключатель.
+                if (state.analyticsLoading && state.analytics != null) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color    = if (state.showRival) rivalPurple else MaterialTheme.colorScheme.accentColor
+                    )
+                }
                 when {
-                    state.analyticsLoading -> CircularProgressIndicator(
+                    state.analyticsLoading && state.analytics == null -> CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color    = MaterialTheme.colorScheme.accentColor
                     )
@@ -314,7 +323,15 @@ fun StatScreen(
                         helpZones        = helpZones,
                         helpMode         = helpMode,
                         onHelpToggle     = { helpTopic = null; helpMode = !helpMode },
-                        onQuestionRect   = { helpQuestionRect = it }
+                        onQuestionRect   = { helpQuestionRect = it },
+                        showRival        = state.showRival,
+                        rivalDiary       = state.rivalDiary,
+                        rivalQuest       = state.rivalQuest,
+                        diaryExpanded    = state.diaryExpanded,
+                        expandedDiaryDays = state.expandedDiaryDays,
+                        onSelectWho      = { setEvent(Event.SelectWho(it)) },
+                        onToggleDiary    = { setEvent(Event.ToggleDiary) },
+                        onToggleDiaryDay = { setEvent(Event.ToggleDiaryDay(it)) }
                     )
 
                     else -> BasicText(
@@ -408,7 +425,16 @@ private fun AnalyticsContent(
                            androidx.compose.ui.geometry.Rect> = mutableMapOf(),
     helpMode         : Boolean = false,
     onHelpToggle     : () -> Unit = {},
-    onQuestionRect   : (androidx.compose.ui.geometry.Rect) -> Unit = {}
+    onQuestionRect   : (androidx.compose.ui.geometry.Rect) -> Unit = {},
+    // Doppelgänger (Alex 2026-11-08)
+    showRival        : Boolean = false,
+    rivalDiary       : List<online.playoftime.features.rival.RivalEngine.DiaryEntry> = emptyList(),
+    rivalQuest       : String = "",
+    diaryExpanded    : Boolean = true,
+    expandedDiaryDays: Set<String> = emptySet(),
+    onSelectWho      : (Boolean) -> Unit = {},
+    onToggleDiary    : () -> Unit = {},
+    onToggleDiaryDay : (String) -> Unit = {}
 ) {
     val tree    = remember(data.sessions) { buildTree(data.sessions) }
     val accent  = MaterialTheme.colorScheme.accentColor
@@ -469,14 +495,21 @@ private fun AnalyticsContent(
                     }
                     PeriodFilter.ALL_TIME -> null
                 }
-                if (periodContext != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment     = Alignment.CenterVertically
-                    ) {
+                // Doppelgänger (Alex 2026-11-08): слева в строке даты — тонкий
+                // переключатель You | AI (22 dp, ниже 28-dp клювиков — высота
+                // строки не меняется); дата с клювиками — справа, как на макете
+                // tools/micro_player/mock_rival_screen.js. Строка есть и на
+                // All time — ради переключателя.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    WhoToggle(rival = showRival, onSelect = onSelectWho)
+                    Spacer(Modifier.weight(1f))
+                    if (periodContext == null) Spacer(Modifier.height(28.dp))
+                    else {
                         PeriodShiftChevron(
                             symbol  = "‹",
                             enabled = data.hasOlderPeriod,
@@ -505,6 +538,21 @@ private fun AnalyticsContent(
                 SummaryHeader(
                     data, helpMode = helpMode,
                     minFaceAttempts = if (selectedPeriod == PeriodFilter.SESSION) MIN_FACE_ATTEMPTS_SESSION else 30
+                )
+            }
+        }
+
+        // ── DOPPELGÄNGER'S DIARY (только в режиме AI) ────────────────────
+        if (showRival) {
+            item {
+                RivalDiaryCard(
+                    entries      = rivalDiary,
+                    questLabel   = rivalQuest,
+                    periodLabel  = pl,
+                    expanded     = diaryExpanded,
+                    expandedDays = expandedDiaryDays,
+                    onToggle     = onToggleDiary,
+                    onToggleDay  = onToggleDiaryDay
                 )
             }
         }

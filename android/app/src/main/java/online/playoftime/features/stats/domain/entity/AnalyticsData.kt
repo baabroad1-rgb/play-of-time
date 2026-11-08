@@ -60,6 +60,9 @@ data class AnalyticsData(
     // Только для period == SESSION — номер (внутри дня) той сессии, что сейчас
     // показана; null для остальных периодов.
     val selectedSessionNumber : Int? = null,
+    /** id выбранной сессии при period == SESSION — по нему дневник Doppelgänger'а
+     *  показывает записи только этой сессии (Alex 2026-11-08). */
+    val selectedSessionId: Int? = null,
 
     // ── Сводка (всегда ALL_TIME) ──────────────────────────────────────
     val totalScm                : Double,

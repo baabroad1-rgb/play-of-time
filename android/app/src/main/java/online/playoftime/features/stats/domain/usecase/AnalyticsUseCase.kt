@@ -489,6 +489,7 @@ class AnalyticsUseCase(
             hasOlderPeriod            = hasOlderPeriod,
             hasNewerPeriod            = hasNewerPeriod,
             selectedSessionNumber     = selectedSessionNumber,
+            selectedSessionId         = targetSession?.id,
             totalScm                 = totalScm,
             periodScm                = periodScm,
             sessionsCount            = sessionsCount,
