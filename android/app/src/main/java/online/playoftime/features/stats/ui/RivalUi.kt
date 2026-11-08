@@ -247,21 +247,22 @@ internal fun RivalDiaryCard(
  * мордам «Based on Chernoff faces (Herman Chernoff, 1973)».
  */
 @Composable
-internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: String?) {
+internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: String?, onCompare: () -> Unit = {}) {
     Column(
         modifier            = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onToggle() }
-                .padding(horizontal = 4.dp, vertical = 2.dp)
+            modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             BasicText(
-                text  = (if (open) "▾ " else "▸ ") + "Who is ${RivalEngine.NAME}?",
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
+                text     = (if (open) "▾ " else "▸ ") + "Who is ${RivalEngine.NAME}?",
+                modifier = Modifier.clickable { onToggle() }.padding(vertical = 4.dp),
+                style    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
             )
+            ComparePill("Compare with you ⇄", MaterialTheme.colorScheme.accentColor, onCompare)
         }
         if (open) {
             val body = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.85f))
@@ -340,3 +341,52 @@ private fun DiaryStatus(text: String, spinner: Boolean = false, onClick: (() -> 
         BasicText(text = text, style = TextStyle(fontSize = 12.5.sp, color = rivalPurpleLight))
     }
 }
+
+/**
+ * Призыв сравнить (Alex 08.11: «может быть добавить колл ту экшн типа „сравни,
+ * кто лучше“»). Без цифр: строку гонки Алекс убрал раньше («строка гонки не
+ * нужна») — кнопка только переключает экран, сравнивает игрок сам. В режиме
+ * You — плашка наверху (тап → AI), в режиме AI — кнопка у «Who is…» (тап → You).
+ */
+@Composable
+internal fun RivalCompareBanner(onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .border(1.dp, rivalPurple.copy(alpha = 0.7f), shape)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        PersonIcon(twin = true, color = rivalPurpleLight, modifier = Modifier.size(16.dp))
+        BasicText(
+            text     = "Your double plays one attempt for each of yours — who’s better?",
+            modifier = Modifier.weight(1f),
+            style    = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = Color.White.copy(alpha = 0.85f))
+        )
+        BasicText(
+            text  = "Compare ⇄",
+            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
+        )
+    }
+}
+
+@Composable
+private fun ComparePill(text: String, color: Color, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(11.dp)
+    Box(
+        modifier = Modifier
+            .height(22.dp)
+            .clip(shape)
+            .border(1.dp, color.copy(alpha = 0.8f), shape)
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        BasicText(text = text, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = color))
+    }
+}
+

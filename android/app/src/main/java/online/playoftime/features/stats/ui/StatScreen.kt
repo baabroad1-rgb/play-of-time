@@ -546,14 +546,19 @@ private fun AnalyticsContent(
             }
         }
         // ── WHO IS DOPPELGÄNGER? (режим AI, в самом верху — Alex 08.11) ────
+        // и призыв сравнить: в режиме AI — кнопка «Compare with you», в режиме
+        // You — плашка «who’s better? Compare» (тап переключает экран).
         if (showRival) {
             item {
                 RivalAboutCard(
                     open       = RIVAL_ABOUT_KEY in expandedDiaryDays,
                     onToggle   = { onToggleDiaryDay(RIVAL_ABOUT_KEY) },
-                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model
+                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model,
+                    onCompare  = { onSelectWho(false) }
                 )
             }
+        } else {
+            item { RivalCompareBanner(onClick = { onSelectWho(true) }) }
         }
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
