@@ -9,6 +9,90 @@
 
 ## 8 ноября 2026 — версия v15.35
 
+### Бэклог: после переезда — снять выключатель DG_PAUSED
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/73ecb8d523845c1b617d1bc440bbd4b1a5b4da96)
+
+### Дневник модели на паузе до переезда хостинга: с российского IP к OpenRouter не обращаемся (503 paused), приложение на заметках игры
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/14aa19e3f37d423188f8fd8faec9820ac70b3f15)
+
+### Журнал: дневник модели на сервере, отказ OpenRouter из России, до переезда — шаблоны
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/921eaa64edbf3ed96e815495969660ebe0b6abad)
+
+### Doppelgänger: пока модель недоступна — без «не вышло», дневник на заметках игры (раскрыты); «пишет…» только после 1,5 с; после отказа до перезапуска сервер не дёргаем
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/071698dfd88eead4368aa6370d4bbe3bdff1dc7f)
+
+### Бэклог: переезд хостинга в Швейцарию — дневник через OpenRouter заработает там без переделок; список, что перенести
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b6e10506b50e4be40d28e9d91e5634e699bc1138)
+
+### Бэклог: OpenRouter не пускает российский сервер (403) — нужен поставщик, работающий из России
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f828fafdfcb13a59552327f09bb718bece992dd1)
+
+### Дневник: при отказе модели — код и причина от OpenRouter (без ключа), чтобы видеть, что не так
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1b3d778346f2c3b982536c0896dc1126a5bb1192)
+
+### Выкладка сайта кладёт ключ OpenRouter из секрета репозитория OPENROUTER_KEY — обход недоступного файлового менеджера Beget; проверяет, что дневник видит ключ
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/de0ada1ca7bc36c68ff4f6390ecb1cd8c1f8d439)
+
+### Бэклог: PHP на хостинге 8.2.35 (PHP2Shell закрыт), до 31.12.2026 перейти на 8.4
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7bd67b94a0207ec2f93c24c5c3782983c7cfd5e4)
+
+### Doppelgänger: API README, .htaccess (openrouter_key закрыт), журнал и бэклог по дневнику модели
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/acd83906072462e29d6dec28779fc728eb444735)
+
+### Doppelgänger (натив): дневник языковой моделью — запись дня пишется, только когда день открыт; факты считает движок, ключ на сервере; заметки игры свёрнуты под записью
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a1ae5c2a767bbad2cb57eb89420f0cde55e12a8a)
+
+### Doppelgänger: серверный api/doppelganger_diary.php — дневник пишет Claude Haiku 5.5 через OpenRouter; ключ только на сервере (вне git и выкладки), лимиты на игрока и в сутки
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ec759c23df225ea6957c957be311217c6f294895)
+
+### Журнал и бэклог: «муха» в нативе, проба дневника через OpenRouter
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a7b1a7bdc140722b8f0152faef2df99065fa8e96)
+
+### Doppelgänger: дневник от языковой модели через OpenRouter — файл характера, память, которую он сам переписывает, факты только от движка; проба Haiku 5.5 и DeepSeek
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/6dc17209447ccff9799a8f9f590edb6a57215b84)
+
+### Doppelgänger (натив): голова — «муха» вместо Калмана: сам выбирает шаг поправки и учится этому по дофамину; синапсы в отдельном файле
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/19899059b813367617ac5f8bc1ae869630630d30)
+
+### Doppelgänger: «муха» — учится учиться по схеме грибовидного тела дрозофилы; в симуляторе почти догоняет Калмана без подсказки своего шума
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f2ff6ee8e70c154e5bc89086b9234569404a80b3)
+
+### Бэклог: откуда языковая модель и почему соперник пока не учится учиться
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/fb31d0e43a4d089b853e838b9225681d97488f1d)
+
+### Бэклог: вопрос «какие основания считать это ИИ» и три пути
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f3c75730bfc97499f82793e5cb32030d7fddc859)
+
+### Doppelgänger: попытка соперника не налезает на предыдущую; журнал и бэклог
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f9f9fa4dc5082e90f093a368ea5ddddadfb21308)
+
+### Doppelgänger (натив): тонкий переключатель You|AI слева в строке даты, вся аналитика по его базе, дневник гармошкой по дням
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/65b209cd64fe78a9510ac0ae0f4c5c9ab83383b6)
+
+### Doppelgänger (натив): движок соперника — ученик-Калман, свои квесты, своя база, дневник; ответ на каждую попытку игрока
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2d9964baccfcc0a37f1e509bc3d95e5a92812074)
+
 ### Doppelgänger: макет переключателя You|AI с дневником, дневник по-английски; бэклог — одна живая спецификация
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4822b66a5837338c974cf521a08ad6e476286cf7)
@@ -2362,4 +2446,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 167.
+Всего записей: 188.
