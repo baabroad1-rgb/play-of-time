@@ -144,8 +144,9 @@ class RivalEngine(
 
         // A session ends with the game's own events (below) — and also when the
         // player took a break: a gap over 30 min, a new day, or time going back
-        // (an imported old history). Like the player's app closing a session.
-        if (st.sessionId != 0 && (src.startTime < st.lastEndTime ||
+        // to before this session (an imported old history). Like the player's
+        // app closing a session.
+        if (st.sessionId != 0 && (src.startTime < st.sessionStart ||
                 src.startTime - st.lastEndTime > SESSION_BREAK_MS ||
                 !sameDay(st.sessionStart, src.startTime))) {
             closeSession(st)
@@ -162,7 +163,13 @@ class RivalEngine(
 
         val tol = effectiveT(st, quest)
         val duration = mind.nextDurationMs().coerceIn(minAttemptDuration + 1, maxAttemptDuration - 1)
-        val start = src.startTime
+        // His attempt starts with the player's — but never before his own
+        // previous one ended: the player may press RUN again sooner than the
+        // rival's 3 s are over. A short human pause in between.
+        // (Only a small overlap counts: an old imported history replayed after
+        // newer attempts lies far in the past and keeps its own time.)
+        val overlap = st.lastEndTime + MIN_PAUSE_MS - src.startTime
+        val start = if (overlap in 1 until 60_000) src.startTime + overlap else src.startTime
         val end = start + duration
         val errCells = roundedCells(duration, acc) - roundedCells(aim, acc)
         val errMs = errCells * cell
@@ -502,5 +509,6 @@ class RivalEngine(
         private const val DIARY_FILE = "doppelganger_diary.jsonl"
         private const val BATCH = 500
         private const val SESSION_BREAK_MS = 30 * 60_000L
+        private const val MIN_PAUSE_MS = 400L
     }
 }
