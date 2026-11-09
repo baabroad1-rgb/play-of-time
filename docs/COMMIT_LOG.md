@@ -7,7 +7,27 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
-## 8 ноября 2026 — версия v15.35
+## 8 ноября 2026 — версия v15.36
+
+### Doppelgänger: призыв сравнить — плашка в режиме You, кнопка в режиме AI; без цифр, только переключение
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/920a068a7e850214ffc37f5744fd68ff6c4ee91c)
+
+### «Who is Doppelgänger?» — в самый верх экрана AI; только ссылки на исследования, без строки про идею
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7f34c09be7cb38a0c5141626c43cf6d68f05fbd3)
+
+### Журнал: одна запись на день, его морда, «Who is Doppelgänger?»
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f0bf4670251afd3dbc7230e6200c75a534a26026)
+
+### Doppelgänger: одна запись на день по итогам дня (движок или модель), без комментариев к попыткам; его морда и отчёт — по его попыткам (report.html ?local=1); блок «Who is Doppelgänger?» с авторством
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2d060f9f3255911389bb8c642ff81996cb8e1acd)
+
+### Журнал: выкачено v15.36 с Doppelgänger'ом, дневник модели на паузе до переезда
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/49eed6ac4a62a9f9c0896139afd9569cc9e35258)
 
 ### Бэклог: после переезда — снять выключатель DG_PAUSED
 
@@ -2446,4 +2466,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 188.
+Всего записей: 193.
