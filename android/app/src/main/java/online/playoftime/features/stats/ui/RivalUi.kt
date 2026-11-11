@@ -247,7 +247,7 @@ internal fun RivalDiaryCard(
  * мордам «Based on Chernoff faces (Herman Chernoff, 1973)».
  */
 @Composable
-internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: String?, onCompare: () -> Unit = {}) {
+internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: String?) {
     Column(
         modifier            = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -262,7 +262,6 @@ internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: Str
                 modifier = Modifier.clickable { onToggle() }.padding(vertical = 4.dp),
                 style    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
             )
-            ComparePill("Compare with you ⇄", MaterialTheme.colorScheme.accentColor, onCompare)
         }
         if (open) {
             val body = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.85f))
@@ -346,7 +345,8 @@ private fun DiaryStatus(text: String, spinner: Boolean = false, onClick: (() -> 
  * Призыв сравнить (Alex 08.11: «может быть добавить колл ту экшн типа „сравни,
  * кто лучше“»). Без цифр: строку гонки Алекс убрал раньше («строка гонки не
  * нужна») — кнопка только переключает экран, сравнивает игрок сам. В режиме
- * You — плашка наверху (тап → AI), в режиме AI — кнопка у «Who is…» (тап → You).
+ * You — плашка наверху (тап → AI). Кнопку в строке «Who is Doppelgänger?» Алекс
+ * убрал 11.11 («убери кнопку сравнить в строчке доппельгангер»).
  */
 @Composable
 internal fun RivalCompareBanner(onClick: () -> Unit) {
@@ -371,22 +371,6 @@ internal fun RivalCompareBanner(onClick: () -> Unit) {
             text  = "Compare ⇄",
             style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight)
         )
-    }
-}
-
-@Composable
-private fun ComparePill(text: String, color: Color, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(11.dp)
-    Box(
-        modifier = Modifier
-            .height(22.dp)
-            .clip(shape)
-            .border(1.dp, color.copy(alpha = 0.8f), shape)
-            .clickable { onClick() }
-            .padding(horizontal = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        BasicText(text = text, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = color))
     }
 }
 

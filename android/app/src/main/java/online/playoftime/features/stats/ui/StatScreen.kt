@@ -553,8 +553,7 @@ private fun AnalyticsContent(
                 RivalAboutCard(
                     open       = RIVAL_ABOUT_KEY in expandedDiaryDays,
                     onToggle   = { onToggleDiaryDay(RIVAL_ABOUT_KEY) },
-                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model,
-                    onCompare  = { onSelectWho(false) }
+                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model
                 )
             }
         } else {
