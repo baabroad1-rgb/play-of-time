@@ -3269,3 +3269,7 @@ Alex: «сделать luck coefficient для индульгированных 
 - Недельные записи — `WeeklyReflection.kt` (перенос `tools/micro_player/weekly_reflection.js`), `RivalEngine.weeklyEntries()`, в дереве сессий режима игрока — свёрнутая строка «Doppelgänger’s week» внутри недели.
 - Своё имя: `LocalStorage.getOwnName()` — только если игрок ввёл непустое имя в лидерборде; на переключателе и в плашке.
 
+
+## 2026-11-11 — Lucky Index с зелёными близнецами; выкачено v15.40
+
+Lucky = (G + T) / (E_G + E_T) — `docs/LUCKY_INDEX_TWINS.md`. Натив (`LuckyIndex.kt`, кроме строк дерева сессий — в барах нет сессии), веб (`app.20261111a.js`), сервер лидерборда (`lucky_index()`, `leaderboard.php`). Выкачено: v15.40, `index.html` → `app.20261111a.js`, лидерборд отвечает 200. В браузере и на телефоне не проверялось.
