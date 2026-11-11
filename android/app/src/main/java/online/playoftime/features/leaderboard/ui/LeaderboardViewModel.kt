@@ -118,6 +118,9 @@ class LeaderboardViewModel(
                     if (result != null) {
                         val resolved = result.optString("displayName", "")
                         localStorage.putDisplayName(resolved.ifBlank { null })
+                        // Своё имя — только если игрок ввёл непустое (пустое = сервер
+                        // выдал автоимя) — им заменяется «You» (Alex 2026-11-11).
+                        localStorage.putOwnName(if (name.isBlank()) null else resolved.ifBlank { null })
                         setState {
                             copy(
                                 nameInput  = resolved,

@@ -45,6 +45,18 @@ class StatsContract {
         /** Сервер модели не ответил — до перезапуска больше не просим (хостинг в
          *  России, OpenRouter его не пускает; Alex 08.11: «пусть генерится шаблонами»). */
         val diaryWriterDown: Boolean = false,
+        // ── Круг 11.11.2026: экран AI — только сравнения ─────────────────────
+        /** Имя, введённое игроком руками; null — «You». */
+        val ownName: String? = null,
+        /** Аналитика игрока за тот же период — правый столбец сравнения в режиме AI. */
+        val playerAnalytics: AnalyticsData? = null,
+        /** Квест, достигнутый к каждой попытке (индекс в questList): игрок, соперник. */
+        val curveYou: List<Int> = emptyList(),
+        val curveAi: List<Int> = emptyList(),
+        /** Текущий квест игрока, "2.3". */
+        val playerQuest: String = "",
+        /** Недельные размышления соперника, ключ "год-неделя" — в дереве сессий. */
+        val weeklyNotes: Map<String, String> = emptyMap(),
     ) : ViewState
 
     sealed class Event : ViewEvent {

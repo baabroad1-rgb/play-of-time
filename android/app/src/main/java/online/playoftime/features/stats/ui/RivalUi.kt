@@ -13,10 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import online.playoftime.features.stats.domain.entity.AnalyticsData
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,7 +60,7 @@ private val diaryLabelGray    = Color(0xFF7F7F7F)
  * саму кнопку, так чтобы не распидарасило расстояние для строки»).
  */
 @Composable
-internal fun WhoToggle(rival: Boolean, onSelect: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+internal fun WhoToggle(rival: Boolean, onSelect: (Boolean) -> Unit, modifier: Modifier = Modifier, youName: String = "You") {
     val shape = RoundedCornerShape(11.dp)
     Row(
         modifier = modifier
@@ -66,7 +70,7 @@ internal fun WhoToggle(rival: Boolean, onSelect: (Boolean) -> Unit, modifier: Mo
             .border(1.dp, toggleBorder, shape),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        WhoSegment("You", on = !rival, onColor = MaterialTheme.colorScheme.accentColor, twin = false) { onSelect(false) }
+        WhoSegment(youName, on = !rival, onColor = MaterialTheme.colorScheme.accentColor, twin = false) { onSelect(false) }
         WhoSegment("AI", on = rival, onColor = rivalPurple, twin = true) { onSelect(true) }
     }
 }
@@ -349,7 +353,7 @@ private fun DiaryStatus(text: String, spinner: Boolean = false, onClick: (() -> 
  * убрал 11.11 («убери кнопку сравнить в строчке доппельгангер»).
  */
 @Composable
-internal fun RivalCompareBanner(onClick: () -> Unit) {
+internal fun RivalCompareBanner(onClick: () -> Unit, youName: String? = null) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         modifier = Modifier
@@ -363,7 +367,8 @@ internal fun RivalCompareBanner(onClick: () -> Unit) {
     ) {
         PersonIcon(twin = true, color = rivalPurpleLight, modifier = Modifier.size(16.dp))
         BasicText(
-            text     = "Your double plays one attempt for each of yours — who’s better?",
+            text     = if (youName != null) "$youName, your double plays one attempt for each of yours — who’s better?"
+                       else "Your double plays one attempt for each of yours — who’s better?",
             modifier = Modifier.weight(1f),
             style    = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = Color.White.copy(alpha = 0.85f))
         )
@@ -374,3 +379,216 @@ internal fun RivalCompareBanner(onClick: () -> Unit) {
     }
 }
 
+
+// ──────────────────────────────────────────────────────────────────────────────
+//  Экран AI — только сравнения (Alex 11.11.2026: «на экране AI выводить только
+//  сравнения you/ai; в явном виде указать текущий уровень; вместо всех графиков
+//  — сравнительный график скорости обучения пользователя и „мухи“… сделай
+//  контент почти такой, как в аналитикс, только со сравнением»).
+// ──────────────────────────────────────────────────────────────────────────────
+
+private val youColor = Color(0xFFFF551C)
+private val aiColor  = Color(0xFFA78BFA)
+private val compLabel = Color(0xFF9A9A9A)
+
+@Composable
+private fun CompTitle(title: String, period: String = "") {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        BasicText(title, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = diaryLabelGray))
+        if (period.isNotEmpty()) BasicText(period, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = diaryLabelGray))
+    }
+}
+
+@Composable
+private fun CompCard(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(cardBg)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) { content() }
+}
+
+@Composable
+private fun CompHeader(you: String) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+        Box(Modifier.weight(1.3f))
+        BasicText(you, modifier = Modifier.weight(1f), style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = youColor, textAlign = androidx.compose.ui.text.style.TextAlign.End))
+        BasicText(RivalEngine.NAME, modifier = Modifier.weight(1f), style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = aiColor, textAlign = androidx.compose.ui.text.style.TextAlign.End))
+    }
+}
+
+/** better: +1 — у игрока лучше, −1 — у соперника, 0 — не сравниваем. */
+@Composable
+private fun CompRow(label: String, you: String, ai: String, better: Int = 0) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF262626)))
+    Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+        BasicText(label, modifier = Modifier.weight(1.3f), style = TextStyle(fontSize = 12.sp, color = compLabel))
+        fun st(b: Boolean) = TextStyle(fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            fontWeight = if (b) FontWeight.Bold else FontWeight.Normal,
+            color = if (b) Color.White else Color.White.copy(alpha = 0.72f))
+        BasicText(you, modifier = Modifier.weight(1f), style = st(better > 0))
+        BasicText(ai, modifier = Modifier.weight(1f), style = st(better < 0))
+    }
+}
+
+private fun cmpHigher(a: Double, b: Double) = if (a > b) 1 else if (b > a) -1 else 0
+private fun cmpLower(a: Double, b: Double) = if (a < b) 1 else if (b < a) -1 else 0
+private fun ms(v: Double) = if (v == 0.0) "—" else "${kotlin.math.round(v).toLong()} ms"
+private fun dur(msTotal: Long): String {
+    val m = msTotal / 60_000
+    return if (m >= 60) "${m / 60} h ${m % 60} min" else "$m min"
+}
+private fun precisionOf(level: Char) = when (level) { '1' -> "tenths"; '2' -> "hundredths"; '3' -> "thousandths"; else -> "" }
+
+@Composable
+internal fun RivalCompareSection(
+    you: AnalyticsData?, ai: AnalyticsData, youName: String,
+    playerQuest: String, rivalQuest: String,
+    curveYou: List<Int>, curveAi: List<Int>, periodLabel: String,
+) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // ── уровень — в явном виде ────────────────────────────────────────
+        CompTitle("Level now")
+        CompCard {
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                listOf(Triple(youName, playerQuest, youColor), Triple(RivalEngine.NAME, rivalQuest, aiColor)).forEach { (n, q, c) ->
+                    Column(Modifier.weight(1f)) {
+                        BasicText(n, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = c))
+                        BasicText("Level ${q.firstOrNull() ?: '—'}", style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White))
+                        BasicText("quest $q · ${precisionOf(q.firstOrNull() ?: ' ')}", style = TextStyle(fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f)))
+                    }
+                }
+            }
+        }
+
+        // ── скорость обучения — вместо всех графиков ─────────────────────
+        CompTitle("Speed of learning", "quest reached · by attempts")
+        CompCard {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(bottom = 6.dp)) {
+                BasicText("● $youName", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = youColor))
+                BasicText("● ${RivalEngine.NAME}", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = aiColor))
+            }
+            LearningChart(curveYou, curveAi)
+            BasicText(
+                "The same number of attempts for both — he makes one for each of yours. The higher line got further for the same practice.",
+                modifier = Modifier.padding(top = 6.dp),
+                style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, color = diaryLabelGray)
+            )
+        }
+
+        if (you == null) return@Column
+        // ── как в аналитике, только два столбца ──────────────────────────
+        CompTitle("Summary", periodLabel)
+        CompCard {
+            CompHeader(youName)
+            CompRow("Attempts", "${you.periodAttempts}", "${ai.periodAttempts}")
+            CompRow("Sessions", "${you.periodSessionsCount}", "${ai.periodSessionsCount}")
+            CompRow("Play time", dur(you.periodPlayTimeMs), dur(ai.periodPlayTimeMs))
+            CompRow("Serenity coins", "%.2f".format(you.periodScm), "%.2f".format(ai.periodScm), cmpHigher(you.periodScm, ai.periodScm))
+            CompRow("Wins / precise", "${you.periodWins} / ${you.periodPrecise}", "${ai.periodWins} / ${ai.periodPrecise}",
+                cmpHigher(you.periodPrecise.toDouble(), ai.periodPrecise.toDouble()))
+        }
+        CompTitle("Chance of Win", periodLabel)
+        CompCard {
+            CompHeader(youName)
+            CompRow("Hit rate", "%.1f%%".format(you.trueThreeHitRatePct), "%.1f%%".format(ai.trueThreeHitRatePct),
+                cmpHigher(you.trueThreeHitRatePct, ai.trueThreeHitRatePct))
+            CompRow("Attempts per win",
+                if (you.attemptsPerWin > 0) "%.1f".format(you.attemptsPerWin) else "—",
+                if (ai.attemptsPerWin > 0) "%.1f".format(ai.attemptsPerWin) else "—",
+                if (you.attemptsPerWin > 0 && ai.attemptsPerWin > 0) cmpLower(you.attemptsPerWin, ai.attemptsPerWin) else 0)
+            CompRow("Lucky Index",
+                if (you.luckyIndex > 0) "%.2f".format(you.luckyIndex) else "—",
+                if (ai.luckyIndex > 0) "%.2f".format(ai.luckyIndex) else "—",
+                cmpHigher(you.luckyIndex, ai.luckyIndex))
+        }
+        CompTitle("Geometric Mean ÷ Spread", periodLabel)
+        CompCard {
+            CompHeader(youName)
+            CompRow("Early", ms(-you.deviationEarly.medianMs), ms(-ai.deviationEarly.medianMs),
+                cmpLower(kotlin.math.abs(you.deviationEarly.medianMs), kotlin.math.abs(ai.deviationEarly.medianMs)))
+            CompRow("Absolute", ms(you.deviationAll.medianMs), ms(ai.deviationAll.medianMs),
+                cmpLower(you.deviationAll.medianMs, ai.deviationAll.medianMs))
+            CompRow("Late", ms(you.deviationLate.medianMs), ms(ai.deviationLate.medianMs),
+                cmpLower(kotlin.math.abs(you.deviationLate.medianMs), kotlin.math.abs(ai.deviationLate.medianMs)))
+        }
+        CompTitle("Range of deviations", periodLabel)
+        CompCard {
+            CompHeader(youName)
+            CompRow("Early edge", ms(you.rangeEarlyMs), ms(ai.rangeEarlyMs),
+                cmpLower(kotlin.math.abs(you.rangeEarlyMs), kotlin.math.abs(ai.rangeEarlyMs)))
+            CompRow("Late edge", ms(you.rangeLateMs), ms(ai.rangeLateMs),
+                cmpLower(kotlin.math.abs(you.rangeLateMs), kotlin.math.abs(ai.rangeLateMs)))
+            CompRow("Early / late misses", "${you.earlyCount} / ${you.lateCount}", "${ai.earlyCount} / ${ai.lateCount}")
+        }
+    }
+}
+
+/** Ступенчатые линии «квест к попытке» для обоих, полосы уровней. */
+@Composable
+private fun LearningChart(you: List<Int>, ai: List<Int>) {
+    val n = maxOf(you.size, ai.size)
+    if (n < 2) {
+        BasicText("Not enough attempts yet.", style = TextStyle(fontSize = 12.sp, color = diaryLabelGray))
+        return
+    }
+    val labelPaint = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(110, 110, 110); textSize = 26f; isAntiAlias = true }
+    }
+    Canvas(Modifier.fillMaxWidth().height(170.dp)) {
+        val left = 52f
+        val bottom = size.height - 30f
+        val top = 8f
+        val w = size.width - left - 8f
+        fun x(i: Int, len: Int) = left + w * i / (len - 1).coerceAtLeast(1)
+        fun y(k: Float) = top + (bottom - top) * (1f - k / 14f)
+        listOf(Triple(0, 4, "L1"), Triple(5, 9, "L2"), Triple(10, 14, "L3")).forEachIndexed { j, (a, b, lab) ->
+            drawRect(if (j % 2 == 0) Color(0xFF202020) else Color(0xFF262626),
+                topLeft = Offset(left, y(b + 0.5f)), size = androidx.compose.ui.geometry.Size(w, y(a - 0.5f) - y(b + 0.5f)))
+            drawContext.canvas.nativeCanvas.drawText(lab, 8f, (y(b + 0.5f) + y(a - 0.5f)) / 2 + 9f, labelPaint)
+        }
+        drawContext.canvas.nativeCanvas.drawText("0", left, size.height - 4f, labelPaint)
+        val endLabel = "$n"
+        drawContext.canvas.nativeCanvas.drawText("attempts →", left + w / 2 - 60f, size.height - 4f, labelPaint)
+        drawContext.canvas.nativeCanvas.drawText(endLabel, left + w - labelPaint.measureText(endLabel), size.height - 4f, labelPaint)
+        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
+            if (pts.size < 2) return@forEach
+            val path = Path()
+            pts.forEachIndexed { i, k ->
+                val px = x(i, pts.size); val py = y(k.toFloat())
+                if (i == 0) path.moveTo(px, py) else { path.lineTo(px, y(pts[i - 1].toFloat())); path.lineTo(px, py) }
+            }
+            drawPath(path, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f))
+            drawCircle(c, 7f, Offset(x(pts.size - 1, pts.size), y(pts.last().toFloat())))
+        }
+    }
+}
+
+/** Недельная запись соперника внутри недели дерева сессий — свёрнута до тапа. */
+@Composable
+internal fun RivalWeekNote(text: String, expanded: Boolean, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = 28.dp, end = 4.dp, top = 2.dp, bottom = 4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            BasicText(if (expanded) "▾" else "▸", style = TextStyle(fontSize = 12.sp, color = rivalPurpleLight))
+            PersonIcon(twin = true, color = rivalPurpleLight, modifier = Modifier.size(13.dp))
+            BasicText("${RivalEngine.NAME}’s week", style = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.Medium, color = rivalPurpleLight))
+        }
+        if (expanded) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp)) {
+                Box(Modifier.width(2.dp).height(1.dp))
+                BasicText(
+                    text = text,
+                    modifier = Modifier.background(Color(0xFF17151F), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+                    style = TextStyle(fontSize = 13.5.sp, lineHeight = 20.sp, color = Color.White.copy(alpha = 0.9f),
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
+                )
+            }
+        }
+    }
+}

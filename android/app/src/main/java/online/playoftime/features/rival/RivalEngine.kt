@@ -329,6 +329,113 @@ class RivalEngine(
     }
 
     /**
+     * Weekly reflections (Alex 11.11.2026: weekly, in the analytics log, ВПФ-style)
+     * keyed like the session tree's week node: "year-weekOfYear" (Calendar default).
+     */
+    suspend fun weeklyEntries(): Map<String, String> {
+        sync()
+        return mutex.withLock {
+            withContext(Dispatchers.IO) { runCatching { buildWeekly() }.getOrDefault(emptyMap()) }
+        }
+    }
+
+    private suspend fun buildWeekly(): Map<String, String> {
+        val all = rivalDb.tryDao().getAllAttempts().sortedBy { it.startTime }
+        if (all.isEmpty()) return emptyMap()
+        val aim = aimMs().toLong()
+        val cal = Calendar.getInstance()
+        fun weekKey(ms: Long): String {
+            cal.timeInMillis = ms
+            return "${cal.get(Calendar.YEAR)}-${cal.get(Calendar.WEEK_OF_YEAR)}"
+        }
+        val notes = diaryUnlocked()
+        val snaps = loadDays()
+        val snapKeys = snaps.keys().asSequence().toList().sorted()
+        fun habitsOf(o: JSONObject?): Map<String, Int>? = o?.let { j ->
+            j.keys().asSequence().associate { k ->
+                (if (k == "same_side") "repeat" else k) to (j.optString(k).removeSuffix("%").toIntOrNull() ?: 0)
+            }
+        }
+        val nowHabits = loadState().player?.habits()?.filterValues { it != null }?.mapValues { it.value!! }
+        val out = LinkedHashMap<String, String>()
+        var arc: WeeklyReflection.Arc? = null
+        var prevAcc: Int? = null
+        all.groupBy { weekKey(it.startTime) }.entries.forEachIndexed { idx, (key, wk) ->
+            val seen = wk.map { t ->
+                (roundedCells(t.endTime - t.startTime, t.accuracy) - roundedCells(aim, t.accuracy)) *
+                    cellMs(Accuracy.values()[t.accuracy.coerceIn(0, 3)]).toDouble()
+            }
+            val m = seen.average()
+            val sd = kotlin.math.sqrt(seen.sumOf { (it - m) * (it - m) } / seen.size).coerceAtLeast(1.0)
+            var c = 0.0
+            for (i in 1 until seen.size) c += (seen[i - 1] - m) * (seen[i] - m)
+            val r1 = if (seen.size > 1) c / ((seen.size - 1) * sd * sd) else 0.0
+            val first = mutableListOf<Double>(); val last = mutableListOf<Double>()
+            wk.indices.groupBy { wk[it].sessionId }.values.filter { it.size >= 30 }.forEach { ix ->
+                val third = ix.size / 3
+                ix.take(third).forEach { first += kotlin.math.abs(seen[it]) }
+                ix.takeLast(third).forEach { last += kotlin.math.abs(seen[it]) }
+            }
+            val fatigue = if (first.size > 30) last.average() / first.average().coerceAtLeast(1.0) - 1 else 0.0
+            val from = wk.first().startTime
+            val to = wk.last().startTime
+            val wn = notes.filter { it.time in from..to }.map { it.text }
+            val accs = wk.map { it.accuracy }
+            val levelUp = if ((prevAcc != null && accs.max() > prevAcc!!) || accs.distinct().size > 1)
+                when (accs.max()) { 2 -> "hundredths"; 3 -> "thousandths"; else -> null } else null
+            prevAcc = accs.last()
+            val firstDay = dayKey(from)
+            val lastDay = dayKey(to)
+            val w = WeeklyReflection.Week(
+                index = idx, attempts = wk.size,
+                exact = seen.count { it == 0.0 }, early = seen.count { it < 0 }, late = seen.count { it > 0 },
+                meanMs = m, sdMs = sd, r1 = r1, fatigue = fatigue,
+                questsDone = wn.mapNotNull { QUEST_DONE.find(it)?.groupValues?.get(1) },
+                windowsFailed = wn.count { WINDOW_FAILED.containsMatchIn(it) },
+                levelUp = levelUp,
+                habitStart = habitsOf(snaps.optJSONObject(firstDay)),
+                habitEnd = snapKeys.firstOrNull { it > lastDay }?.let { habitsOf(snaps.optJSONObject(it)) } ?: nowHabits,
+            )
+            val (text, next) = WeeklyReflection.entry(w, arc)
+            arc = next
+            out[key] = text
+        }
+        return out
+    }
+
+    /**
+     * Speed of learning for both (Alex 11.11.2026): the quest reached by each
+     * attempt — index in questList, 0…14 — for the player and for him, the same
+     * number of points (he makes one attempt for each of the player's).
+     * Downsampled to ≤ [points].
+     */
+    suspend fun learningCurves(points: Int = 240): Pair<List<Int>, List<Int>> {
+        sync()
+        return mutex.withLock {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    suspend fun curve(db: TimeDatabase): List<Int> {
+                        val sessions = db.sessionDao().getAllSessions().associateBy { it.id }
+                        val tries = db.tryDao().getAllAttempts().sortedBy { it.startTime }
+                        var last = 0
+                        val full = tries.map { t ->
+                            val sess = sessions[t.sessionId]
+                            val k = online.playoftime.core.utils.questList.indexOfFirst {
+                                sess != null && it.levelId == sess.questLevelId && it.taskId == sess.questTaskId
+                            }
+                            if (k >= 0) last = maxOf(last, k)
+                            last
+                        }
+                        if (full.size <= points) return full
+                        return List(points) { i -> full[(i.toLong() * (full.size - 1) / (points - 1)).toInt()] }
+                    }
+                    curve(playerDb) to curve(rivalDb)
+                }.getOrDefault(emptyList<Int>() to emptyList())
+            }
+        }
+    }
+
+    /**
      * His attempts in the format of api/report_data.php — for his own face and
      * report (Alex 2026-11-08: «а морда в аналитикс чья?» — the page drew the
      * player's, from the server; his attempts live only on the phone). Same

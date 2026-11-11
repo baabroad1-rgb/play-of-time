@@ -83,6 +83,9 @@ class StatsViewModel(
                 val report = if (showRival) rival.reportJson() else null
                 val quest = if (showRival) rival.questLabel() else ""
                 val llm = if (showRival) rival.llmEntries() else emptyMap()
+                val weekly = rival.weeklyEntries()
+                val mine = if (showRival) statUseCases.analyticsUseCase(period, offset) else null
+                val curves = if (showRival) rival.learningCurves() else (emptyList<Int>() to emptyList())
                 if (generation != loadGeneration) return@launch
 
                 // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
@@ -102,6 +105,12 @@ class StatsViewModel(
                         rivalReportJson  = report,
                         rivalQuest       = quest,
                         diaryLlm         = if (showRival) llm else diaryLlm,
+                        weeklyNotes      = weekly,
+                        playerAnalytics  = mine,
+                        curveYou         = curves.first,
+                        curveAi          = curves.second,
+                        playerQuest      = "${localStorage.getCurrentLevelId()}.${localStorage.getCurrentTaskId()}",
+                        ownName          = localStorage.getOwnName(),
                         analyticsLoading = false,
                         selectedPeriod   = period,
                         expandedYears    = if (applyDefault) years else expandedYears,

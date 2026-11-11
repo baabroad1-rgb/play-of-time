@@ -337,7 +337,13 @@ fun StatScreen(
                         diaryWriting     = state.diaryWriting,
                         diaryFailed      = state.diaryFailed,
                         diaryTooFew      = state.diaryTooFew,
-                        onRequestDiary   = { key, retry -> setEvent(Event.RequestDiaryEntry(key, retry)) }
+                        onRequestDiary   = { key, retry -> setEvent(Event.RequestDiaryEntry(key, retry)) },
+                        ownName          = state.ownName,
+                        playerAnalytics  = state.playerAnalytics,
+                        curveYou         = state.curveYou,
+                        curveAi          = state.curveAi,
+                        playerQuest      = state.playerQuest,
+                        weeklyNotes      = state.weeklyNotes
                     )
 
                     else -> BasicText(
@@ -446,7 +452,13 @@ private fun AnalyticsContent(
     diaryWriting     : Set<String> = emptySet(),
     diaryFailed      : Set<String> = emptySet(),
     diaryTooFew      : Set<String> = emptySet(),
-    onRequestDiary   : (String, Boolean) -> Unit = { _, _ -> }
+    onRequestDiary   : (String, Boolean) -> Unit = { _, _ -> },
+    ownName          : String? = null,
+    playerAnalytics  : AnalyticsData? = null,
+    curveYou         : List<Int> = emptyList(),
+    curveAi          : List<Int> = emptyList(),
+    playerQuest      : String = "",
+    weeklyNotes      : Map<String, String> = emptyMap()
 ) {
     val tree    = remember(data.sessions) { buildTree(data.sessions) }
     val accent  = MaterialTheme.colorScheme.accentColor
@@ -518,7 +530,7 @@ private fun AnalyticsContent(
                         .padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    WhoToggle(rival = showRival, onSelect = onSelectWho)
+                    WhoToggle(rival = showRival, onSelect = onSelectWho, youName = ownName ?: "You")
                     Spacer(Modifier.weight(1f))
                     if (periodContext == null) Spacer(Modifier.height(28.dp))
                     else {
@@ -545,6 +557,26 @@ private fun AnalyticsContent(
                 }
             }
         }
+        // ── Режим AI — только сравнения (Alex 11.11.2026): уровень, скорость
+        // обучения, карточки аналитики в два столбца. Остальное не показываем.
+        if (showRival) {
+            item {
+                RivalAboutCard(
+                    open       = RIVAL_ABOUT_KEY in expandedDiaryDays,
+                    onToggle   = { onToggleDiaryDay(RIVAL_ABOUT_KEY) },
+                    diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model
+                )
+            }
+            item {
+                RivalCompareSection(
+                    you = playerAnalytics, ai = data, youName = ownName ?: "You",
+                    playerQuest = playerQuest, rivalQuest = rivalQuest,
+                    curveYou = curveYou, curveAi = curveAi, periodLabel = pl
+                )
+            }
+            item { Spacer(Modifier.height(32.dp)) }
+            return@LazyColumn
+        }
         // ── WHO IS DOPPELGÄNGER? (режим AI, в самом верху — Alex 08.11) ────
         // и призыв сравнить: в режиме AI — кнопка «Compare with you», в режиме
         // You — плашка «who’s better? Compare» (тап переключает экран).
@@ -557,7 +589,7 @@ private fun AnalyticsContent(
                 )
             }
         } else {
-            item { RivalCompareBanner(onClick = { onSelectWho(true) }) }
+            item { RivalCompareBanner(onClick = { onSelectWho(true) }, youName = ownName) }
         }
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
@@ -864,6 +896,17 @@ private fun AnalyticsContent(
                                 }
                             }
                             if (weekKey in expandedWeeks) {
+                                // Недельное размышление Doppelgänger'а — дополнительный
+                                // объект недели, свёрнут (Alex 11.11.2026).
+                                weeklyNotes["${yearNode.year}-${weekNode.weekOfYear}"]?.let { note ->
+                                    item {
+                                        RivalWeekNote(
+                                            text     = note,
+                                            expanded = "dg:$weekKey" in expandedWeeks,
+                                            onClick  = { onToggleWeek("dg:$weekKey") }
+                                        )
+                                    }
+                                }
                                 weekNode.days.forEach { dayNode ->
                                     val dayKey = "${yearNode.year}-${monthNode.month}-${dayNode.day}"
                                     item {

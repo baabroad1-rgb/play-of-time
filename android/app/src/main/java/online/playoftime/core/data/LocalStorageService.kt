@@ -163,6 +163,10 @@ interface LocalStorageServiceContract {
     fun getOrCreateSyncToken(): String
     fun getDisplayName(): String?
     fun putDisplayName(value: String?)
+    /** Имя игрока, только если он ввёл его сам (не автоимя сервера) — им
+     *  подписывается игрок вместо «You» (Alex 2026-11-11). */
+    fun getOwnName(): String?
+    fun putOwnName(value: String?)
     /** id последней попытки (TryDatabaseModel.id), уже отправленной на сервер. */
     fun getLastSyncedAttemptId(): Int
     fun putLastSyncedAttemptId(value: Int)
@@ -532,6 +536,14 @@ class LocalStorageService(
     override fun putDisplayName(value: String?) {
         val editor = preferences.edit()
         if (value.isNullOrBlank()) editor.remove(displayNameKey) else editor.putString(displayNameKey, value)
+        editor.apply()
+    }
+
+    override fun getOwnName(): String? = preferences.getString("leaderboardOwnName", null)?.takeIf { it.isNotBlank() }
+
+    override fun putOwnName(value: String?) {
+        val editor = preferences.edit()
+        if (value.isNullOrBlank()) editor.remove("leaderboardOwnName") else editor.putString("leaderboardOwnName", value)
         editor.apply()
     }
 
