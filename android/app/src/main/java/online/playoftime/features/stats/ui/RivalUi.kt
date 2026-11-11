@@ -429,8 +429,8 @@ private fun CompRow(label: String, you: String, ai: String, better: Int = 0) {
         fun st(b: Boolean) = TextStyle(fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.End,
             fontWeight = if (b) FontWeight.Bold else FontWeight.Normal,
             color = if (b) Color.White else Color.White.copy(alpha = 0.72f))
-        BasicText(you, modifier = Modifier.weight(1f), style = st(better > 0))
-        BasicText(ai, modifier = Modifier.weight(1f), style = st(better < 0))
+        BasicText(groupDigits(you), modifier = Modifier.weight(1f), style = st(better > 0))
+        BasicText(groupDigits(ai), modifier = Modifier.weight(1f), style = st(better < 0))
     }
 }
 
@@ -597,6 +597,41 @@ internal fun RivalWeekNote(text: String, expanded: Boolean, onClick: () -> Unit)
                     style = TextStyle(fontSize = 13.5.sp, lineHeight = 20.sp, color = Color.White.copy(alpha = 0.9f),
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
                 )
+            }
+        }
+    }
+}
+
+
+/**
+ * Дневник на экране AI (Alex 11.11.2026: «дневник перенеси в экран ИИ; дай где-нибудь
+ * в конце последние три записи с возможностью подгрузить ещё»). Записи недельные,
+ * новые сверху; «Show 3 earlier weeks» открывает следующие три.
+ * [notes] — подпись недели → запись, старые первыми.
+ */
+@Composable
+internal fun RivalWeeklyDiary(notes: Map<String, String>) {
+    var shown by androidx.compose.runtime.remember(notes.size) { androidx.compose.runtime.mutableStateOf(3) }
+    val list = notes.entries.toList().asReversed()
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        CompTitle("${RivalEngine.NAME}’s diary", "by week")
+        CompCard {
+            if (list.isEmpty()) {
+                BasicText("Nothing yet — he writes once a week.", style = TextStyle(fontSize = 12.5.sp, color = diaryLabelGray))
+            }
+            list.take(shown).forEachIndexed { i, (label, text) ->
+                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF262626)))
+                BasicText(groupDigits(label), modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    style = TextStyle(fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight))
+                BasicText(groupDigits(text), modifier = Modifier.padding(bottom = 8.dp),
+                    style = TextStyle(fontSize = 13.5.sp, lineHeight = 20.sp, color = Color.White.copy(alpha = 0.9f),
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif))
+            }
+            if (list.size > shown) {
+                BasicText("Show ${minOf(3, list.size - shown)} earlier ${if (list.size - shown == 1) "week" else "weeks"} ▾",
+                    modifier = Modifier.fillMaxWidth().clickable { shown += 3 }.padding(vertical = 10.dp),
+                    style = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center))
             }
         }
     }

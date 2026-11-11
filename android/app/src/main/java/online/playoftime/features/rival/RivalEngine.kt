@@ -401,7 +401,10 @@ class RivalEngine(
             )
             val (text, next) = WeeklyReflection.entry(w, arc)
             arc = next
-            out[key] = text
+            // Ключ — подпись недели для экрана AI (Alex 11.11: дневник — на экран ИИ).
+            val f = java.text.SimpleDateFormat("d MMM", java.util.Locale.ENGLISH)
+            val y = java.text.SimpleDateFormat("yyyy", java.util.Locale.ENGLISH)
+            out["${f.format(java.util.Date(from))} – ${f.format(java.util.Date(to))} ${y.format(java.util.Date(to))} · ${wk.size} attempts"] = text
         }
         return out
     }

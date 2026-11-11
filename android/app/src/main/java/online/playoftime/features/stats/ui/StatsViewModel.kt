@@ -75,15 +75,17 @@ class StatsViewModel(
             // При Refresh (каждый выход экрана на передний план) старые данные
             // остаются видимыми, пока считаются новые — без мигания.
             // Переключение You/AI — тоже спиннер: на экране чужие данные.
-            setState { copy(analyticsLoading = analytics == null || analyticsIsRival != showRival) }
+            // Экран AI считается долго (догон соперника, две аналитики, кривые) —
+            // спиннер на каждой его загрузке (Alex 11.11: «если долго — индикатор»).
+            setState { copy(analyticsLoading = analytics == null || analyticsIsRival != showRival || showRival) }
             runCatching {
                 val analytics = if (showRival) rival.analytics(period, offset)
                                 else statUseCases.analyticsUseCase(period, offset)
-                val days = if (showRival) daysForPeriod(rival.dayDigests(), analytics) else emptyList()
-                val report = if (showRival) rival.reportJson() else null
+                val days = emptyList<RivalEngine.DayDigest>()
+                val report: String? = null
                 val quest = if (showRival) rival.questLabel() else ""
-                val llm = if (showRival) rival.llmEntries() else emptyMap()
-                val weekly = rival.weeklyEntries()
+                val llm = emptyMap<String, RivalEngine.LlmEntry>()
+                val weekly = if (showRival) rival.weeklyEntries() else emptyMap()
                 val mine = if (showRival) statUseCases.analyticsUseCase(period, offset) else null
                 val curves = if (showRival) rival.learningCurves() else (emptyList<Int>() to emptyList())
                 if (generation != loadGeneration) return@launch

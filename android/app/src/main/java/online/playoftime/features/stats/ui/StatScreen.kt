@@ -579,6 +579,9 @@ private fun AnalyticsContent(
                     curveYou = curveYou, curveAi = curveAi, periodLabel = pl
                 )
             }
+            // Дневник — на экране AI, в конце: последние три недели и «ещё»
+            // (Alex 11.11.2026). Из дерева сессий убран.
+            item { RivalWeeklyDiary(weeklyNotes) }
             item { Spacer(Modifier.height(32.dp)) }
             return@LazyColumn
         }
@@ -901,17 +904,6 @@ private fun AnalyticsContent(
                                 }
                             }
                             if (weekKey in expandedWeeks) {
-                                // Недельное размышление Doppelgänger'а — дополнительный
-                                // объект недели, свёрнут (Alex 11.11.2026).
-                                weeklyNotes["${yearNode.year}-${weekNode.weekOfYear}"]?.let { note ->
-                                    item {
-                                        RivalWeekNote(
-                                            text     = note,
-                                            expanded = "dg:$weekKey" in expandedWeeks,
-                                            onClick  = { onToggleWeek("dg:$weekKey") }
-                                        )
-                                    }
-                                }
                                 weekNode.days.forEach { dayNode ->
                                     val dayKey = "${yearNode.year}-${monthNode.month}-${dayNode.day}"
                                     item {
@@ -1181,7 +1173,7 @@ private val INT_DIGIT_RUN = Regex("""(?<![\d.])\d{4,}""")
  * за это отвечает отрицательный lookbehind на точку. Числа короче четырёх
  * цифр не трогаются — «999» остаётся «999».
  */
-private fun groupDigits(text: String): String = INT_DIGIT_RUN.replace(text) { m ->
+internal fun groupDigits(text: String): String = INT_DIGIT_RUN.replace(text) { m ->
     m.value.reversed().chunked(3).joinToString(GROUP_SEP.toString()).reversed()
 }
 
