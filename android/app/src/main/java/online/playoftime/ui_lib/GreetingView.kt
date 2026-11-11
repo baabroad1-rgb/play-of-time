@@ -742,7 +742,7 @@ private fun verdictOf(sess: Double, hist: Double, lowerBetter: Boolean): Int? {
 private fun StatChip(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         BasicText(
-            text  = value,
+            text  = online.playoftime.features.stats.ui.groupDigits(value),
             style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.baseTextColor)
         )

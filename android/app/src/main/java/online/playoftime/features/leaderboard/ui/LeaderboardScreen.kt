@@ -507,7 +507,7 @@ private fun LeaderboardRowItem(index: Int, row: LeaderboardRow, sort: Leaderboar
             }
             val isActiveCol = col == sort
             BasicText(
-                text = row.metricFor(col),
+                text = online.playoftime.features.stats.ui.groupDigits(row.metricFor(col)),   // разделители разрядов везде (Alex 11.11)
                 modifier = Modifier.width(colWidth),
                 style = TextStyle(
                     fontSize = 12.5.sp,
@@ -696,7 +696,7 @@ private fun buildCompareMetrics(mine: LeaderboardRow, other: LeaderboardRow, tie
         list += CompareMetric("Progress", m?.progress ?: "—", o?.progress ?: "—", better(m?.progressScore, o?.progressScore))
     }
     list += CompareMetric(
-        "Attempts", m?.attempts?.toString() ?: "—", o?.attempts?.toString() ?: "—", better(m?.attempts, o?.attempts)
+        "Attempts", m?.attempts?.let { online.playoftime.features.stats.ui.groupDigits(it.toString()) } ?: "—", o?.attempts?.let { online.playoftime.features.stats.ui.groupDigits(it.toString()) } ?: "—", better(m?.attempts, o?.attempts)
     )
     list += CompareMetric(
         if (tier == null) "Started" else "Started level $tier",
@@ -704,7 +704,7 @@ private fun buildCompareMetrics(mine: LeaderboardRow, other: LeaderboardRow, tie
         null // "давно" не лучше и не хуже — просто факт
     )
     list += CompareMetric(
-        "Serenity Coins", m?.sc?.let { formatOneDecimal(it) } ?: "—", o?.sc?.let { formatOneDecimal(it) } ?: "—", better(m?.sc, o?.sc)
+        "Serenity Coins", m?.sc?.let { online.playoftime.features.stats.ui.groupDigits(formatOneDecimal(it)) } ?: "—", o?.sc?.let { online.playoftime.features.stats.ui.groupDigits(formatOneDecimal(it)) } ?: "—", better(m?.sc, o?.sc)
     )
     list += CompareMetric(
         "Hit rate", m?.let { "%.1f%%".format(it.hit) } ?: "—", o?.let { "%.1f%%".format(it.hit) } ?: "—", better(m?.hit, o?.hit)
