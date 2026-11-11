@@ -187,7 +187,7 @@ class GetQuestSummaryUseCase(private val database: TimeDatabase) {
     private fun luckyIndex(attempts: List<TryDatabaseModel>): Double =
         online.playoftime.core.utils.luckyIndex(
             attempts.map {
-                online.playoftime.core.utils.LuckyAttempt(it.endTime - it.startTime, it.accuracy, it.toleranceMs)
+                online.playoftime.core.utils.LuckyAttempt(it.endTime - it.startTime, it.accuracy, it.toleranceMs, sessionId = it.sessionId, startMs = it.startTime)
             }
         )
 

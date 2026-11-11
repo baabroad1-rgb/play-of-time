@@ -612,7 +612,7 @@ class AnalyticsUseCase(
         computeLuckyIndex(attempts.map { it.toLucky(aimTime) })
 
     private fun TryDatabaseModel.toLucky(aimTime: Int) =
-        LuckyAttempt(endTime - startTime, accuracy, toleranceMs, aimTime)
+        LuckyAttempt(endTime - startTime, accuracy, toleranceMs, aimTime, sessionId = sessionId, startMs = startTime)
 
     private fun countTrueThree(attempts: List<TryDatabaseModel>, aimTime: Int): Int {
         return attempts.count { attempt ->

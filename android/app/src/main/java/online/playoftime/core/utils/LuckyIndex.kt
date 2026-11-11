@@ -28,7 +28,11 @@ data class LuckyAttempt(
     val durationMs : Long,
     val accuracy   : Int,   // знаков после запятой: 1 — десятые, 2 — сотые, 3 — тысячные
     val toleranceMs: Int,
-    val aimMs      : Int = 3000
+    val aimMs      : Int = 3000,
+    /** Сессия и время попытки — для зелёных близнецов (docs/LUCKY_INDEX_TWINS.md).
+     *  −1 — неизвестно: тогда близнецы не считаются, Lucky как раньше. */
+    val sessionId  : Int = -1,
+    val startMs    : Long = 0L
 ) {
     val errorMs: Double get() = (durationMs - aimMs).toDouble()
     private val cellMs: Double get() = 10.0.pow(3 - accuracy)
@@ -41,6 +45,12 @@ data class LuckyAttempt(
         val roundedErrMs = (durRounded - aimRounded) * (1000.0 / factor)
         return abs(roundedErrMs) <= maxOf(toleranceMs, resolutionFloorMs(accuracy)) + 0.5
     }
+
+    /** Знаковый промах в клетках уровня (как показан). */
+    val errCells: Long get() = roundedCells(durationMs, accuracy) - roundedCells(aimMs.toLong(), accuracy)
+
+    /** Клеток в зелёном окне: 2·⌊допуск/клетка⌋ + 1. */
+    val windowCells: Int get() = (2 * floor(maxOf(toleranceMs, resolutionFloorMs(accuracy)) / cellMs) + 1).toInt()
 
     /** Шанс оказаться зелёной случайно при разбросе [spanMs] уровня. */
     fun chance(spanMs: Double): Double {
@@ -66,6 +76,24 @@ fun luckyIndex(attempts: List<LuckyAttempt>): Double {
     val greens = attempts.count { it.isGreen }
     if (greens == 0) return 0.0
     val spans = luckySpans(attempts)
-    val meanChance = attempts.sumOf { it.chance(spans.getValue(it.accuracy)) } / attempts.size
-    return if (meanChance > 0) (greens.toDouble() / attempts.size) / meanChance else 0.0
+    val p = attempts.map { it.chance(spans.getValue(it.accuracy)) }
+    val expectedGreens = p.sum()
+    // Зелёные близнецы (Alex 11.11.2026, docs/LUCKY_INDEX_TWINS.md): зелёная, и
+    // следующая в той же сессии — зелёная с тем же модулем промаха (одинаковая или
+    // зеркальная). Отдельное событие сверху G; ожидание — pᵢpᵢ₊₁·(2w−1)/w².
+    var twins = 0
+    var expectedTwins = 0.0
+    val ordered = attempts.indices.filter { attempts[it].sessionId >= 0 }.sortedBy { attempts[it].startMs }
+    for (j in 1 until ordered.size) {
+        val i0 = ordered[j - 1]; val i1 = ordered[j]
+        val a = attempts[i0]; val b = attempts[i1]
+        if (a.sessionId != b.sessionId) continue
+        if (a.isGreen && b.isGreen && abs(a.errCells) == abs(b.errCells)) twins++
+        if (a.accuracy == b.accuracy) {
+            val w = minOf(a.windowCells, b.windowCells).toDouble()
+            expectedTwins += p[i0] * p[i1] * (2 * w - 1) / (a.windowCells.toDouble() * b.windowCells)
+        }
+    }
+    val denom = expectedGreens + expectedTwins
+    return if (denom > 0) (greens + twins) / denom else 0.0
 }
