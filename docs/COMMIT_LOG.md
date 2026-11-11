@@ -7,7 +7,23 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
-## 11 ноября 2026 — версия v15.38
+## 11 ноября 2026 — версия v15.39
+
+### Lucky Index (сервер лидерборда): зелёные близнецы; документ — внесено
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/42bb5ad04693b00976d506c6d6a73780f43df354)
+
+### Lucky Index (веб): зелёные близнецы, app.20261111a.js
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7bd478b3fddf0b4c16b997f50b9c2dd735820c2d)
+
+### Lucky Index (натив): зелёные близнецы — (G+T)/(E_G+E_T), docs/LUCKY_INDEX_TWINS.md
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/e733154ccd2fd024b1d286ec9f7595755b82dbe1)
+
+### Решение: Lucky Index с зелёными близнецами (тот же модуль промаха, включая зеркальные) — формула и обоснование
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7cea2f25b8c4c9215ad70408624ce2ebc987797c)
 
 ### Doppelgänger: крупно — квест с индульгенцией и условием (Quest 2.3.1 / 3.00 ± 0.01 · 3× in a row), уровень мелко под; «You» — жёлтый About вместо оранжевого
 
@@ -2494,4 +2510,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 199.
+Всего записей: 203.
