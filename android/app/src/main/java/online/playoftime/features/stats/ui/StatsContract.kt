@@ -55,6 +55,9 @@ class StatsContract {
         val curveAi: List<Int> = emptyList(),
         /** Текущий квест игрока, "2.3". */
         val playerQuest: String = "",
+        /** Квест крупно с индульгенцией и условие — игрок и соперник. */
+        val playerBadge: Pair<String, String> = "" to "",
+        val rivalBadge: Pair<String, String> = "" to "",
         /** Недельные размышления соперника, ключ "год-неделя" — в дереве сессий. */
         val weeklyNotes: Map<String, String> = emptyMap(),
     ) : ViewState

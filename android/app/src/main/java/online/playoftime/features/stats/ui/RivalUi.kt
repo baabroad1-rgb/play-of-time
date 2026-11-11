@@ -70,14 +70,14 @@ internal fun WhoToggle(rival: Boolean, onSelect: (Boolean) -> Unit, modifier: Mo
             .border(1.dp, toggleBorder, shape),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        WhoSegment(youName, on = !rival, onColor = MaterialTheme.colorScheme.accentColor, twin = false) { onSelect(false) }
+        WhoSegment(youName, on = !rival, onColor = youColor, twin = false, onText = Color(0xFF2A1E00)) { onSelect(false) }
         WhoSegment("AI", on = rival, onColor = rivalPurple, twin = true) { onSelect(true) }
     }
 }
 
 @Composable
-private fun WhoSegment(label: String, on: Boolean, onColor: Color, twin: Boolean, onClick: () -> Unit) {
-    val fg = if (on) Color.White else Color.White.copy(alpha = 0.45f)
+private fun WhoSegment(label: String, on: Boolean, onColor: Color, twin: Boolean, onText: Color = Color.White, onClick: () -> Unit) {
+    val fg = if (on) onText else Color.White.copy(alpha = 0.45f)
     Row(
         modifier = Modifier
             .fillMaxHeight()
@@ -387,7 +387,8 @@ internal fun RivalCompareBanner(onClick: () -> Unit, youName: String? = null) {
 //  контент почти такой, как в аналитикс, только со сравнением»).
 // ──────────────────────────────────────────────────────────────────────────────
 
-private val youColor = Color(0xFFFF551C)
+// «You» — жёлтый фона About, не оранжевый: тот слишком нагружен (Alex 11.11).
+private val youColor = Color(0xFFF5C02E)
 private val aiColor  = Color(0xFFA78BFA)
 private val compLabel = Color(0xFF9A9A9A)
 
@@ -446,6 +447,7 @@ private fun precisionOf(level: Char) = when (level) { '1' -> "tenths"; '2' -> "h
 internal fun RivalCompareSection(
     you: AnalyticsData?, ai: AnalyticsData, youName: String,
     playerQuest: String, rivalQuest: String,
+    playerBadge: Pair<String, String> = "" to "", rivalBadge: Pair<String, String> = "" to "",
     curveYou: List<Int>, curveAi: List<Int>, periodLabel: String,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -453,11 +455,18 @@ internal fun RivalCompareSection(
         CompTitle("Level now")
         CompCard {
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                listOf(Triple(youName, playerQuest, youColor), Triple(RivalEngine.NAME, rivalQuest, aiColor)).forEach { (n, q, c) ->
+                // Крупно — квест с точностью до индульгенции и его условие;
+                // уровень — мелко под ним (Alex 11.11.2026).
+                listOf(Triple(youName, playerQuest to playerBadge, youColor),
+                       Triple(RivalEngine.NAME, rivalQuest to rivalBadge, aiColor)).forEach { (n, qb, c) ->
+                    val (q, badge) = qb
                     Column(Modifier.weight(1f)) {
                         BasicText(n, style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = c))
-                        BasicText("Level ${q.firstOrNull() ?: '—'}", style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White))
-                        BasicText("quest $q · ${precisionOf(q.firstOrNull() ?: ' ')}", style = TextStyle(fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f)))
+                        BasicText(badge.first.ifEmpty { "Quest $q" }, style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White))
+                        if (badge.second.isNotEmpty()) BasicText(badge.second, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.85f)))
+                        BasicText("Level ${q.firstOrNull() ?: '—'} · ${precisionOf(q.firstOrNull() ?: ' ')}",
+                            modifier = Modifier.padding(top = 2.dp),
+                            style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.5f)))
                     }
                 }
             }

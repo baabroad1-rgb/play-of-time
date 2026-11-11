@@ -343,6 +343,8 @@ fun StatScreen(
                         curveYou         = state.curveYou,
                         curveAi          = state.curveAi,
                         playerQuest      = state.playerQuest,
+                        playerBadge      = state.playerBadge,
+                        rivalBadge       = state.rivalBadge,
                         weeklyNotes      = state.weeklyNotes
                     )
 
@@ -458,6 +460,8 @@ private fun AnalyticsContent(
     curveYou         : List<Int> = emptyList(),
     curveAi          : List<Int> = emptyList(),
     playerQuest      : String = "",
+    playerBadge      : Pair<String, String> = "" to "",
+    rivalBadge       : Pair<String, String> = "" to "",
     weeklyNotes      : Map<String, String> = emptyMap()
 ) {
     val tree    = remember(data.sessions) { buildTree(data.sessions) }
@@ -571,6 +575,7 @@ private fun AnalyticsContent(
                 RivalCompareSection(
                     you = playerAnalytics, ai = data, youName = ownName ?: "You",
                     playerQuest = playerQuest, rivalQuest = rivalQuest,
+                    playerBadge = playerBadge, rivalBadge = rivalBadge,
                     curveYou = curveYou, curveAi = curveAi, periodLabel = pl
                 )
             }

@@ -104,6 +104,9 @@ class RivalEngine(
         return AnalyticsUseCase(rivalDb, localStorage)(period, offset, currentToleranceMs = st.curT)
     }
 
+    /** His quest with the indulgence step and condition, like the quest strip: "Quest 2.3.1" / "3.00 ± 0.01 · 3× in a row". */
+    fun questBadge(): Pair<String, String> = loadState().let { questBadge(it.levelId, it.taskId, it.curN, it.curT) }
+
     /** Current quest of the rival — "L.T" for the UI. */
     fun questLabel(): String = loadState().let { "${it.levelId}.${it.taskId}" }
 
@@ -902,6 +905,34 @@ class RivalEngine(
 
     companion object {
         const val NAME = "Doppelgänger"
+
+        /**
+         * Квест крупно, с точностью до индульгенции (Alex 11.11.2026: «крупным —
+         * про квест с точностью до индульгенций, уровень — мелочью под»):
+         * "Quest 2.3.1" (ступень ослабления после точки) и условие
+         * "3.00 ± 0.01 · 3× in a row" / "3.00 · 2× in 66 attempts".
+         */
+        fun questBadge(levelId: Int, taskId: Int, curN: Int, curT: Int): Pair<String, String> {
+            val q = getCurrentQuest(levelId, taskId)
+            val digits = q.accuracy.ordinal.coerceIn(1, 3)
+            val cell = when (digits) { 1 -> 100; 2 -> 10; else -> 1 }
+            val base = q.maxAttemptsDefault
+            val n = if (base != null && curN > 0) curN else base
+            val stepN = if (q.adaptiveN && base != null && n != null && n > base) (n - base) / q.adaptiveNStep else 0
+            val t = if (q.adaptiveT) maxOf(curT, q.toleranceMsDefault) else q.toleranceMsDefault
+            val stepT = if (q.adaptiveT) (t - q.toleranceMsDefault) / cell else 0
+            val sub = stepN + stepT
+            val title = "Quest ${q.levelId}.${q.taskId}" + if (sub > 0) ".$sub" else ""
+            val aim = "3." + "0".repeat(digits)
+            val tol = if (t > 0) " ± " + "%.${digits}f".format(java.util.Locale.US, t / 1000.0) else ""
+            val c = q.victory.victoryCount
+            val cond = when (q.victory.victoryCondition) {
+                VictoryCondition.SESSION -> "$c× in total"
+                VictoryCondition.ROW -> "$c× in a row"
+                VictoryCondition.IN_N -> "$c× in ${n ?: "—"} attempts"
+            }
+            return title to "$aim$tol · $cond"
+        }
         private const val PREFS = "doppelganger"
         private const val KEY_STATE = "state"
         private const val DIARY_FILE = "doppelganger_diary.jsonl"
