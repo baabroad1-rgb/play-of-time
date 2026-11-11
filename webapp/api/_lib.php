@@ -131,16 +131,45 @@ function lucky_index($items) {
     }
     $greens = 0;
     $sumP = 0.0;
-    foreach ($items as $it) {
+    $p = array();
+    $w = array();
+    foreach ($items as $i => $it) {
         $acc = (int) $it[0];
         $cell = pow(10, 3 - $acc);
         $k = 2 * (int) floor(max(0, (int) $it[2]) / $cell) + 1;
         $all = (int) floor($span[$acc] / $cell) + 1;
-        $sumP += min(1.0, $k / $all);
+        $p[$i] = min(1.0, $k / $all);
+        $w[$i] = $k;
+        $sumP += $p[$i];
         if ($it[3]) $greens++;
     }
     if ($greens === 0 || $sumP <= 0) return 0.0;
-    return round(($greens / $n) / ($sumP / $n), 2);
+    // Зелёные близнецы (Alex 11.11.2026, docs/LUCKY_INDEX_TWINS.md): зелёная, и
+    // следующая в той же сессии — зелёная с тем же модулем промаха (одинаковая или
+    // зеркальная). Lucky = (G + T) / (E_G + E_T), E_T = Σ pᵢpᵢ₊₁·(2w−1)/(wᵢwᵢ₊₁).
+    $twins = 0;
+    $expT = 0.0;
+    $idx = array();
+    foreach ($items as $i => $it) if (isset($it[4])) $idx[] = $i;
+    usort($idx, function ($x, $y) use ($items) {
+        return $items[$x][4] === $items[$y][4] ? ($items[$x][5] <=> $items[$y][5]) : ($items[$x][4] <=> $items[$y][4]);
+    });
+    $cells = function ($it) {
+        $cell = (int) pow(10, 3 - (int) $it[0]);
+        $d = (int) $it[1] + 3000;
+        return (int) floor(($d + $cell / 2) / $cell) - (int) floor((3000 + $cell / 2) / $cell);
+    };
+    for ($j = 1; $j < count($idx); $j++) {
+        $a = $items[$idx[$j - 1]];
+        $b = $items[$idx[$j]];
+        if ($a[4] !== $b[4]) continue;
+        if ($a[3] && $b[3] && abs($cells($a)) === abs($cells($b))) $twins++;
+        if ((int) $a[0] === (int) $b[0]) {
+            $m = min($w[$idx[$j - 1]], $w[$idx[$j]]);
+            $expT += $p[$idx[$j - 1]] * $p[$idx[$j]] * (2 * $m - 1) / ($w[$idx[$j - 1]] * $w[$idx[$j]]);
+        }
+    }
+    return round(($greens + $twins) / ($sumP + $expT), 2);
 }
 
 // UUID-ish shape check on playerId — not a strict RFC4122 validator, just

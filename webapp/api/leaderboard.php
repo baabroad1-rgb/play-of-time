@@ -42,7 +42,8 @@ foreach ($playerStmt->fetchAll() as $row) {
 // MySQL 5.7-compatible on purpose — no window functions to lean on anyway).
 $attStmt = $pdo->prepare(
     "SELECT a.player_id AS playerId, a.error_ms AS errorMs, a.accuracy AS accuracy, a.tolerance_ms AS toleranceMs,
-            a.recorded_at AS recordedAt, a.sc AS sc, a.is_win AS isWin
+            a.recorded_at AS recordedAt, a.sc AS sc, a.is_win AS isWin,
+            a.session_id AS sessionId, a.recorded_ms AS recordedMs
      FROM attempts a
      JOIN players p ON p.id = a.player_id AND a.epoch = p.current_epoch
      WHERE p.attempts_total > 0"
@@ -61,7 +62,9 @@ foreach ($attStmt->fetchAll() as $a) {
     $err = (int) $a["errorMs"];
     $errorsByPlayer[$pid][] = $err;
     $isTolerantWin = is_true_three_win((int) $a["accuracy"], $err, (int) $a["toleranceMs"]);
-    $luckyItems[$pid][] = array((int) $a["accuracy"], $err, (int) $a["toleranceMs"], $isTolerantWin);
+    // + сессия и время — для зелёных близнецов (docs/LUCKY_INDEX_TWINS.md)
+    $luckyItems[$pid][] = array((int) $a["accuracy"], $err, (int) $a["toleranceMs"], $isTolerantWin,
+                                (int) $a["sessionId"], (float) ($a["recordedMs"] ?? 0));
     if ($isTolerantWin) {
         $tolerantTrueThree[$pid] = (isset($tolerantTrueThree[$pid]) ? $tolerantTrueThree[$pid] : 0) + 1;
     }
