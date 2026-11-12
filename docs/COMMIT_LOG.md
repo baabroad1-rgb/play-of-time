@@ -9,6 +9,10 @@
 
 ## 12 ноября 2026 — версия v15.41
 
+### Чистка measurement: показывать список файлов на сервере
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4e46d4ff4a2ec069ec6c499622a832f13242e4a4)
+
 ### Measurement: ручной workflow чистки старых сборок в /measurement/
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1f53376f5d5b2558f93740c8f59bf8b7af3d2116)
@@ -2532,4 +2536,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 208.
+Всего записей: 209.
