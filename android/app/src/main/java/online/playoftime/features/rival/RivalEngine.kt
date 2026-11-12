@@ -469,23 +469,52 @@ class RivalEngine(
      * сотрётся. Ступень — по допуску ±t, записанному в попытке (поблажка по N
      * в попытках не хранится и сюда не входит).
      */
-    suspend fun learningCurves(points: Int = 200): Pair<List<Int>, List<Int>> {
+    suspend fun learningCurves(period: PeriodFilter, offset: Int, points: Int = 400): Pair<List<Int>, List<Int>> {
         sync()
         return mutex.withLock {
             withContext(Dispatchers.IO) {
                 runCatching {
                     suspend fun ladder(db: TimeDatabase): List<Int> {
                         val sessions = db.sessionDao().getAllSessions().associateBy { it.id }
-                        val tries = db.tryDao().getAllAttempts().sortedBy { it.startTime }.takeLast(points)
+                        // Попытки выбранного периода — как в AnalyticsUseCase (Alex 12.11:
+                        // «одинаковый для любого периода, что ошибка»).
+                        val tries = when (period) {
+                            PeriodFilter.ALL_TIME -> db.tryDao().getAllAttempts()
+                            PeriodFilter.SESSION -> db.sessionDao().getAllSessions().sortedByDescending { it.startTime }
+                                .getOrNull(offset)?.let { db.tryDao().getAttemptsBySessionId(it.id) } ?: emptyList()
+                            else -> {
+                                val (from, to) = period.rangeMsForOffset(offset)
+                                db.tryDao().getAttemptsInRange(from, to).map { it.sessionId }.toSet()
+                                    .flatMap { db.tryDao().getAttemptsBySessionId(it) }
+                            }
+                        }.sortedBy { it.startTime }
                         val lastOfSession = tries.groupBy { it.sessionId }.mapValues { (_, l) -> l.maxOf { it.startTime } }
+                        // Значение = индекс квеста × 1000 + ступень (999 — win), чтобы график
+                        // мог подписать квест над каждым отрезком.
                         return tries.map { t ->
                             val sess = sessions[t.sessionId]
-                            if (sess != null && sess.isQuestComplete && lastOfSession[t.sessionId] == t.startTime) return@map LADDER_WIN
-                            if (sess == null || sess.questLevelId == 0) return@map 0
-                            val q = online.playoftime.core.utils.getCurrentQuest(sess.questLevelId, sess.questTaskId)
-                            if (!q.adaptiveT || t.toleranceMs <= q.toleranceMsDefault) return@map 0
-                            val cell = when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
-                            (t.toleranceMs - q.toleranceMsDefault) / cell
+                            val qi = if (sess == null) 0 else online.playoftime.core.utils.questList.indexOfFirst {
+                                it.levelId == sess.questLevelId && it.taskId == sess.questTaskId }.coerceAtLeast(0)
+                            val step = when {
+                                sess != null && sess.isQuestComplete && lastOfSession[t.sessionId] == t.startTime -> LADDER_WIN_CODE
+                                sess == null || sess.questLevelId == 0 -> 0
+                                else -> {
+                                    val q = online.playoftime.core.utils.getCurrentQuest(sess.questLevelId, sess.questTaskId)
+                                    if (!q.adaptiveT || t.toleranceMs <= q.toleranceMsDefault) 0
+                                    else (t.toleranceMs - q.toleranceMsDefault) / when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
+                                }
+                            }
+                            qi * 1000 + step.coerceAtMost(LADDER_WIN_CODE)
+                        }.let { full ->
+                            // Больше [points] — прореживаем корзинами: win, если был в
+                            // корзине, иначе самая глубокая ступень — колебание не теряется.
+                            if (full.size <= points) full
+                            else List(points) { i ->
+                                val a = (i.toLong() * full.size / points).toInt()
+                                val b = ((i + 1).toLong() * full.size / points).toInt().coerceAtLeast(a + 1)
+                                val part = full.subList(a, b)
+                                part.firstOrNull { it % 1000 == LADDER_WIN_CODE } ?: part.maxBy { it % 1000 }
+                            }
                         }
                     }
                     ladder(playerDb) to ladder(rivalDb)
@@ -1001,6 +1030,8 @@ class RivalEngine(
         const val MIN_ATTEMPTS_FOR_ENTRY = 10
         /** learningCurves: попытка, которой взят квест — верхняя линия графика. */
         const val LADDER_WIN = -1
+        /** learningCurves: код win в младших трёх разрядах значения. */
+        const val LADDER_WIN_CODE = 999
         private const val FIRST_MEMORY = "Nothing yet. I have never played."
         private val QUEST_EVENT = Regex("^(Quest|Level|Done|Didn't make|Another window)")
         private val QUEST_DONE = Regex("Quest (\\d+\\.\\d+) done")
