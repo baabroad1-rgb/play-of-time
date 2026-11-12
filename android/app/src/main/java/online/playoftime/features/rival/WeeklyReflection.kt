@@ -20,6 +20,16 @@ object WeeklyReflection {
         val meanMs: Double, val sdMs: Double, val r1: Double, val fatigue: Double,
         val questsDone: List<String>, val windowsFailed: Int, val levelUp: String?,
         val habitStart: Map<String, Int>?, val habitEnd: Map<String, Int>?,
+        // Конкретика недели (Alex 12.11.2026: «дневник по-прежнему тупой» —
+        // в настоящих дневниках тренировок есть день, момент, причина с
+        // сомнением, сверка с прошлой неделей и один проверяемый план).
+        val bestDay: String? = null, val bestDayExact: Int = 0, val bestDayAttempts: Int = 0,
+        val worstDay: String? = null, val worstDayExact: Int = 0, val worstDayAttempts: Int = 0,
+        val worstDayTired: Boolean = false, val worstDayLongest: Boolean = false,
+        val longestRun: Int = 0, val longestRunDay: String? = null,
+        /** Квест → день недели и номер попытки в сессии, которой он взят. */
+        val questMoments: List<Triple<String, String, Int>> = emptyList(),
+        val deepestStep: Int = 0, val sessions: Int = 0,
     )
 
     data class Arc(
@@ -99,20 +109,48 @@ object WeeklyReflection {
 
     private fun cap(x: String) = x.replaceFirstChar { it.uppercase() }
 
-    fun entry(w: Week, arcIn: Arc?): Pair<String, Arc?> {
+    private fun ord(n: Int) = "$n" + when { n % 100 in 11..13 -> "th"; n % 10 == 1 -> "st"; n % 10 == 2 -> "nd"; n % 10 == 3 -> "rd"; else -> "th" }
+    private fun oneIn(exact: Int, att: Int) = if (exact == 0) "none" else "one in ${(att.toDouble() / exact).roundToInt()}"
+
+    fun entry(w: Week, arcIn: Arc?, prev: Week? = null): Pair<String, Arc?> {
         if (w.attempts < 20) return "I hardly played this week — too little to learn anything about myself from." to arcIn
         var arc = arcIn
         val s = mutableListOf<String>()
         fun short(a: Arc) = if (a.alt) TOOLS.getValue(a.issue).altShort else TOOLS.getValue(a.issue).short
 
+        // 1. Момент недели — конкретный день, а не среднее.
+        val qm = w.questMoments
         s += when {
             w.levelUp != null -> "The week the counter switched to ${w.levelUp} — everything I thought I knew about my three got ten times finer."
-            w.questsDone.size >= 3 -> "A good week: quests ${w.questsDone.first()} to ${w.questsDone.last()} are behind me."
-            w.questsDone.size == 2 -> "A good week: quests ${w.questsDone.joinToString(" and ")} are behind me."
-            w.questsDone.size == 1 -> "Quest ${w.questsDone[0]} is behind me."
+            qm.size >= 2 -> "Quests ${qm.first().first} to ${qm.last().first} fell this week; the last one on ${qm.last().second}, ${qm.last().third} attempts into the session — I nearly gave up on it before that."
+            qm.size == 1 -> "Quest ${qm[0].first} fell on ${qm[0].second}, on the ${ord(qm[0].third)} attempt of the session." +
+                if (qm[0].third > 40) " It took patience; for a long while nothing was coming." else " It came quicker than I expected."
+            w.longestRun >= 3 && w.longestRunDay != null -> "Best moment of the week: on ${w.longestRunDay}, ${w.longestRun} exact threes in a row. I tried to notice what that felt like — quiet, no hurry, the stop just happened."
+            w.bestDay != null && w.bestDayExact > 0 -> "${w.bestDay} was my best day: ${w.bestDayExact} exact out of ${w.bestDayAttempts}."
             w.windowsFailed >= 2 -> "A hard week — ${w.windowsFailed} times the quest window closed on me before I made it."
             w.exact == 0 -> "${w.attempts} attempts and not one exact three."
             else -> "About one exact three in ${(w.attempts.toDouble() / w.exact).roundToInt()} this week."
+        }
+
+        // 2. Сверка с прошлой неделей — одна цифра и честная оценка.
+        if (prev != null && prev.attempts >= 20) {
+            val now = w.exact.toDouble() / w.attempts
+            val was = prev.exact.toDouble() / prev.attempts
+            s += when {
+                now > was * 1.2 -> "Exact threes: ${oneIn(w.exact, w.attempts)} now, ${oneIn(prev.exact, prev.attempts)} last week — better, though one good week proves little."
+                now < was * 0.8 -> "Exact threes: ${oneIn(w.exact, w.attempts)} now against ${oneIn(prev.exact, prev.attempts)} last week. A step back; I want to understand it rather than shrug."
+                else -> "Exact threes about as often as last week, ${oneIn(w.exact, w.attempts)}."
+            }
+        }
+
+        // 3. Неудачный день — с догадкой о причине и сомнением в ней.
+        if (w.worstDay != null && w.worstDay != w.bestDay && w.worstDayAttempts >= 20) {
+            s += "${w.worstDay} went badly — ${w.worstDayExact} exact out of ${w.worstDayAttempts}. " + when {
+                w.worstDayTired -> "The end of that session was clearly worse than its start, so I think I simply played on past the point where I was fresh."
+                w.worstDayLongest -> "It was my longest session of the week; maybe that's the reason, maybe not."
+                else -> "I don't see a reason in it — some days the hand doesn't listen, and I'd rather not invent one."
+            }
+            if (w.deepestStep > 0) s += "I had to take the eased terms, down to .${w.deepestStep}. I don't mind: better to lose a step and keep playing than to stand still."
         }
 
         val names = mapOf("repeat" to "after a second miss on the same side",
@@ -134,7 +172,7 @@ object WeeklyReflection {
         fun fresh(k: String, lead: String = ""): Arc {
             val t = TOOLS.getValue(k)
             s += lead + t.noticed(w)
-            s += t.tool
+            s += "For next week: " + t.tool.replaceFirstChar { it.lowercase() }
             return Arc(k, false, 0, t.metric(w))
         }
         val a = arc
@@ -167,7 +205,7 @@ object WeeklyReflection {
                 val weeks = a.weeks + 1
                 when {
                     weeks == 1 -> {
-                        s += "Second week with ${short(a)}: ${t.phrase(a.start, now)}${if (better) "" else " — nothing to show yet"}. ${WEEK2[w.index % WEEK2.size]}"
+                        s += "Last week I gave myself ${short(a)}. What came of it: ${t.phrase(a.start, now)}${if (better) "" else " — nothing to show yet"}. ${WEEK2[w.index % WEEK2.size]}"
                         arc = a.copy(weeks = weeks)
                     }
                     better -> {

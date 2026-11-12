@@ -362,7 +362,10 @@ class RivalEngine(
         val nowHabits = loadState().player?.habits()?.filterValues { it != null }?.mapValues { it.value!! }
         val out = LinkedHashMap<String, String>()
         var arc: WeeklyReflection.Arc? = null
+        var prevWeek: WeeklyReflection.Week? = null
         var prevAcc: Int? = null
+        val rivalSessions = rivalDb.sessionDao().getAllSessions().associateBy { it.id }
+        val dayName = java.text.SimpleDateFormat("EEEE", java.util.Locale.ENGLISH)
         all.groupBy { weekKey(it.startTime) }.entries.forEachIndexed { idx, (key, wk) ->
             val seen = wk.map { t ->
                 (roundedCells(t.endTime - t.startTime, t.accuracy) - roundedCells(aim, t.accuracy)) *
@@ -389,7 +392,38 @@ class RivalEngine(
             prevAcc = accs.last()
             val firstDay = dayKey(from)
             val lastDay = dayKey(to)
-            val w = WeeklyReflection.Week(
+            // Конкретика: лучший/худший день, серия точных, момент взятия квеста.
+            val byDay = wk.indices.groupBy { dayKey(wk[it].startTime) }.filterValues { it.size >= 20 }
+            fun exactOf(ix: List<Int>) = ix.count { seen[it] == 0.0 }
+            val best = byDay.maxByOrNull { (_, ix) -> exactOf(ix).toDouble() / ix.size }
+            val worst = byDay.minByOrNull { (_, ix) -> exactOf(ix).toDouble() / ix.size }
+            val bySession = wk.indices.groupBy { wk[it].sessionId }
+            val longestSession = bySession.maxByOrNull { it.value.size }?.key
+            val worstTired = worst?.value?.groupBy { wk[it].sessionId }?.values?.filter { it.size >= 20 }?.any { ix ->
+                val third = ix.size / 3
+                ix.takeLast(third).map { kotlin.math.abs(seen[it]) }.average() >
+                    ix.take(third).map { kotlin.math.abs(seen[it]) }.average() * 1.15
+            } ?: false
+            var run = 0; var bestRun = 0; var runDay: Long? = null
+            seen.forEachIndexed { i, v ->
+                run = if (v == 0.0 && (i == 0 || wk[i - 1].sessionId == wk[i].sessionId)) run + 1 else if (v == 0.0) 1 else 0
+                if (run > bestRun) { bestRun = run; runDay = wk[i].startTime }
+            }
+            val moments = notes.filter { it.time in from..to }.mapNotNull { e ->
+                val q = QUEST_DONE.find(e.text)?.groupValues?.get(1) ?: return@mapNotNull null
+                val k = bySession[e.sessionId]?.count { wk[it].startTime <= e.time } ?: 0
+                Triple(q, dayName.format(java.util.Date(e.time)), k.coerceAtLeast(1))
+            }
+            val deepest = wk.maxOfOrNull { t ->
+                val sess = rivalSessions[t.sessionId]
+                if (sess == null || sess.questLevelId == 0) 0 else {
+                    val q = getCurrentQuest(sess.questLevelId, sess.questTaskId)
+                    if (!q.adaptiveT || t.toleranceMs <= q.toleranceMsDefault) 0
+                    else (t.toleranceMs - q.toleranceMsDefault) / when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
+                }
+            } ?: 0
+            fun nameOf(ix: List<Int>?) = ix?.let { dayName.format(java.util.Date(wk[it.first()].startTime)) }
+            val w0 = WeeklyReflection.Week(
                 index = idx, attempts = wk.size,
                 exact = seen.count { it == 0.0 }, early = seen.count { it < 0 }, late = seen.count { it > 0 },
                 meanMs = m, sdMs = sd, r1 = r1, fatigue = fatigue,
@@ -399,8 +433,17 @@ class RivalEngine(
                 habitStart = habitsOf(snaps.optJSONObject(firstDay)),
                 habitEnd = snapKeys.firstOrNull { it > lastDay }?.let { habitsOf(snaps.optJSONObject(it)) } ?: nowHabits,
             )
-            val (text, next) = WeeklyReflection.entry(w, arc)
+            val w = w0.copy(
+                bestDay = nameOf(best?.value), bestDayExact = best?.value?.let { exactOf(it) } ?: 0, bestDayAttempts = best?.value?.size ?: 0,
+                worstDay = nameOf(worst?.value), worstDayExact = worst?.value?.let { exactOf(it) } ?: 0, worstDayAttempts = worst?.value?.size ?: 0,
+                worstDayTired = worstTired,
+                worstDayLongest = worst?.value?.any { wk[it].sessionId == longestSession } ?: false,
+                longestRun = bestRun, longestRunDay = runDay?.let { dayName.format(java.util.Date(it)) },
+                questMoments = moments, deepestStep = deepest, sessions = bySession.size,
+            )
+            val (text, next) = WeeklyReflection.entry(w, arc, prevWeek)
             arc = next
+            prevWeek = w
             // Ключ — подпись недели для экрана AI (Alex 11.11: дневник — на экран ИИ).
             val f = java.text.SimpleDateFormat("d MMM", java.util.Locale.ENGLISH)
             val y = java.text.SimpleDateFormat("yyyy", java.util.Locale.ENGLISH)
