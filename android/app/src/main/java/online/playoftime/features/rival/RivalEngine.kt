@@ -495,8 +495,9 @@ class RivalEngine(
                             val sess = sessions[t.sessionId]
                             val qi = if (sess == null) 0 else online.playoftime.core.utils.questList.indexOfFirst {
                                 it.levelId == sess.questLevelId && it.taskId == sess.questTaskId }.coerceAtLeast(0)
+                            // Подквест = ступень индульгенции по допуску ±t попытки (как
+                            // «Quest 2.3.1» в Level now; поблажка по N в попытке не хранится).
                             val step = when {
-                                sess != null && sess.isQuestComplete && lastOfSession[t.sessionId] == t.startTime -> LADDER_WIN_CODE
                                 sess == null || sess.questLevelId == 0 -> 0
                                 else -> {
                                     val q = online.playoftime.core.utils.getCurrentQuest(sess.questLevelId, sess.questTaskId)
@@ -504,12 +505,8 @@ class RivalEngine(
                                     else (t.toleranceMs - q.toleranceMsDefault) / when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
                                 }
                             }
-                            // Уровень по вертикали (Alex 12.11: «по вертикали уровень, по
-                            // горизонтали время»): квест k — целое k, ступень индульгенции
-                            // опускает на 0.15 за ступень (не ниже предыдущего квеста),
-                            // взятие квеста — сразу k+1.
-                            val y = if (step == LADDER_WIN_CODE) qi + 1f else qi - minOf(step, 6) * 0.15f
-                            t.startTime to y
+                            // Значение = индекс квеста × 100 + номер подквеста.
+                            t.startTime to (qi * 100 + step.coerceIn(0, 99)).toFloat()
                         }.let { full ->
                             // Больше [points] — по корзинам минимум и максимум, по времени.
                             if (full.size <= points) full

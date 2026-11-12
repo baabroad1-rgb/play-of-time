@@ -479,7 +479,7 @@ internal fun RivalCompareSection(
         CompCard {
             LevelTimeChart(curveYou, curveAi, youName)
             BasicText(
-                "Up — quest (1.1 … 3.5), thin lines under each quest — its eased steps. Across — time of the selected period.",
+                "Up — quest and its sub-quests: 2.3 is the quest itself, 2.3.1, 2.3.2… below it are its eased steps. Across — time of the selected period.",
                 modifier = Modifier.padding(top = 6.dp),
                 style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.8f))
             )
@@ -553,9 +553,20 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         BasicText("━ ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
     }
     val t0 = all.minOf { it.first }; val t1 = all.maxOf { it.first }.coerceAtLeast(t0 + 60_000)
-    val yMin = kotlin.math.floor(all.minOf { it.second } - 0.1f)
-    val yMax = kotlin.math.ceil(all.maxOf { it.second } + 0.05f).coerceAtLeast(yMin + 1f)
-    val levels = (yMax - yMin).toInt()
+    // Строки по вертикали — каждый подквест отдельно, снизу вверх:
+    // 1.1.2, 1.1.1, 1.1, 1.2.1, 1.2 … (Alex 12.11.2026: «по вертикали
+    // детальность с подквестами, подпиши цифрой каждый подквест»).
+    val qs = online.playoftime.core.utils.questList
+    val codes = all.map { it.second.toInt() }
+    val qMin = codes.minOf { it / 100 }; val qMax = codes.maxOf { it / 100 }
+    val maxSub = codes.groupBy { it / 100 }.mapValues { (_, l) -> l.maxOf { it % 100 } }
+    val rowsList = (qMin..qMax).flatMap { q -> ((maxSub[q] ?: 0) downTo 0).map { sub -> q * 100 + sub } }
+    val rowOf = rowsList.withIndex().associate { it.value to it.index }
+    fun label(code: Int): String {
+        val q = qs.getOrNull(code / 100) ?: return ""
+        return "${q.levelId}.${q.taskId}" + if (code % 100 > 0) ".${code % 100}" else ""
+    }
+    val n = rowsList.size
     val span = t1 - t0
     val fmt = java.text.SimpleDateFormat(when {
         span < 36L * 3600_000 -> "HH:mm"
@@ -563,28 +574,24 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         else -> "MMM yy"
     }, java.util.Locale.ENGLISH)
     val paint = remember {
-        android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 34f; isFakeBoldText = true; isAntiAlias = true }
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 30f; isFakeBoldText = true; isAntiAlias = true }
     }
-    val rowDp = if (levels <= 3) 70 else if (levels <= 6) 46 else 30
-    Canvas(Modifier.fillMaxWidth().height((levels * rowDp + 50).dp)) {
-        val left = 84f; val top = 16f
+    val subPaint = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(170, 170, 170); textSize = 26f; isAntiAlias = true }
+    }
+    val rowDp = if (n <= 6) 34 else if (n <= 14) 24 else 18
+    Canvas(Modifier.fillMaxWidth().height(((n - 1).coerceAtLeast(1) * rowDp + 70).dp)) {
+        val left = 110f; val top = 18f
         val bottom = size.height - 46f
         val w = size.width - left - 12f
         fun x(t: Long) = left + w * (t - t0).toFloat() / (t1 - t0)
-        fun y(v: Float) = bottom - (bottom - top) * (v - yMin) / (yMax - yMin)
-        // Сетка: квест — жирная линия с подписью, ступени индульгенций — тонкие.
-        for (k in yMin.toInt()..yMax.toInt()) {
-            val q = online.playoftime.core.utils.questList.getOrNull(k)
-            val yy = y(k.toFloat())
-            drawLine(Color(0xFF6A6A6A), Offset(left, yy), Offset(left + w, yy), strokeWidth = 2.5f)
-            val label = q?.let { "${it.levelId}.${it.taskId}" } ?: if (k >= online.playoftime.core.utils.questList.size) "done" else ""
-            drawContext.canvas.nativeCanvas.drawText(label, 4f, yy + 12f, paint)
-            for (j in 1..6) {
-                val ys = y(k - j * 0.15f)
-                if (ys <= bottom) drawLine(Color(0xFF333333), Offset(left, ys), Offset(left + w, ys), strokeWidth = 1f)
-            }
+        fun y(code: Float) = bottom - (bottom - top) * (rowOf[code.toInt()] ?: 0) / (n - 1).coerceAtLeast(1)
+        rowsList.forEach { code ->
+            val yy = y(code.toFloat())
+            val base = code % 100 == 0
+            drawLine(if (base) Color(0xFF7A7A7A) else Color(0xFF353535), Offset(left, yy), Offset(left + w, yy), strokeWidth = if (base) 2.5f else 1.2f)
+            drawContext.canvas.nativeCanvas.drawText(label(code), 4f, yy + 10f, if (base) paint else subPaint)
         }
-        // Время: 4 подписи.
         for (i in 0..3) {
             val t = t0 + (t1 - t0) * i / 3
             val lab = fmt.format(java.util.Date(t))
