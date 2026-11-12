@@ -9,6 +9,10 @@
 
 ## 12 ноября 2026 — версия v15.41
 
+### CHANGELOG: старых сборок measurement на сервере нет, выкладка удаляет их сама
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f2aebe3e390b09e0fe62deee562994f2bc6418ba)
+
 ### Чистка measurement: показывать список файлов на сервере
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4e46d4ff4a2ec069ec6c499622a832f13242e4a4)
@@ -2536,4 +2540,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 209.
+Всего записей: 210.
