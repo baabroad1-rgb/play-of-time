@@ -7,7 +7,17 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
-## 12 ноября 2026 — версия v15.48
+## 12 ноября 2026 — версия v15.49
+
+### CHANGELOG: 3.00 в Level now возвращено
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2a7428d6c5b0b1f5fa8a45a886307c1bb0007ca4)
+
+### Revert "Level now: убрана цель 3.00 из строки условия квеста"
+
+This reverts commit f035d4d4357a2c77e5b0f47f51fbd0eba64983a3.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a6f6b8d95d12a549ad92aa536982cef68380b88d)
 
 ### Level now: убрана цель 3.00 из строки условия квеста
 
@@ -2580,4 +2590,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 220.
+Всего записей: 222.
