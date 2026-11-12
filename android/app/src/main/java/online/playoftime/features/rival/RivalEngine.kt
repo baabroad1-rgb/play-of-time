@@ -415,27 +415,36 @@ class RivalEngine(
      * number of points (he makes one attempt for each of the player's).
      * Downsampled to ≤ [points].
      */
-    suspend fun learningCurves(points: Int = 240): Pair<List<Int>, List<Int>> {
+    /**
+     * Лесенка индульгенций по попыткам (Alex 12.11.2026: «по вертикали
+     * откладывать уровни с точностью до индульгенции… масштаб — чтобы видеть
+     * колебание между индульгенциями, самая верхняя линия win»).
+     * Значение попытки: номер ступени индульгенции (0 — условие квеста без
+     * поблажки, 1, 2… — ослабленные), [LADDER_WIN] — попытка, которой квест взят.
+     * Последние [points] попыток каждого, без прореживания — иначе колебание
+     * сотрётся. Ступень — по допуску ±t, записанному в попытке (поблажка по N
+     * в попытках не хранится и сюда не входит).
+     */
+    suspend fun learningCurves(points: Int = 200): Pair<List<Int>, List<Int>> {
         sync()
         return mutex.withLock {
             withContext(Dispatchers.IO) {
                 runCatching {
-                    suspend fun curve(db: TimeDatabase): List<Int> {
+                    suspend fun ladder(db: TimeDatabase): List<Int> {
                         val sessions = db.sessionDao().getAllSessions().associateBy { it.id }
-                        val tries = db.tryDao().getAllAttempts().sortedBy { it.startTime }
-                        var last = 0
-                        val full = tries.map { t ->
+                        val tries = db.tryDao().getAllAttempts().sortedBy { it.startTime }.takeLast(points)
+                        val lastOfSession = tries.groupBy { it.sessionId }.mapValues { (_, l) -> l.maxOf { it.startTime } }
+                        return tries.map { t ->
                             val sess = sessions[t.sessionId]
-                            val k = online.playoftime.core.utils.questList.indexOfFirst {
-                                sess != null && it.levelId == sess.questLevelId && it.taskId == sess.questTaskId
-                            }
-                            if (k >= 0) last = maxOf(last, k)
-                            last
+                            if (sess != null && sess.isQuestComplete && lastOfSession[t.sessionId] == t.startTime) return@map LADDER_WIN
+                            if (sess == null || sess.questLevelId == 0) return@map 0
+                            val q = online.playoftime.core.utils.getCurrentQuest(sess.questLevelId, sess.questTaskId)
+                            if (!q.adaptiveT || t.toleranceMs <= q.toleranceMsDefault) return@map 0
+                            val cell = when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
+                            (t.toleranceMs - q.toleranceMsDefault) / cell
                         }
-                        if (full.size <= points) return full
-                        return List(points) { i -> full[(i.toLong() * (full.size - 1) / (points - 1)).toInt()] }
                     }
-                    curve(playerDb) to curve(rivalDb)
+                    ladder(playerDb) to ladder(rivalDb)
                 }.getOrDefault(emptyList<Int>() to emptyList())
             }
         }
@@ -946,6 +955,8 @@ class RivalEngine(
         /** День → запись языковой модели + её память до и после. */
         private const val LLM_FILE = "doppelganger_llm.json"
         const val MIN_ATTEMPTS_FOR_ENTRY = 10
+        /** learningCurves: попытка, которой взят квест — верхняя линия графика. */
+        const val LADDER_WIN = -1
         private const val FIRST_MEMORY = "Nothing yet. I have never played."
         private val QUEST_EVENT = Regex("^(Quest|Level|Done|Didn't make|Another window)")
         private val QUEST_DONE = Regex("Quest (\\d+\\.\\d+) done")

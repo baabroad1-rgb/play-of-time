@@ -472,21 +472,20 @@ internal fun RivalCompareSection(
             }
         }
 
-        // ── скорость обучения — вместо всех графиков ─────────────────────
-        // Pace of learning — та же метрика, что в аналитике игрока (средняя
-        // эффективность попыток по отрезкам периода), две линии (Alex 12.11.2026:
-        // «я имел в виду скорость обучения, которую мы использовали раньше»).
-        CompTitle("Pace of learning", periodLabel)
+        // ── скорость обучения: лесенка индульгенций по попыткам ──────────
+        // Alex 12.11.2026: «по вертикали откладывать уровни с точностью до
+        // индульгенции… самая верхняя линия win». Pace-график не прижился.
+        CompTitle("Speed of learning", "last ${maxOf(curveYou.size, curveAi.size)} attempts")
         CompCard {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(bottom = 6.dp)) {
-                BasicText("● $youName", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = youColor))
-                BasicText("● ${RivalEngine.NAME}", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = aiColor))
+                BasicText("● $youName", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = youColor))
+                BasicText("● ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
             }
-            PaceCompareChart(you?.paceChartValues.orEmpty(), ai.paceChartValues, ai.paceChartLabels.ifEmpty { you?.paceChartLabels.orEmpty() })
+            LadderChart(curveYou, curveAi)
             BasicText(
-                "Efficiency of attempts over the period, 0–100% — the same measure as Pace of learning in your analytics. The higher line learned more from the same practice.",
+                "Each attempt: which step of the quest you were on. “base” is the quest’s own condition, .1, .2… are the eased steps below it, and “win” — the attempt that took the quest. The same number of attempts for both.",
                 modifier = Modifier.padding(top = 6.dp),
-                style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, color = diaryLabelGray)
+                style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.8f))
             )
         }
 
@@ -538,7 +537,58 @@ internal fun RivalCompareSection(
     }
 }
 
-/** Ступенчатые линии «квест к попытке» для обоих, полосы уровней. */
+/**
+ * Лесенка индульгенций: верх — win, под ним base (условие без поблажки),
+ * ниже .1, .2… до самой глубокой ступени, на которую кто-то из двоих спускался.
+ * Одна ступень — одна строка, чтобы колебание между ними было видно.
+ */
+@Composable
+private fun LadderChart(you: List<Int>, ai: List<Int>) {
+    val n = maxOf(you.size, ai.size)
+    if (n < 2) {
+        BasicText("Not enough attempts yet.", style = TextStyle(fontSize = 12.sp, color = diaryLabelGray))
+        return
+    }
+    val deepest = (you + ai).maxOrNull()?.coerceAtLeast(1) ?: 1
+    val rows = deepest + 2          // win, base, .1 … .deepest
+    val labelPaint = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 36f; isFakeBoldText = true; isAntiAlias = true }
+    }
+    val rowDp = if (rows <= 6) 34 else if (rows <= 12) 22 else 14
+    Canvas(Modifier.fillMaxWidth().height((rows * rowDp + 40).dp)) {
+        val left = 100f
+        val bottom = size.height - 44f
+        val top = 10f
+        val w = size.width - left - 8f
+        val step = (bottom - top) / (rows - 1)
+        fun x(i: Int, len: Int) = left + w * i / (len - 1).coerceAtLeast(1)
+        // win → строка 0, base → 1, ступень k → k+1
+        fun y(v: Int) = top + step * (if (v == RivalEngine.LADDER_WIN) 0 else v + 1)
+        val every = if (rows <= 12) 1 else (rows + 9) / 10
+        for (r in 0 until rows) {
+            val yy = top + step * r
+            drawLine(if (r == 0) Color(0xFF4CAF50) else Color(0xFF3A3A3A), Offset(left, yy), Offset(left + w, yy), strokeWidth = if (r <= 1) 2f else 1f)
+            if (r <= 1 || (r - 1) % every == 0) {
+                val lab = when (r) { 0 -> "win"; 1 -> "base"; else -> ".${r - 1}" }
+                drawContext.canvas.nativeCanvas.drawText(lab, 6f, yy + 12f, labelPaint)
+            }
+        }
+        drawContext.canvas.nativeCanvas.drawText("attempts →", left + w / 2 - 90f, size.height - 6f, labelPaint)
+        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
+            if (pts.size < 2) return@forEach
+            val path = Path()
+            pts.forEachIndexed { i, v ->
+                val px = x(i, pts.size); val py = y(v)
+                if (i == 0) path.moveTo(px, py) else { path.lineTo(px, y(pts[i - 1])); path.lineTo(px, py) }
+            }
+            drawPath(path, c.copy(alpha = 0.85f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
+            pts.forEachIndexed { i, v -> if (v == RivalEngine.LADDER_WIN) drawCircle(c, 7f, Offset(x(i, pts.size), y(v))) }
+            drawCircle(c, 6f, Offset(x(pts.size - 1, pts.size), y(pts.last())))
+        }
+    }
+}
+
+/** Ступенчатые линии «квест к попытке» для обоих, полосы уровней (не используется с 12.11.2026). */
 @Composable
 private fun LearningChart(you: List<Int>, ai: List<Int>) {
     val n = maxOf(you.size, ai.size)
