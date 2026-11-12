@@ -3277,3 +3277,7 @@ Lucky = (G + T) / (E_G + E_T) — `docs/LUCKY_INDEX_TWINS.md`. Натив (`Luck
 ## 2026-11-12 — Measurement: ручная чистка старых сборок на хостинге
 
 Алекс: «так а ты сам сотри». Выкладка measurement ничего на сервере не удаляет, а каждая правка меняет имя скрипта и стилей, поэтому в `/measurement/` скопились `play.20261014a…o.js` и `styles.20261014a…h.css`. Новый workflow `.github/workflows/cleanup-measurement.yml` запускается только вручную. Он удаляет в `/measurement/` только файлы вида `play.YYYYMMDDx.js` и `styles.YYYYMMDDx.css`, которых нет в текущем `measurement/play.html`. Остальное (`index.html`, `play.html`, `.htaccess`, `api/`, `assets/`, состояние выкладки) и игру (`webapp/`, корень сайта) не трогает. Очередь общая с выкладкой measurement, чтобы чистка не пошла одновременно с заливкой.
+
+## 2026-11-12 — Measurement: старых сборок на сервере нет
+
+Workflow чистки показал список `/measurement/` на сервере: там только `.ftp-deploy-sync-state.json`, `.htaccess`, `api/`, `assets/`, `index.html`, `manifest.webmanifest`, `play.html`, `play.20261014p.js` и `styles.20261014i.css`. Старых `play.*.js` и `styles.*.css` нет: выкладка (FTP-Deploy-Action по своему файлу состояния) сама удаляет на сервере файлы, удалённые из репозитория. Значит, утверждение из записи от 14.10 («выкладка ничего на сервере не удаляет, старые сборки копятся») неверно. Workflow `cleanup-measurement.yml` оставлен на всякий случай: запускается только вручную, лишнего не удаляет.
