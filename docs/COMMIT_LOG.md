@@ -9,6 +9,14 @@
 
 ## 12 ноября 2026 — версия v15.41
 
+### CHANGELOG: Pace of learning на экране AI
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/74706f691e910fa6bccaeea8728acf45dedd6b80)
+
+### Экран AI: вместо ступенек квестов — Pace of learning обоих (та же метрика, что в аналитике), по отрезкам периода
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5796ae199d3abcbdb8f8423d9b3999f945f1f525)
+
 ### CHANGELOG: старых сборок measurement на сервере нет, выкладка удаляет их сама
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f2aebe3e390b09e0fe62deee562994f2bc6418ba)
@@ -2540,4 +2548,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 210.
+Всего записей: 212.
