@@ -51,8 +51,8 @@ class StatsContract {
         /** Аналитика игрока за тот же период — правый столбец сравнения в режиме AI. */
         val playerAnalytics: AnalyticsData? = null,
         /** Квест, достигнутый к каждой попытке (индекс в questList): игрок, соперник. */
-        val curveYou: List<Int> = emptyList(),
-        val curveAi: List<Int> = emptyList(),
+        val curveYou: List<Pair<Long, Float>> = emptyList(),
+        val curveAi: List<Pair<Long, Float>> = emptyList(),
         /** Текущий квест игрока, "2.3". */
         val playerQuest: String = "",
         /** Квест крупно с индульгенцией и условие — игрок и соперник. */

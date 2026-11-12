@@ -448,7 +448,7 @@ internal fun RivalCompareSection(
     you: AnalyticsData?, ai: AnalyticsData, youName: String,
     playerQuest: String, rivalQuest: String,
     playerBadge: Pair<String, String> = "" to "", rivalBadge: Pair<String, String> = "" to "",
-    curveYou: List<Int>, curveAi: List<Int>, periodLabel: String,
+    curveYou: List<Pair<Long, Float>>, curveAi: List<Pair<Long, Float>>, periodLabel: String,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         // ── уровень — в явном виде ────────────────────────────────────────
@@ -477,9 +477,9 @@ internal fun RivalCompareSection(
         // индульгенции… самая верхняя линия win». Pace-график не прижился.
         CompTitle("Speed of learning", periodLabel)
         CompCard {
-            LadderChart(curveYou, curveAi, youName)
+            LevelTimeChart(curveYou, curveAi, youName)
             BasicText(
-                "Each step of the line is one attempt. “base” — the quest’s own condition; .1, .2… — eased terms below it; a green dot on “win” — the attempt that took the quest. The number above is the quest.",
+                "Up — quest (1.1 … 3.5), thin lines under each quest — its eased steps. Across — time of the selected period.",
                 modifier = Modifier.padding(top = 6.dp),
                 style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.8f))
             )
@@ -534,82 +534,74 @@ internal fun RivalCompareSection(
 }
 
 /**
- * Лесенка индульгенций (Alex 12.11.2026: «график непонятный»): два поля —
- * игрок сверху, Doppelgänger снизу, общая ось попыток. Строки: win, base,
- * .1, .2 … Над каждым отрезком — номер квеста, на смене квеста — вертикальная
- * черта, взятие квеста — зелёная точка на строке win. Значение = индекс
- * квеста × 1000 + ступень (999 — win).
+ * Один график (Alex 12.11.2026: «1. один; 2. перемещение по уровням включая
+ * подуровни; 4. по вертикали уровень, по горизонтали время, в зависимости от
+ * фильтра, однозначно читается»). Y — квест: 1.1 … 3.5 по порядку, ступени
+ * индульгенций — тонкие линии под своим квестом (−0.15 за ступень). X — время
+ * попыток выбранного периода; подписи — часы, дни или месяцы по длине периода.
+ * Линия ступенчатая: уровень держится до следующей попытки.
  */
 @Composable
-private fun LadderChart(you: List<Int>, ai: List<Int>, youName: String) {
-    if (you.size < 2 && ai.size < 2) {
-        BasicText("Not enough attempts in this period.", style = TextStyle(fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f)))
+private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Float>>, youName: String) {
+    val all = you + ai
+    if (all.size < 2) {
+        BasicText("No attempts in this period.", style = TextStyle(fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f)))
         return
     }
-    val deepest = (you + ai).map { it % 1000 }.filter { it != RivalEngine.LADDER_WIN_CODE }.maxOrNull()?.coerceAtLeast(1) ?: 1
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        LadderPanel(youName, you, youColor, deepest)
-        LadderPanel(RivalEngine.NAME, ai, aiColor, deepest)
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+        BasicText("━ $youName", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = youColor))
+        BasicText("━ ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
     }
-}
-
-@Composable
-private fun LadderPanel(name: String, pts: List<Int>, c: Color, deepest: Int) {
-    val rows = deepest + 2
+    val t0 = all.minOf { it.first }; val t1 = all.maxOf { it.first }.coerceAtLeast(t0 + 60_000)
+    val yMin = kotlin.math.floor(all.minOf { it.second } - 0.1f)
+    val yMax = kotlin.math.ceil(all.maxOf { it.second } + 0.05f).coerceAtLeast(yMin + 1f)
+    val levels = (yMax - yMin).toInt()
+    val span = t1 - t0
+    val fmt = java.text.SimpleDateFormat(when {
+        span < 36L * 3600_000 -> "HH:mm"
+        span < 75L * 86400_000 -> "d MMM"
+        else -> "MMM yy"
+    }, java.util.Locale.ENGLISH)
     val paint = remember {
         android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 34f; isFakeBoldText = true; isAntiAlias = true }
     }
-    val questPaint = remember(c) {
-        android.graphics.Paint().apply { color = android.graphics.Color.argb(255, (c.red * 255).toInt(), (c.green * 255).toInt(), (c.blue * 255).toInt()); textSize = 32f; isFakeBoldText = true; isAntiAlias = true }
-    }
-    BasicText(name, style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = c))
-    if (pts.size < 2) {
-        BasicText("no attempts in this period", style = TextStyle(fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f)))
-        return
-    }
-    val rowDp = if (rows <= 4) 30 else if (rows <= 8) 22 else 14
-    Canvas(Modifier.fillMaxWidth().height((rows * rowDp + 44).dp)) {
-        val left = 96f
-        val top = 44f
-        val bottom = size.height - 8f
-        val w = size.width - left - 8f
-        val step = (bottom - top) / (rows - 1)
-        fun x(i: Int) = left + w * i / (pts.size - 1)
-        fun row(v: Int) = (v % 1000).let { if (it == RivalEngine.LADDER_WIN_CODE) 0 else it + 1 }
-        fun y(v: Int) = top + step * row(v)
-        val every = if (rows <= 10) 1 else (rows + 7) / 8
-        for (r in 0 until rows) {
-            val yy = top + step * r
-            drawLine(if (r == 0) Color(0xFF4CAF50) else if (r == 1) Color(0xFF8A8A8A) else Color(0xFF3A3A3A),
-                Offset(left, yy), Offset(left + w, yy), strokeWidth = if (r <= 1) 3f else 1.5f)
-            if (r <= 1 || (r - 1) % every == 0)
-                drawContext.canvas.nativeCanvas.drawText(when (r) { 0 -> "win"; 1 -> "base"; else -> ".${r - 1}" }, 4f, yy + 11f, paint)
-        }
-        // Отрезки квестов: вертикальная черта на смене и номер над отрезком.
-        var segStart = 0
-        for (i in 1..pts.size) {
-            if (i == pts.size || pts[i] / 1000 != pts[segStart] / 1000) {
-                val q = online.playoftime.core.utils.questList.getOrNull(pts[segStart] / 1000)
-                val label = q?.let { "${it.levelId}.${it.taskId}" } ?: ""
-                val x0 = x(segStart); val x1 = x(i - 1)
-                if (segStart > 0) drawLine(Color.White.copy(alpha = 0.35f), Offset(x0, top - 6f), Offset(x0, bottom), strokeWidth = 2f)
-                val tw = questPaint.measureText(label)
-                if (x1 - x0 > tw * 0.8f || segStart == 0)
-                    drawContext.canvas.nativeCanvas.drawText(label, (x0 + 4f).coerceAtMost(left + w - tw), top - 14f, questPaint)
-                segStart = i
+    val rowDp = if (levels <= 3) 70 else if (levels <= 6) 46 else 30
+    Canvas(Modifier.fillMaxWidth().height((levels * rowDp + 50).dp)) {
+        val left = 84f; val top = 16f
+        val bottom = size.height - 46f
+        val w = size.width - left - 12f
+        fun x(t: Long) = left + w * (t - t0).toFloat() / (t1 - t0)
+        fun y(v: Float) = bottom - (bottom - top) * (v - yMin) / (yMax - yMin)
+        // Сетка: квест — жирная линия с подписью, ступени индульгенций — тонкие.
+        for (k in yMin.toInt()..yMax.toInt()) {
+            val q = online.playoftime.core.utils.questList.getOrNull(k)
+            val yy = y(k.toFloat())
+            drawLine(Color(0xFF6A6A6A), Offset(left, yy), Offset(left + w, yy), strokeWidth = 2.5f)
+            val label = q?.let { "${it.levelId}.${it.taskId}" } ?: if (k >= online.playoftime.core.utils.questList.size) "done" else ""
+            drawContext.canvas.nativeCanvas.drawText(label, 4f, yy + 12f, paint)
+            for (j in 1..6) {
+                val ys = y(k - j * 0.15f)
+                if (ys <= bottom) drawLine(Color(0xFF333333), Offset(left, ys), Offset(left + w, ys), strokeWidth = 1f)
             }
         }
-        // Заливка под ступенчатой линией и сама линия.
-        val line = Path(); val fill = Path()
-        pts.forEachIndexed { i, v ->
-            val px = x(i); val py = y(v)
-            if (i == 0) { line.moveTo(px, py); fill.moveTo(px, bottom); fill.lineTo(px, py) }
-            else { val pp = y(pts[i - 1]); line.lineTo(px, pp); line.lineTo(px, py); fill.lineTo(px, pp); fill.lineTo(px, py) }
+        // Время: 4 подписи.
+        for (i in 0..3) {
+            val t = t0 + (t1 - t0) * i / 3
+            val lab = fmt.format(java.util.Date(t))
+            val tw = paint.measureText(lab)
+            val px = (x(t) - tw / 2).coerceIn(left - 20f, left + w - tw)
+            drawLine(Color(0xFF444444), Offset(x(t), bottom), Offset(x(t), bottom + 8f), strokeWidth = 2f)
+            drawContext.canvas.nativeCanvas.drawText(lab, px, size.height - 6f, paint)
         }
-        fill.lineTo(x(pts.size - 1), bottom); fill.close()
-        drawPath(fill, c.copy(alpha = 0.18f))
-        drawPath(line, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f))
-        pts.forEachIndexed { i, v -> if (v % 1000 == RivalEngine.LADDER_WIN_CODE) drawCircle(Color(0xFF4CAF50), 9f, Offset(x(i), y(v))) }
+        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
+            if (pts.isEmpty()) return@forEach
+            val path = Path()
+            pts.forEachIndexed { i, (t, v) ->
+                if (i == 0) path.moveTo(x(t), y(v)) else { path.lineTo(x(t), y(pts[i - 1].second)); path.lineTo(x(t), y(v)) }
+            }
+            drawPath(path, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f))
+            drawCircle(c, 8f, Offset(x(pts.last().first), y(pts.last().second)))
+        }
     }
 }
 

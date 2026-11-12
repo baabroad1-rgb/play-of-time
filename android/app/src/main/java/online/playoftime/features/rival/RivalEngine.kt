@@ -469,12 +469,12 @@ class RivalEngine(
      * сотрётся. Ступень — по допуску ±t, записанному в попытке (поблажка по N
      * в попытках не хранится и сюда не входит).
      */
-    suspend fun learningCurves(period: PeriodFilter, offset: Int, points: Int = 400): Pair<List<Int>, List<Int>> {
+    suspend fun learningCurves(period: PeriodFilter, offset: Int, points: Int = 400): Pair<List<Pair<Long, Float>>, List<Pair<Long, Float>>> {
         sync()
         return mutex.withLock {
             withContext(Dispatchers.IO) {
                 runCatching {
-                    suspend fun ladder(db: TimeDatabase): List<Int> {
+                    suspend fun ladder(db: TimeDatabase): List<Pair<Long, Float>> {
                         val sessions = db.sessionDao().getAllSessions().associateBy { it.id }
                         // Попытки выбранного периода — как в AnalyticsUseCase (Alex 12.11:
                         // «одинаковый для любого периода, что ошибка»).
@@ -504,21 +504,25 @@ class RivalEngine(
                                     else (t.toleranceMs - q.toleranceMsDefault) / when (q.accuracy.ordinal.coerceIn(1, 3)) { 1 -> 100; 2 -> 10; else -> 1 }
                                 }
                             }
-                            qi * 1000 + step.coerceAtMost(LADDER_WIN_CODE)
+                            // Уровень по вертикали (Alex 12.11: «по вертикали уровень, по
+                            // горизонтали время»): квест k — целое k, ступень индульгенции
+                            // опускает на 0.15 за ступень (не ниже предыдущего квеста),
+                            // взятие квеста — сразу k+1.
+                            val y = if (step == LADDER_WIN_CODE) qi + 1f else qi - minOf(step, 6) * 0.15f
+                            t.startTime to y
                         }.let { full ->
-                            // Больше [points] — прореживаем корзинами: win, если был в
-                            // корзине, иначе самая глубокая ступень — колебание не теряется.
+                            // Больше [points] — по корзинам минимум и максимум, по времени.
                             if (full.size <= points) full
-                            else List(points) { i ->
-                                val a = (i.toLong() * full.size / points).toInt()
-                                val b = ((i + 1).toLong() * full.size / points).toInt().coerceAtLeast(a + 1)
+                            else (0 until points / 2).flatMap { i ->
+                                val a = (i.toLong() * full.size / (points / 2)).toInt()
+                                val b = ((i + 1).toLong() * full.size / (points / 2)).toInt().coerceAtLeast(a + 1)
                                 val part = full.subList(a, b)
-                                part.firstOrNull { it % 1000 == LADDER_WIN_CODE } ?: part.maxBy { it % 1000 }
+                                listOf(part.minBy { it.second }, part.maxBy { it.second }).distinct().sortedBy { it.first }
                             }
                         }
                     }
                     ladder(playerDb) to ladder(rivalDb)
-                }.getOrDefault(emptyList<Int>() to emptyList())
+                }.getOrDefault(emptyList<Pair<Long, Float>>() to emptyList())
             }
         }
     }

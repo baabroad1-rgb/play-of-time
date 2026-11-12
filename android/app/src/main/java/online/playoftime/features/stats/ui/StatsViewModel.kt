@@ -95,7 +95,7 @@ class StatsViewModel(
                 val llm = emptyMap<String, RivalEngine.LlmEntry>()
                 val weekly = if (reuse) prev.weeklyNotes else if (showRival) rival.weeklyEntries() else emptyMap()
                 val mine = mineAsync?.await()
-                val curves = if (showRival) rival.learningCurves(period, offset) else (emptyList<Int>() to emptyList())
+                val curves = if (showRival) rival.learningCurves(period, offset) else (emptyList<Pair<Long, Float>>() to emptyList())
                 if (generation != loadGeneration) return@launch
 
                 // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
