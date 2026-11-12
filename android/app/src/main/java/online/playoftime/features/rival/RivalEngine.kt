@@ -440,6 +440,7 @@ class RivalEngine(
                 worstDayLongest = worst?.value?.any { wk[it].sessionId == longestSession } ?: false,
                 longestRun = bestRun, longestRunDay = runDay?.let { dayName.format(java.util.Date(it)) },
                 questMoments = moments, deepestStep = deepest, sessions = bySession.size,
+                errors = seen.filter { it != 0.0 },
             )
             val (text, next) = WeeklyReflection.entry(w, arc, prevWeek)
             arc = next

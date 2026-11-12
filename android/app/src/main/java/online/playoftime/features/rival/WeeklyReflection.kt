@@ -30,6 +30,8 @@ object WeeklyReflection {
         /** Квест → день недели и номер попытки в сессии, которой он взят. */
         val questMoments: List<Triple<String, String, Int>> = emptyList(),
         val deepestStep: Int = 0, val sessions: Int = 0,
+        /** Промахи недели со знаком, мс (без точных) — для орудия «угадать до цифры». */
+        val errors: List<Double> = emptyList(),
     )
 
     /**
@@ -47,6 +49,13 @@ object WeeklyReflection {
     data class Arc(
         val issue: String, val stage: Int, val weeks: Int, val start: Double, val lastStage: Double,
         val mastered: List<String> = emptyList(), val failed: List<String> = emptyList(),
+        // Первое орудие у всех — по Геллерштейну: до цифры сказать себе
+        // «длинно»/«коротко» и сверить (Alex 12.11.2026: «поищи пример
+        // образования ВПФ… и по образцу»). [guessTheta] — с какого промаха (мс)
+        // он уже чувствует сторону: меньше — угадывает как монетка; порог
+        // сжимается с каждой неделей практики.
+        val guessTheta: Double = 0.0, val guessWeek: Int = 0, val guessDone: Boolean = false,
+        val guessPrev: Double = 0.0,
     )
 
     private class Tool(
@@ -137,10 +146,17 @@ object WeeklyReflection {
     private fun form(t: Tool, stage: Int) = when (stage) { 2 -> t.material; 3 -> t.loud; 4 -> t.inner; else -> t.folded }
 
     private val STAGE_NOTE = mapOf(
-        2 to "It feels clumsy — a grown-up tapping a table. But that is the point: for now the rhythm has to live outside me before it can live inside.",
+        2 to "At first it gets in the way — attention goes on the prop, not the press. That is the price; for now it has to live outside me before it can live inside.",
         3 to "My own voice now does what my hand did. Less of a prop, still a prop.",
         4 to "Nobody would see it from outside any more; the help has moved in, but I still have to switch it on.",
-        5 to "This is the part I wanted: not a trick I remember, but how I now am.",
+        5 to "This is the part I wanted: not a trick I remember, but how I now am. Doing it the old way, from outside, would only throw me now.",
+    )
+
+    /** Пропущенное звено, найденное в медленной развёрнутой форме. */
+    private val LINKS = listOf(
+        "I stop listening after “two” — the last second goes by on its own.",
+        "I decide the stop before the press, and then don’t hear the stop itself.",
+        "on a miss I look at the number before I’ve said my guess — the guess comes after, so it isn’t one.",
     )
 
     fun entry(w: Week, arcIn: Arc?, prev: Week? = null): Pair<String, Arc?> {
@@ -179,6 +195,49 @@ object WeeklyReflection {
             }
         }
 
+        // 3а. Орудие Геллерштейна — угадать сторону до цифры. Параллелограмм
+        // Леонтьева: сначала мешает, потом помогает, вросшее — снаружи сбивает.
+        // Развалилось — назад к медленной развёрнутой форме (Гальперин).
+        val g = arcIn
+        if (g == null || !g.guessDone) {
+            val theta = if (g == null) 1.2 * w.sdMs else g.guessTheta * 0.72
+            fun rate(e: List<Double>) = if (e.isEmpty()) 0.5 else (e.count { abs(it) > theta } + 0.5 * e.count { abs(it) <= theta }) / e.size
+            val r = rate(w.errors)
+            val rs = rate(w.errors.filter { it < 0 }); val rl = rate(w.errors.filter { it > 0 })
+            fun of20(x: Double) = "${(x * 20).roundToInt()} of 20"
+            val week = (g?.guessWeek ?: -1) + 1
+            when {
+                g == null -> {
+                    s += "The three happens to me: I press and find out from the number, not from inside. So, an experiment — before looking, I tell myself “long” or “short”."
+                    s += "Right ${of20(r)}; a coin would do about as well. " + if (prev != null && w.exact < prev.exact) "And fewer exact threes: half my attention goes on guessing. Fine — that is how a new tool starts." else "And it eats attention — the press itself gets sloppier. Fine — that is how a new tool starts."
+                }
+                r < g.guessPrev - 0.05 -> {
+                    val link = LINKS[w.index % LINKS.size]
+                    s += "Guessing fell apart${w.worstDay?.let { " on $it" } ?: ""}: ${of20(r)}, it was ${of20(g.guessPrev)}. Trying harder won’t help, so back to slow: five attempts with a long pause, and on each I say what I feel in the last second. Found it: $link"
+                }
+                r < 0.8 -> {
+                    val (worse, better) = if (rl < rs) "“long”" to "“short”" else "“short”" to "“long”"
+                    s += "Guessing ${of20(r)}. Where I go wrong is the interesting part: $better I know at once, $worse I mix up with “exact”."
+                    s += if (rl < rs) "So what I need is not a general rhythm but a mark for the end." else "So it’s the start that I don’t feel, not the end."
+                    if (week >= 2) s += "Am I really feeling it, or just learning the odds? I tried a few with eyes off the number for a while afterwards — the guess holds, so it’s not only the odds."
+                }
+                else -> {
+                    s += "I hardly guess any more — I know which it was before the number; no words needed. I tried saying it out loud on purpose — it threw me, two misses in a row. A support that has grown in only gets in the way from outside."
+                    s += "So that is what the three is now: not something that happens to me but something I hear."
+                }
+            }
+            val done = g != null && r >= 0.8
+            val nextArc = Arc(g?.issue ?: "", 0, 0, 0.0, 0.0, g?.mastered.orEmpty(), g?.failed.orEmpty(),
+                guessTheta = theta, guessWeek = week, guessDone = done, guessPrev = r)
+            if (!done) return s.joinToString(" ") to nextArc
+            // Вросло — дальше трудность, которую теперь слышно.
+            val first = issues(w)[0]
+            val t = TOOLS.getValue(first)
+            s += "What next? " + t.noticed(w) + " " + t.idea + " This week: " + t.material + "."
+            return s.joinToString(" ") to nextArc.copy(issue = first, stage = 2, start = t.metric(w), lastStage = t.metric(w),
+                mastered = nextArc.mastered + "hearing the three")
+        }
+
         // 3. Линия орудия: шаг вращивания и его доказательство.
         val list = issues(w)
         var arc = arcIn
@@ -186,7 +245,7 @@ object WeeklyReflection {
             val t = TOOLS.getValue(k)
             s += lead + t.noticed(w)
             s += t.idea + " This week: " + t.material + "."
-            arc = Arc(k, 2, 0, t.metric(w), t.metric(w), arcIn?.mastered.orEmpty(), arcIn?.failed.orEmpty())
+            arc = (arcIn ?: Arc(k, 2, 0, 0.0, 0.0)).copy(issue = k, stage = 2, weeks = 0, start = t.metric(w), lastStage = t.metric(w))
         }
         val a = arc
         if (a == null) {
@@ -211,7 +270,7 @@ object WeeklyReflection {
                 }
                 now > a.lastStage * 1.1 && a.stage > 2 -> {
                     // Отпустил рано — шаг назад к более внешней форме.
-                    s += "Last week I tried ${form(t, a.stage)}, and it got worse: ${t.phrase(a.lastStage, now)}. I let go too early. Back to ${form(t, a.stage - 1)} — what I can do with help today, I’ll do alone later, not now."
+                    s += "Last week I tried ${form(t, a.stage)}, and it got worse: ${t.phrase(a.lastStage, now)}. I let go too early. Back to ${form(t, a.stage - 1)}, and slowly — a few attempts with a long pause, to find which link I dropped. What I can do with help today, I’ll do alone later, not now."
                     arc = a.copy(stage = a.stage - 1, weeks = 0, lastStage = now)
                 }
                 now > a.start * 0.97 && a.weeks >= 2 && a.stage <= 3 -> {
