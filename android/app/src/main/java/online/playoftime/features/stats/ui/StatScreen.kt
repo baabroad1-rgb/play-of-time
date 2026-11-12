@@ -292,12 +292,6 @@ fun StatScreen(
                 // Переключение You | AI (Doppelgänger): старые данные остаются на
                 // экране под спиннером, пока считаются данные другого — иначе
                 // вместе с контентом пропал бы и сам переключатель.
-                if (state.analyticsLoading && state.analytics != null) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color    = if (state.showRival) rivalPurple else MaterialTheme.colorScheme.accentColor
-                    )
-                }
                 when {
                     state.analyticsLoading && state.analytics == null -> CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
@@ -353,6 +347,20 @@ fun StatScreen(
                         modifier = Modifier.align(Alignment.Center),
                         style    = labelStyle(color = MaterialTheme.colorScheme.baseTextColor.copy(alpha = subtleText))
                     )
+                }
+
+                // Спиннер поверх контента (раньше рисовался ДО карточек и
+                // прятался под ними — Alex 12.11: «не возникает никакого
+                // индикатора»). Старые данные видны сквозь затемнение.
+                if (state.analyticsLoading && state.analytics != null) {
+                    Box(
+                        Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = if (state.showRival) rivalPurple else MaterialTheme.colorScheme.accentColor
+                        )
+                    }
                 }
 
                 // Оверлей интерактивной справки — поверх карточек, под диалогами.

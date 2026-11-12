@@ -3,6 +3,7 @@ package online.playoftime.features.stats.ui
 import android.content.Intent
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import online.playoftime.R
 import online.playoftime.core.BaseViewModel
@@ -67,9 +68,13 @@ class StatsViewModel(
             }
         }
 
-    private fun loadAnalytics(period: PeriodFilter, offset: Int = 0) {
+    /** [periodOnly] — сменился только период/листание: недельный дневник, лесенку
+     *  и значки квестов (от периода не зависят) не пересчитываем (Alex 12.11:
+     *  «переключение между периодами тоже слишком долгое»). */
+    private fun loadAnalytics(period: PeriodFilter, offset: Int = 0, periodOnly: Boolean = false) {
         val generation = ++loadGeneration
         val showRival = viewState.value.showRival
+        val reuse = periodOnly && showRival && viewState.value.analyticsIsRival
         viewModelScope.launch {
             // Полноэкранный спиннер — только на самой первой загрузке.
             // При Refresh (каждый выход экрана на передний план) старые данные
@@ -79,15 +84,19 @@ class StatsViewModel(
             // спиннер на каждой его загрузке (Alex 11.11: «если долго — индикатор»).
             setState { copy(analyticsLoading = analytics == null || analyticsIsRival != showRival || showRival) }
             runCatching {
+                // Его и твоя аналитика — параллельно.
+                val mineAsync = if (showRival) async { statUseCases.analyticsUseCase(period, offset) } else null
                 val analytics = if (showRival) rival.analytics(period, offset)
                                 else statUseCases.analyticsUseCase(period, offset)
                 val days = emptyList<RivalEngine.DayDigest>()
                 val report: String? = null
-                val quest = if (showRival) rival.questLabel() else ""
+                val prev = viewState.value
+                val quest = if (reuse) prev.rivalQuest else if (showRival) rival.questLabel() else ""
                 val llm = emptyMap<String, RivalEngine.LlmEntry>()
-                val weekly = if (showRival) rival.weeklyEntries() else emptyMap()
-                val mine = if (showRival) statUseCases.analyticsUseCase(period, offset) else null
-                val curves = if (showRival) rival.learningCurves() else (emptyList<Int>() to emptyList())
+                val weekly = if (reuse) prev.weeklyNotes else if (showRival) rival.weeklyEntries() else emptyMap()
+                val mine = mineAsync?.await()
+                val curves = if (reuse) prev.curveYou to prev.curveAi
+                             else if (showRival) rival.learningCurves() else (emptyList<Int>() to emptyList())
                 if (generation != loadGeneration) return@launch
 
                 // Дерево по умолчанию раскрыто до уровня месяцев (Alex 2026-10-07):
@@ -134,7 +143,7 @@ class StatsViewModel(
                 // Сохраняем выбор в общем LocalStorage — MainViewModel подхватит
                 // тот же период при следующем открытии главного экрана.
                 localStorage.putPeriodFilter(event.period)
-                loadAnalytics(event.period)
+                loadAnalytics(event.period, periodOnly = true)
             }
 
             is Event.Refresh -> {
@@ -146,7 +155,7 @@ class StatsViewModel(
                 val current  = viewState.value.analytics?.periodOffset ?: 0
                 val newOffset = (current + event.delta).coerceAtLeast(0)
                 if (newOffset != current) {
-                    loadAnalytics(viewState.value.selectedPeriod, newOffset)
+                    loadAnalytics(viewState.value.selectedPeriod, newOffset, periodOnly = true)
                 }
             }
 
