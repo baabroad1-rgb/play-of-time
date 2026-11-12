@@ -1012,15 +1012,15 @@ class RivalEngine(
             val stepT = if (q.adaptiveT) (t - q.toleranceMsDefault) / cell else 0
             val sub = stepN + stepT
             val title = "Quest ${q.levelId}.${q.taskId}" + if (sub > 0) ".$sub" else ""
-            // Без «3.00» (Alex 12.11.2026: «тройку эту убери») — только допуск и условие.
-            val tol = if (t > 0) "± " + "%.${digits}f".format(java.util.Locale.US, t / 1000.0) + " · " else ""
+            val aim = "3." + "0".repeat(digits)
+            val tol = if (t > 0) " ± " + "%.${digits}f".format(java.util.Locale.US, t / 1000.0) else ""
             val c = q.victory.victoryCount
             val cond = when (q.victory.victoryCondition) {
                 VictoryCondition.SESSION -> "$c× in total"
                 VictoryCondition.ROW -> "$c× in a row"
                 VictoryCondition.IN_N -> "$c× in ${n ?: "—"} attempts"
             }
-            return title to "$tol$cond"
+            return title to "$aim$tol · $cond"
         }
         private const val PREFS = "doppelganger"
         private const val KEY_STATE = "state"
