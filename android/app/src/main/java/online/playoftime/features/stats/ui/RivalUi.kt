@@ -473,15 +473,18 @@ internal fun RivalCompareSection(
         }
 
         // ── скорость обучения — вместо всех графиков ─────────────────────
-        CompTitle("Speed of learning", "quest reached · by attempts")
+        // Pace of learning — та же метрика, что в аналитике игрока (средняя
+        // эффективность попыток по отрезкам периода), две линии (Alex 12.11.2026:
+        // «я имел в виду скорость обучения, которую мы использовали раньше»).
+        CompTitle("Pace of learning", periodLabel)
         CompCard {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(bottom = 6.dp)) {
                 BasicText("● $youName", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = youColor))
                 BasicText("● ${RivalEngine.NAME}", style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = aiColor))
             }
-            LearningChart(curveYou, curveAi)
+            PaceCompareChart(you?.paceChartValues.orEmpty(), ai.paceChartValues, ai.paceChartLabels.ifEmpty { you?.paceChartLabels.orEmpty() })
             BasicText(
-                "The same number of attempts for both — he makes one for each of yours. The higher line got further for the same practice.",
+                "Efficiency of attempts over the period, 0–100% — the same measure as Pace of learning in your analytics. The higher line learned more from the same practice.",
                 modifier = Modifier.padding(top = 6.dp),
                 style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, color = diaryLabelGray)
             )
@@ -632,6 +635,44 @@ internal fun RivalWeeklyDiary(notes: Map<String, String>) {
                     modifier = Modifier.fillMaxWidth().clickable { shown += 3 }.padding(vertical = 10.dp),
                     style = TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = rivalPurpleLight,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center))
+            }
+        }
+    }
+}
+
+
+/** Pace of learning обоих по одним отрезкам периода: эффективность 0..1, null — пусто. */
+@Composable
+private fun PaceCompareChart(you: List<Float?>, ai: List<Float?>, labels: List<String>) {
+    val n = maxOf(you.size, ai.size)
+    if (n < 2) {
+        BasicText("Not enough attempts in this period yet.", style = TextStyle(fontSize = 12.sp, color = diaryLabelGray))
+        return
+    }
+    val top = (you + ai).filterNotNull().maxOrNull()?.coerceAtLeast(0.05f) ?: 1f
+    val paint = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(110, 110, 110); textSize = 26f; isAntiAlias = true }
+    }
+    Canvas(Modifier.fillMaxWidth().height(170.dp)) {
+        val left = 64f
+        val bottom = size.height - 30f
+        val topY = 10f
+        val w = size.width - left - 8f
+        fun x(i: Int) = left + w * i / (n - 1)
+        fun y(v: Float) = bottom - (bottom - topY) * (v / top)
+        drawRect(Color(0xFF202020), topLeft = Offset(left, topY), size = androidx.compose.ui.geometry.Size(w, bottom - topY))
+        drawContext.canvas.nativeCanvas.drawText("%.0f%%".format(top * 100), 4f, topY + 20f, paint)
+        drawContext.canvas.nativeCanvas.drawText("0%", 4f, bottom, paint)
+        labels.firstOrNull()?.let { drawContext.canvas.nativeCanvas.drawText(it, left, size.height - 4f, paint) }
+        labels.lastOrNull()?.let { drawContext.canvas.nativeCanvas.drawText(it, left + w - paint.measureText(it), size.height - 4f, paint) }
+        listOf(you to youColor, ai to aiColor).forEach { (vals, c) ->
+            var prev: Offset? = null
+            vals.forEachIndexed { i, v ->
+                if (v == null) { prev = null; return@forEachIndexed }
+                val pt = Offset(x(i), y(v))
+                prev?.let { drawLine(c, it, pt, strokeWidth = 5f) }
+                drawCircle(c, 5f, pt)
+                prev = pt
             }
         }
     }
