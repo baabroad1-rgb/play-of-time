@@ -1,0 +1,48 @@
+name: Почистить старые сборки measurement на хостинге
+
+# Только ручной запуск: вкладка Actions -> этот workflow -> Run workflow.
+#
+# Выкладка (deploy-measurement.yml) ничего на сервере не удаляет, поэтому
+# в /measurement/ копятся старые play.*.js и styles.*.css — каждая правка
+# меняет имя файла. Этот workflow удаляет ИМЕННО их: только файлы вида
+# play.YYYYMMDDx.js и styles.YYYYMMDDx.css прямо в /measurement/, и только
+# те, которых нет в текущем measurement/play.html. Всё остальное (index.html,
+# play.html, .htaccess, api/, assets/, состояние выкладки) не трогается.
+# Игра (webapp/, корень сайта) этим workflow не затрагивается.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-measurement
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установить lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Удалить старые сборки
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.LOGIN }}
+          FTP_PASS: ${{ secrets.PASSWORD }}
+        run: |
+          set -e
+          keep=$(grep -oE '(play|styles)\.[0-9]{8}[a-z]+\.(js|css)' measurement/play.html | sort -u)
+          echo "Оставляю (подключены в play.html):"; echo "$keep"
+          [ -n "$keep" ] || { echo "play.html не подключает ни одного файла — стоп"; exit 1; }
+          lftp_cmd() {
+            lftp -u "$FTP_USER,$FTP_PASS" -e "set ftp:ssl-force true; set ftp:ssl-protect-data true; set net:max-retries 2; $1; bye" "$FTP_HOST"
+          }
+          listing=$(lftp_cmd "cls -1 /measurement/")
+          old=$(echo "$listing" | sed 's#.*/##' | grep -E '^(play|styles)\.[0-9]{8}[a-z]+\.(js|css)$' | grep -vxF "$keep" || true)
+          if [ -z "$old" ]; then echo "Удалять нечего."; exit 0; fi
+          echo "Удаляю:"; echo "$old"
+          cmds=$(echo "$old" | sed 's#^#rm /measurement/#' | paste -sd ';' -)
+          lftp_cmd "$cmds"
+          echo "Осталось:"; lftp_cmd "cls -1 /measurement/" | sed 's#.*/##' | grep -E '^(play|styles)\.' || true

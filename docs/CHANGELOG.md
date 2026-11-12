@@ -3273,3 +3273,7 @@ Alex: «сделать luck coefficient для индульгированных 
 ## 2026-11-11 — Lucky Index с зелёными близнецами; выкачено v15.40
 
 Lucky = (G + T) / (E_G + E_T) — `docs/LUCKY_INDEX_TWINS.md`. Натив (`LuckyIndex.kt`, кроме строк дерева сессий — в барах нет сессии), веб (`app.20261111a.js`), сервер лидерборда (`lucky_index()`, `leaderboard.php`). Выкачено: v15.40, `index.html` → `app.20261111a.js`, лидерборд отвечает 200. В браузере и на телефоне не проверялось.
+
+## 2026-11-12 — Measurement: ручная чистка старых сборок на хостинге
+
+Алекс: «так а ты сам сотри». Выкладка measurement ничего на сервере не удаляет, а каждая правка меняет имя скрипта и стилей, поэтому в `/measurement/` скопились `play.20261014a…o.js` и `styles.20261014a…h.css`. Новый workflow `.github/workflows/cleanup-measurement.yml` запускается только вручную. Он удаляет в `/measurement/` только файлы вида `play.YYYYMMDDx.js` и `styles.YYYYMMDDx.css`, которых нет в текущем `measurement/play.html`. Остальное (`index.html`, `play.html`, `.htaccess`, `api/`, `assets/`, состояние выкладки) и игру (`webapp/`, корень сайта) не трогает. Очередь общая с выкладкой measurement, чтобы чистка не пошла одновременно с заливкой.
