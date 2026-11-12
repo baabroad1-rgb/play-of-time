@@ -39,7 +39,9 @@ jobs:
           lftp_cmd() {
             lftp -u "$FTP_USER,$FTP_PASS" -e "set ftp:ssl-force true; set ftp:ssl-protect-data true; set net:max-retries 2; $1; bye" "$FTP_HOST"
           }
+          echo "Папка входа FTP:"; lftp_cmd "pwd"
           listing=$(lftp_cmd "cls -1 /measurement/")
+          echo "Сейчас в /measurement/:"; echo "$listing"
           old=$(echo "$listing" | sed 's#.*/##' | grep -E '^(play|styles)\.[0-9]{8}[a-z]+\.(js|css)$' | grep -vxF "$keep" || true)
           if [ -z "$old" ]; then echo "Удалять нечего."; exit 0; fi
           echo "Удаляю:"; echo "$old"
