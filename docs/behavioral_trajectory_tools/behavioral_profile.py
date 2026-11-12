@@ -33,7 +33,7 @@ import json, math, datetime, sys, os, re
 import statistics as st
 from collections import defaultdict, Counter
 
-RESEARCH_KEY = "pot-research-2026-10-01-7f3c9a"  # см. webapp/api/research_raw_attempts.php — это трение, не секрет
+RESEARCH_KEY = os.environ.get("POT_RESEARCH_KEY", "")  # эндпоинт выключен 12.11.2026; ключ — только вне репозитория
 API = "https://playoftime.online/api/research_raw_attempts.php"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ATT_PATH = os.path.join(HERE, "attempts.json")
