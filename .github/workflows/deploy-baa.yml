@@ -1,0 +1,52 @@
+name: Выложить baa на хостинг
+
+# Отдельная выкладка сайта-визитки. С выкладкой игры (deploy-web.yml) и
+# measurement не связана: свой триггер, своя очередь, своя папка на сервере.
+#
+# Срабатывает, когда меняется baa/ и это попадает в main.
+# Можно запустить и руками: вкладка Actions -> этот workflow -> Run workflow.
+#
+# Заливает baa/ в папку /baa/ на сервере: https://playoftime.online/baa/
+# Поддомен baa.playoftime.online в панели Beget должен смотреть на эту же
+# папку (playoftime.online/public_html/baa). Ничего на сервере не удаляет.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'baa/**'
+      - '.github/workflows/deploy-baa.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-baa
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Залить baa/ в /baa/ на playoftime.online
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.LOGIN }}
+          password: ${{ secrets.PASSWORD }}
+          protocol: ftps
+          local-dir: ./baa/
+          server-dir: /baa/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/*.md
+
+      # Проверка, что страница реально открывается и совпадает с репозиторием.
+      - name: Проверить, что страница открывается
+        run: |
+          set -e
+          curl -fsS "https://playoftime.online/baa/index.html?check=$GITHUB_RUN_ID" -o /tmp/index.html
+          cmp /tmp/index.html baa/index.html
+          echo "OK index.html"
