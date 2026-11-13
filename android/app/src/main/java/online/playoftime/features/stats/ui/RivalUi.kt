@@ -605,7 +605,7 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         // отрезки времени, высота столбика — подквест, где игрок был в конце
         // отрезка (без попыток — держится прежний). Оба поверх друг друга,
         // перекрытие видно по смешению цветов.
-        val buckets = 30
+        val buckets = 20
         val bw = w / buckets
         fun bars(pts: List<Pair<Long, Float>>): List<Float?> {
             var last: Float? = null
@@ -616,12 +616,15 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
                 last
             }
         }
-        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
+        // Рядом, не друг на друге (Alex 13.11: «что за цвета? где тут я и где ИИ?» —
+        // наложение смешивало жёлтый с фиолетовым): в отрезке слева игрок, справа ИИ.
+        listOf(Triple(you, youColor, 0), Triple(ai, aiColor, 1)).forEach { (pts, c, side) ->
             bars(pts).forEachIndexed { b, v ->
                 if (v == null) return@forEachIndexed
                 val yy = y(v)
-                drawRect(c.copy(alpha = 0.45f), topLeft = Offset(left + b * bw + 2f, yy),
-                    size = androidx.compose.ui.geometry.Size(bw - 4f, (bottom - yy).coerceAtLeast(3f)))
+                val half = (bw - 6f) / 2
+                drawRect(c.copy(alpha = 0.7f), topLeft = Offset(left + b * bw + 3f + side * half, yy),
+                    size = androidx.compose.ui.geometry.Size(half - 1f, (bottom - yy).coerceAtLeast(3f)))
             }
         }
     }
