@@ -604,9 +604,8 @@ private fun AnalyticsContent(
                     diaryModel = diaryLlm.values.maxByOrNull { it.at }?.model
                 )
             }
-        } else {
-            item { RivalCompareBanner(onClick = { onSelectWho(true) }, youName = ownName) }
         }
+        // Баннер «сравнить» под переключателем You | AI убран (Alex 13.11.2026).
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_SUMMARY)) {
                 SummaryHeader(
