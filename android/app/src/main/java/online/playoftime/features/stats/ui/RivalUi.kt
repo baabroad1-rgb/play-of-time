@@ -580,12 +580,13 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         android.graphics.Paint().apply { color = android.graphics.Color.rgb(170, 170, 170); textSize = 26f; isAntiAlias = true }
     }
     val rowDp = if (n <= 6) 34 else if (n <= 14) 24 else 18
-    Canvas(Modifier.fillMaxWidth().height(((n - 1).coerceAtLeast(1) * rowDp + 70).dp)) {
+    Canvas(Modifier.fillMaxWidth().height((n * rowDp + 70).dp)) {
         val left = 110f; val top = 18f
         val bottom = size.height - 46f
         val w = size.width - left - 12f
         fun x(t: Long) = left + w * (t - t0).toFloat() / (t1 - t0)
-        fun y(code: Float) = bottom - (bottom - top) * (rowOf[code.toInt()] ?: 0) / (n - 1).coerceAtLeast(1)
+        // Нижний подквест — на одну строку выше оси, чтобы его столбик был виден.
+        fun y(code: Float) = bottom - (bottom - top) * ((rowOf[code.toInt()] ?: 0) + 1) / n
         rowsList.forEach { code ->
             val yy = y(code.toFloat())
             val base = code % 100 == 0
