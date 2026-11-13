@@ -6,9 +6,14 @@ name: Выложить baa на хостинг
 # Срабатывает, когда меняется baa/ и это попадает в main.
 # Можно запустить и руками: вкладка Actions -> этот workflow -> Run workflow.
 #
-# Заливает baa/ в папку /baa/ на сервере: https://playoftime.online/baa/
-# Поддомен baa.playoftime.online в панели Beget должен смотреть на эту же
-# папку (playoftime.online/public_html/baa). Ничего на сервере не удаляет.
+# Заливает baa/ в корень отдельного сайта на Beget:
+# https://baa.playoftime.online/
+# У поддомена своя папка (baa.playoftime.online/public_html), и обычный
+# FTP-пользователь infousil_github в неё не попадает. Поэтому здесь свой
+# FTP-аккаунт infousil_baa, домашняя папка которого и есть эта папка —
+# отсюда server-dir: /. Его данные лежат в секретах BAA_LOGIN и
+# BAA_PASSWORD; сервер тот же, что у остальных выкладок (FTP_HOST).
+# Ничего на сервере не удаляет.
 
 on:
   push:
@@ -28,15 +33,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Залить baa/ в /baa/ на playoftime.online
+      - name: Залить baa/ на baa.playoftime.online
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.LOGIN }}
-          password: ${{ secrets.PASSWORD }}
+          username: ${{ secrets.BAA_LOGIN }}
+          password: ${{ secrets.BAA_PASSWORD }}
           protocol: ftps
           local-dir: ./baa/
-          server-dir: /baa/
+          server-dir: /
           dangerous-clean-slate: false
           exclude: |
             **/.git*
@@ -44,9 +49,18 @@ jobs:
             **/*.md
 
       # Проверка, что страница реально открывается и совпадает с репозиторием.
+      # Сертификат на новом поддомене может появиться не сразу, поэтому
+      # несколько попыток с паузой.
       - name: Проверить, что страница открывается
         run: |
-          set -e
-          curl -fsS "https://playoftime.online/baa/index.html?check=$GITHUB_RUN_ID" -o /tmp/index.html
-          cmp /tmp/index.html baa/index.html
-          echo "OK index.html"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "https://baa.playoftime.online/index.html?check=$GITHUB_RUN_ID" -o /tmp/index.html; then
+              cmp /tmp/index.html baa/index.html
+              echo "OK index.html"
+              exit 0
+            fi
+            echo "Попытка $i не удалась, жду 30 с"
+            sleep 30
+          done
+          echo "Страница не открылась: проверьте SSL-сертификат поддомена в панели Beget"
+          exit 1
