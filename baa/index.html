@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--head:start-->
+<title>baa — Александр Белышкин</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Александр Белышкин: проекты в одном месте — Usethics, Play of Time, Read Aloud и другие.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@400;600&display=swap">
+<style>
+/* Layout: one left-aligned column, a register of projects — name, one line, state. Nothing else. */
+:root {
+  --bg: #ECEFEC;
+  --fg: #141C19;
+  --muted: #5E6A65;
+  --rule: #C9D0CB;
+  --accent: #2337D2;
+  --mark: #FFE14A;
+  --mark-fg: #141C19;
+  --display: "Unbounded", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  --body: "Golos Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1412; --fg: #E3E8E4; --muted: #8C9892; --rule: #2A332F;
+    --accent: #9AA6FF; --mark: #FFE14A; --mark-fg: #141C19; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1412; --fg: #E3E8E4; --muted: #8C9892; --rule: #2A332F;
+  --accent: #9AA6FF; --mark: #FFE14A; --mark-fg: #141C19; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-block: clamp(40px, 9vw, 104px) 56px;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 8vw, 88px);
+}
+
+/* Intro */
+.intro { display: flex; flex-direction: column; gap: 22px; }
+.wordmark {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(72px, 19vw, 176px);
+  line-height: 0.82;
+  letter-spacing: -0.06em;
+  margin-left: -0.05em;
+}
+.wordmark span { color: var(--accent); }
+.expand {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.expand b { color: var(--fg); font-weight: 500; }
+.lede {
+  margin: 0;
+  max-width: 34em;
+  font-size: clamp(19px, 2.4vw, 23px);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.lede mark {
+  background: var(--mark);
+  color: var(--mark-fg);
+  padding: 0 0.18em;
+  border-radius: 2px;
+}
+
+/* Register */
+.label {
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.register { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.register li { border-bottom: 1px solid var(--rule); }
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) auto;
+  align-items: baseline;
+  column-gap: 28px;
+  row-gap: 6px;
+  padding-block: 22px;
+  color: inherit;
+  text-decoration: none;
+}
+.name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(19px, 2.6vw, 25px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.what { margin: 0; min-width: 0; color: var(--muted); font-size: 16px; }
+.state {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  justify-self: end;
+}
+a.row .state { color: var(--accent); }
+a.row .state::after { content: " ↗"; }
+a.row { transition: padding-left 0.18s ease; }
+a.row:hover, a.row:focus-visible { padding-left: 12px; }
+a.row:hover .name, a.row:focus-visible .name { color: var(--accent); }
+a.row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row.pending .name { color: var(--muted); }
+.texts .name { font-family: var(--body); font-weight: 500; font-size: 18px; letter-spacing: 0; line-height: 1.35; overflow-wrap: break-word; }
+.sections { display: flex; flex-direction: column; gap: clamp(40px, 6vw, 64px); }
+.timer { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .what { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.row { transition: none; }
+}
+
+/* Footer */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+</style>
+<!--head:end-->
+</head>
+<body>
+<!--body:start-->
+<main class="page">
+  <header class="intro">
+    <h1 class="wordmark" aria-label="baa">baa<span>.</span></h1>
+    <p class="expand"><b>Б</b>елышкин <b>А</b>лександр <b>А</b>натольевич</p>
+    <p class="lede">Психолог по образованию, исследователь по профессии. Больше 25&nbsp;лет смотрю, <mark>как люди действуют на самом деле</mark>, а не как об этом рассказывают. Здесь собрано то, что я делаю.</p>
+  </header>
+
+  <div class="sections">
+  <section aria-labelledby="projects-label">
+    <h2 class="label" id="projects-label">Проекты</h2>
+    <ul class="register">
+      <li>
+        <a class="row" href="https://usethics.ru/" target="_blank" rel="noopener">
+          <h3 class="name">Usethics</h3>
+          <p class="what">Студия проектирования и тестирования интерфейсов. Руководил ею двадцать лет.</p>
+          <span class="state">usethics.ru</span>
+        </a>
+      </li>
+      <li>
+        <a class="row" href="https://playoftime.online/" target="_blank" rel="noopener">
+          <h3 class="name">Play of Time</h3>
+          <p class="what">Тренажёр чувства времени. Секундомер, который нужно остановить ровно на <span class="timer" id="timer">3.000</span>&nbsp;с.</p>
+          <span class="state">playoftime.online</span>
+        </a>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Read Aloud</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Reddit</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Question of the Day</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Аккумулятор</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Фотосессия</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">«Ревизор» Гоголя</h3>
+          <p class="what">Описание появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="texts-label">
+    <h2 class="label" id="texts-label">Статьи и книги</h2>
+    <ul class="register texts">
+      <li>
+        <a class="row" href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">
+          <h3 class="name">Особенности субъективных представлений о работе с компьютером у разных категорий пользователей</h3>
+          <p class="what">Дипломное исследование, с которого всё началось. 1997.</p>
+          <span class="state">usability.ru</span>
+        </a>
+      </li>
+      <li>
+        <a class="row" href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener">
+          <h3 class="name">Четырежды не адекватен</h3>
+          <p class="what">Статья из цикла «Пользовательские интерфейсы: эргономика и юзабилити».</p>
+          <span class="state">guimachine.ru</span>
+        </a>
+      </li>
+      <li>
+        <div class="row pending">
+          <h3 class="name">Главы в книгах</h3>
+          <p class="what">Список появится позже.</p>
+          <span class="state">скоро</span>
+        </div>
+      </li>
+    </ul>
+  </section>
+  </div>
+
+  <footer class="foot">
+    <span>baa.playoftime.online</span>
+    <span>МГУ, факультет психологии, 1997</span>
+  </footer>
+</main>
+
+<script>
+// The Play of Time row runs its own stopwatch: 0.000 → 3.000, hold, again.
+(function () {
+  var el = document.getElementById("timer");
+  if (!el || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  var RUN = 3000, HOLD = 1600, start = null;
+  function tick(now) {
+    if (start === null) start = now;
+    var t = (now - start) % (RUN + HOLD);
+    el.textContent = (Math.min(t, RUN) / 1000).toFixed(3);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+<!--body:end-->
+</body>
+</html>
