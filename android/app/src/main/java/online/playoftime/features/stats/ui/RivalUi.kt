@@ -549,8 +549,8 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         return
     }
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-        BasicText("━ $youName", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = youColor))
-        BasicText("━ ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
+        BasicText("■ $youName", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = youColor))
+        BasicText("■ ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
     }
     val t0 = all.minOf { it.first }; val t1 = all.maxOf { it.first }.coerceAtLeast(t0 + 60_000)
     // Строки по вертикали — каждый подквест отдельно, снизу вверх:
@@ -600,14 +600,28 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
             drawLine(Color(0xFF444444), Offset(x(t), bottom), Offset(x(t), bottom + 8f), strokeWidth = 2f)
             drawContext.canvas.nativeCanvas.drawText(lab, px, size.height - 6f, paint)
         }
-        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
-            if (pts.isEmpty()) return@forEach
-            val path = Path()
-            pts.forEachIndexed { i, (t, v) ->
-                if (i == 0) path.moveTo(x(t), y(v)) else { path.lineTo(x(t), y(pts[i - 1].second)); path.lineTo(x(t), y(v)) }
+        // Полупрозрачные столбики (Alex 13.11.2026): период делится на равные
+        // отрезки времени, высота столбика — подквест, где игрок был в конце
+        // отрезка (без попыток — держится прежний). Оба поверх друг друга,
+        // перекрытие видно по смешению цветов.
+        val buckets = 30
+        val bw = w / buckets
+        fun bars(pts: List<Pair<Long, Float>>): List<Float?> {
+            var last: Float? = null
+            var j = 0
+            return List(buckets) { b ->
+                val end = t0 + (t1 - t0) * (b + 1) / buckets
+                while (j < pts.size && pts[j].first <= end) { last = pts[j].second; j++ }
+                last
             }
-            drawPath(path, c, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f))
-            drawCircle(c, 8f, Offset(x(pts.last().first), y(pts.last().second)))
+        }
+        listOf(you to youColor, ai to aiColor).forEach { (pts, c) ->
+            bars(pts).forEachIndexed { b, v ->
+                if (v == null) return@forEachIndexed
+                val yy = y(v)
+                drawRect(c.copy(alpha = 0.45f), topLeft = Offset(left + b * bw + 2f, yy),
+                    size = androidx.compose.ui.geometry.Size(bw - 4f, (bottom - yy).coerceAtLeast(3f)))
+            }
         }
     }
 }
