@@ -164,17 +164,24 @@ section { padding-block: clamp(32px, 5vw, 56px); }
 
 /* In the works */
 .soon { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
-.soon li {
-  display: flex; flex-direction: column; gap: 14px; min-width: 0;
-  padding: 16px; border: 1px dashed var(--rule); border-radius: 14px;
+.soon li { display: flex; min-width: 0; }
+.soon li > * {
+  display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0;
+  padding: 16px; border: 1px solid var(--rule); border-radius: 14px;
+  background: var(--surface); text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease;
 }
+.soon a:hover { transform: translateY(-2px); border-color: var(--accent); }
+.soon li.pending > * { background: transparent; border-style: dashed; }
 .soon i {
   display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px;
   background: var(--accent-soft); color: var(--accent);
   font-style: normal; font-family: var(--display); font-weight: 700; font-size: 16px;
 }
 .soon strong { font-family: var(--display); font-weight: 600; font-size: 16px; line-height: 1.25; overflow-wrap: break-word; }
-.soon span { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: auto; }
+.soon span { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: auto; overflow-wrap: anywhere; }
+.soon span.at { color: var(--accent); }
+.soon span.at::after { content: " ↗"; }
 
 /* Writing */
 .writing { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
@@ -217,8 +224,8 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .card { transition: none; }
-  .card:hover { transform: none; }
+  .card, .soon li > * { transition: none; }
+  .card:hover, .soon a:hover { transform: none; }
 }
 </style>
 <!--head:end-->
@@ -248,7 +255,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
   </header>
 
   <section id="projects" class="wrap" aria-labelledby="projects-h">
-    <div class="head"><h2 id="projects-h">Projects</h2><span>3 live · 5 in the works</span></div>
+    <div class="head"><h2 id="projects-h">Projects</h2><span>featured</span></div>
     <div class="cards">
       <a class="card" href="https://usethics.ru/" target="_blank" rel="noopener">
         <div class="tile t-usethics" aria-hidden="true">
@@ -293,13 +300,13 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
   </section>
 
   <section class="wrap" aria-labelledby="soon-h">
-    <div class="head"><h2 id="soon-h">In the works</h2><span>details soon</span></div>
+    <div class="head"><h2 id="soon-h">More</h2><span>4 live · 1 on the way</span></div>
     <ul class="soon">
-      <li><i>R</i><strong>Reddit</strong><span>coming soon</span></li>
-      <li><i>Q</i><strong>Question of the Day</strong><span>coming soon</span></li>
-      <li><i>A</i><strong>Accumulator</strong><span>coming soon</span></li>
-      <li><i>P</i><strong>Photo Session</strong><span>coming soon</span></li>
-      <li><i>G</i><strong>Gogol's “The Government Inspector”</strong><span>coming soon</span></li>
+      <li><a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener"><i>E</i><strong>English but Simple</strong><span class="at">Reddit · r/English_but_Simple</span></a></li>
+      <li><a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><i>Q</i><strong>Question of the Day</strong><span class="at">Telegram · @q_of_t_d</span></a></li>
+      <li><a href="https://t.me/baaqod" target="_blank" rel="noopener"><i>A</i><strong>Accumulator</strong><span class="at">Telegram · @baaqod</span></a></li>
+      <li><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><i>P</i><strong>Photo Session</strong><span class="at">Web · dreamsmoker</span></a></li>
+      <li class="pending"><div><i>G</i><strong>Gogol's “The Government Inspector”</strong><span>Audiobook, read by me · soon</span></div></li>
     </ul>
   </section>
 
