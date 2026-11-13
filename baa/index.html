@@ -7,358 +7,115 @@
 <title>Alexander Belyshkin</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Alexander Belyshkin — psychologist and UX researcher. Projects, apps and writing in one place.">
-<meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<meta name="color-scheme" content="light">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: sticky nav, a short hero, three featured project cards with a picture each, a compact "in the works" grid, writing list, about. */
+/* Layout: one narrow left-aligned column. White page, black text, hairlines. Hierarchy from size and weight only. */
 :root {
-  --bg: #F3F5F4;
-  --surface: #FFFFFF;
-  --fg: #131A18;
-  --muted: #5B6763;
-  --rule: #DCE2DF;
-  --accent: #2740D8;
-  --accent-soft: #E6E9FB;
-  --good: #1E8A4C;
-  --bad: #C8372D;
-  --tile-a: #1B2A8F;
-  --tile-b: #10201A;
-  --tile-c: #FBF7EC;
-  --tile-c-fg: #1D1B16;
-  --on-dark: #F2F5F3;
-  --shadow: 0 1px 2px rgba(19, 26, 24, 0.05), 0 8px 24px rgba(19, 26, 24, 0.06);
-  --display: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-  --body: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --bg: #FFFFFF;
+  --fg: #000000;
+  --rule: #000000;
+  --body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0E1312; --surface: #171D1B; --fg: #E6EBE8; --muted: #93A09B; --rule: #29322F;
-    --accent: #98A5FF; --accent-soft: #1E2547; --good: #4CC27F; --bad: #F0776C;
-    --tile-a: #24349F; --tile-b: #0A1512; --tile-c: #24221C; --tile-c-fg: #EFEADB; --on-dark: #F2F5F3;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0E1312; --surface: #171D1B; --fg: #E6EBE8; --muted: #93A09B; --rule: #29322F;
-  --accent: #98A5FF; --accent-soft: #1E2547; --good: #4CC27F; --bad: #F0776C;
-  --tile-a: #24349F; --tile-b: #0A1512; --tile-c: #24221C; --tile-c-fg: #EFEADB; --on-dark: #F2F5F3;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .wrap {
-  max-width: 1080px;
+  max-width: 760px;
   margin: 0 auto;
   padding-left: max(20px, env(safe-area-inset-left, 0px));
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 28px; font-size: 15px; }
+.top .me { font-weight: 600; }
+.top nav { display: flex; gap: 20px; }
+.top a:hover, footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
+h1 { margin: 0; font-weight: 600; font-size: clamp(32px, 6vw, 52px); line-height: 1.08; letter-spacing: -0.035em; text-wrap: balance; }
+h2 { margin: 0 0 14px; font-weight: 600; font-size: 15px; letter-spacing: 0; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-block: 28px 40px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-/* Nav */
-body::before {
-  content: ""; position: fixed; inset: 0 0 auto; z-index: 10;
-  height: env(safe-area-inset-top, 0px); background: var(--bg);
+.hero { padding-block: clamp(40px, 9vw, 96px) clamp(48px, 9vw, 96px); }
+.hero p { margin: 22px 0 0; max-width: 32em; font-size: clamp(18px, 2.2vw, 21px); line-height: 1.45; }
+section { padding-bottom: clamp(48px, 8vw, 80px); }
+.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.list li { border-bottom: 1px solid var(--rule); }
+.row {
+  display: grid; grid-template-columns: 30% minmax(0, 1fr) 180px;
+  column-gap: 24px; row-gap: 2px; align-items: baseline; padding-block: 16px;
 }
-.nav {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--rule);
-}
-.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 600; font-size: 16px; }
-.brand i {
-  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
-  background: var(--accent); color: var(--surface);
-  font-style: normal; font-family: var(--mono); font-weight: 500; font-size: 12.5px; letter-spacing: -0.02em;
-}
-.links { display: flex; gap: 4px; }
-.links a {
-  text-decoration: none; font-size: 14.5px; font-weight: 500; color: var(--muted);
-  padding: 6px 12px; border-radius: 8px;
-}
-.links a:hover { color: var(--fg); background: var(--rule); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* Hero */
-.hero { padding-block: clamp(48px, 9vw, 104px) clamp(40px, 6vw, 72px); display: flex; flex-direction: column; gap: 20px; }
-.eyebrow {
-  margin: 0; align-self: flex-start;
-  font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.04em;
-  color: var(--accent); background: var(--accent-soft);
-  padding: 5px 10px; border-radius: 999px;
-}
-.hero h1 {
-  margin: 0; max-width: 16em;
-  font-family: var(--display); font-weight: 700;
-  font-size: clamp(36px, 6.4vw, 68px); line-height: 1.04; letter-spacing: -0.03em;
-  text-wrap: balance;
-}
-.hero h1 em { font-style: normal; color: var(--accent); }
-.hero p.lede { margin: 0; max-width: 38em; font-size: clamp(17px, 1.9vw, 20px); color: var(--muted); text-wrap: pretty; }
-.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.btn {
-  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-  font-weight: 600; font-size: 15px; padding: 11px 18px; border-radius: 10px;
-  border: 1px solid var(--rule); background: var(--surface);
-}
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
-.btn.primary:hover { filter: brightness(1.08); color: var(--surface); }
-
-/* Sections */
-section { padding-block: clamp(32px, 5vw, 56px); }
-.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-.head h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(24px, 3vw, 32px); letter-spacing: -0.02em; }
-.head span { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
-
-/* Featured cards */
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.card {
-  display: flex; flex-direction: column; min-width: 0;
-  background: var(--surface); border: 1px solid var(--rule); border-radius: 16px; overflow: hidden;
-  text-decoration: none; box-shadow: var(--shadow);
-  transition: transform 0.18s ease, border-color 0.18s ease;
-}
-.card:hover { transform: translateY(-3px); border-color: var(--accent); }
-.tile { aspect-ratio: 16 / 10; display: grid; place-items: center; padding: 20px; overflow: hidden; }
-.body { display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 22px; flex: 1; }
-.kind { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.card h3 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -0.015em; line-height: 1.2; }
-.card p { margin: 0; color: var(--muted); font-size: 15px; }
-.go { margin-top: auto; padding-top: 10px; font-weight: 600; font-size: 14.5px; color: var(--accent); }
-.go::after { content: " →"; }
-
-/* Tile: Usethics — a wireframe under test */
-.t-usethics { background: var(--tile-a); color: var(--on-dark); }
-.wire { width: min(100%, 250px); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: relative; }
-.wire b { display: block; height: 14px; border-radius: 4px; background: color-mix(in srgb, var(--on-dark) 26%, transparent); }
-.wire b.w { grid-column: 1 / -1; }
-.wire b.tall { height: 46px; }
-.wire b.hit { background: var(--on-dark); }
-.wire svg { position: absolute; right: 16%; bottom: -12px; width: 26px; height: 26px; }
-/* Tile: Play of Time — the stopwatch */
-.t-pot { background: var(--tile-b); color: var(--on-dark); grid-auto-flow: column; gap: 16px; }
-.t-pot img { width: 64px; height: 64px; border-radius: 16px; display: block; }
-.clock { font-family: var(--mono); font-weight: 500; font-size: clamp(30px, 4vw, 40px); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
-.clock small { font-size: 0.45em; opacity: 0.6; margin-left: 4px; }
-/* Tile: Read Aloud — a scored sentence */
-.t-aloud { background: var(--tile-c); color: var(--tile-c-fg); }
-.t-aloud p { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 19px; line-height: 1.5; color: inherit; max-width: 15em; }
-.ok { color: var(--good); }
-.no { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-
-/* In the works */
-.soon { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
-.soon li { display: flex; min-width: 0; }
-.soon li > * {
-  display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0;
-  padding: 16px; border: 1px solid var(--rule); border-radius: 14px;
-  background: var(--surface); text-decoration: none;
-  transition: transform 0.18s ease, border-color 0.18s ease;
-}
-.soon a:hover { transform: translateY(-2px); border-color: var(--accent); }
-.soon li.pending > * { background: transparent; border-style: dashed; }
-.soon i {
-  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px;
-  background: var(--accent-soft); color: var(--accent);
-  font-style: normal; font-family: var(--display); font-weight: 700; font-size: 16px;
-}
-.soon strong { font-family: var(--display); font-weight: 600; font-size: 16px; line-height: 1.25; overflow-wrap: break-word; }
-.soon span { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: auto; overflow-wrap: anywhere; }
-.soon span.at { color: var(--accent); }
-.soon span.at::after { content: " ↗"; }
-
-/* Writing */
-.writing { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-.writing li { border-bottom: 1px solid var(--rule); }
-.item {
-  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; column-gap: 20px; row-gap: 4px;
-  align-items: baseline; padding-block: 18px; text-decoration: none;
-}
-.item .yr { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.item h3 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 18px; line-height: 1.35; }
-.item p { margin: 2px 0 0; color: var(--muted); font-size: 14.5px; }
-.item .src { font-family: var(--mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-a.item .src { color: var(--accent); }
-a.item .src::after { content: " ↗"; }
-a.item:hover h3 { color: var(--accent); }
-
-/* About */
-.about { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(24px, 5vw, 64px); align-items: start; }
-.about p { margin: 0 0 14px; max-width: 36em; font-size: 17px; }
-.facts { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
-.facts div { display: flex; justify-content: space-between; gap: 16px; padding-block: 12px; border-bottom: 1px solid var(--rule); }
-.facts dt { color: var(--muted); font-size: 14.5px; }
-.facts dd { margin: 0; font-weight: 500; font-size: 14.5px; text-align: right; }
-
-footer { border-top: 1px solid var(--rule); margin-top: 24px; }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 24px 32px; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
-
-@media (max-width: 900px) {
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .soon { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 620px) {
-  .cards { grid-template-columns: minmax(0, 1fr); }
-  .soon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .about { grid-template-columns: minmax(0, 1fr); }
-  .item { grid-template-columns: minmax(0, 1fr) auto; }
-  .item .yr { grid-column: 1 / -1; }
-  .links a { padding: 6px 8px; }
-  .brand span { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .card, .soon li > * { transition: none; }
-  .card:hover, .soon a:hover { transform: none; }
+.name { font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+.what { min-width: 0; font-size: 16px; }
+.src { font-size: 14px; white-space: nowrap; justify-self: end; }
+a.row .src::after { content: " →"; }
+a.row:hover .name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.timer { font-variant-numeric: tabular-nums; }
+.about p { margin: 0 0 14px; max-width: 34em; }
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .what { grid-column: 1 / -1; grid-row: 2; }
 }
 </style>
 <!--head:end-->
 </head>
 <body>
 <!--body:start-->
-<nav class="nav" aria-label="Main">
-  <div class="wrap">
-    <a class="brand" href="#top"><i>baa</i><span>Alexander Belyshkin</span></a>
-    <div class="links">
-      <a href="#projects">Projects</a>
-      <a href="#writing">Writing</a>
-      <a href="#about">About</a>
-    </div>
+<header class="wrap top">
+  <a class="me" href="#top">Alexander Belyshkin</a>
+  <nav aria-label="Main"><a href="#projects">Projects</a><a href="#writing">Writing</a><a href="#about">About</a></nav>
+</header>
+
+<main class="wrap" id="top">
+  <div class="hero">
+    <h1>I study what people actually do, then build things for them.</h1>
+    <p>Psychologist and UX researcher. More than 25 years between academic psychology and applied research.</p>
   </div>
-</nav>
 
-<main id="top">
-  <header class="hero wrap">
-    <p class="eyebrow">Psychologist · UX researcher · maker</p>
-    <h1>I study what people <em>actually do</em>, then build things for them.</h1>
-    <p class="lede">I'm Alexander Belyshkin. For more than 25 years I've worked between academic psychology and applied research. This page gathers the company I ran, the apps I make and the things I've written.</p>
-    <div class="cta">
-      <a class="btn primary" href="#projects">See the projects</a>
-      <a class="btn" href="#writing">Read the writing</a>
-    </div>
-  </header>
-
-  <section id="projects" class="wrap" aria-labelledby="projects-h">
-    <div class="head"><h2 id="projects-h">Projects</h2><span>featured</span></div>
-    <div class="cards">
-      <a class="card" href="https://usethics.ru/" target="_blank" rel="noopener">
-        <div class="tile t-usethics" aria-hidden="true">
-          <div class="wire">
-            <b class="w"></b><b class="tall"></b><b class="tall"></b><b></b><b class="hit"></b>
-            <svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.6L10 19z" fill="#F2F5F3" stroke="#10201A" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-        <div class="body">
-          <span class="kind">Company · since 2001</span>
-          <h3>Usethics</h3>
-          <p>An interface design and usability testing studio. I led it for twenty years, through thousands of projects.</p>
-          <span class="go">usethics.ru</span>
-        </div>
-      </a>
-
-      <a class="card" href="https://playoftime.online/" target="_blank" rel="noopener">
-        <div class="tile t-pot" aria-hidden="true">
-          <img src="assets/play-of-time.png" alt="" width="64" height="64">
-          <span class="clock"><span id="timer">3.000</span><small>s</small></span>
-        </div>
-        <div class="body">
-          <span class="kind">Android · Web</span>
-          <h3>Play of Time</h3>
-          <p>A trainer for your sense of time. One stopwatch, one job: stop it at exactly 3.000 seconds.</p>
-          <span class="go">playoftime.online</span>
-        </div>
-      </a>
-
-      <a class="card" href="https://playoftime.online/aloud/" target="_blank" rel="noopener">
-        <div class="tile t-aloud" aria-hidden="true">
-          <p><span class="ok">It was the best of times,</span> <span class="ok">it was the</span> <span class="no">worst</span> <span class="ok">of times, it was the age of</span> <span class="no">wisdom</span></p>
-        </div>
-        <div class="body">
-          <span class="kind">Android · on-device speech</span>
-          <h3>Read Aloud</h3>
-          <p>An e-book reader that listens while you read aloud and colours each word: green when it sounded right, red when it didn't.</p>
-          <span class="go">playoftime.online/aloud</span>
-        </div>
-      </a>
-    </div>
-  </section>
-
-  <section class="wrap" aria-labelledby="soon-h">
-    <div class="head"><h2 id="soon-h">More</h2><span>side projects</span></div>
-    <ul class="soon">
-      <li><a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener"><i>E</i><strong>English but Simple</strong><span class="at">Reddit · r/English_but_Simple</span></a></li>
-      <li><a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><i>Q</i><strong>Question of the Day</strong><span class="at">Telegram · @q_of_t_d</span></a></li>
-      <li><a href="https://t.me/baaqod" target="_blank" rel="noopener"><i>A</i><strong>Accumulator</strong><span class="at">Telegram · @baaqod</span></a></li>
-      <li><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><i>P</i><strong>Photo Session</strong><span class="at">Web · dreamsmoker</span></a></li>
-      <li><a href="revizor/"><i>G</i><strong>Gogol's “The Government Inspector”</strong><span class="at">Audiobook · read by me</span></a></li>
+  <section id="projects" aria-labelledby="projects-h">
+    <h2 id="projects-h">Projects</h2>
+    <ul class="list">
+      <li><a class="row" href="https://usethics.ru/" target="_blank" rel="noopener"><span class="name">Usethics</span><span class="what">An interface design and usability testing studio. 2001–2026.</span><span class="src">usethics.ru</span></a></li>
+      <li><a class="row" href="https://playoftime.online/" target="_blank" rel="noopener"><span class="name">Play of Time</span><span class="what">A trainer for your sense of time. Stop the stopwatch at <span style="white-space:nowrap">exactly <span class="timer" id="timer">3.000</span>&nbsp;s.</span></span><span class="src">playoftime.online</span></a></li>
+      <li><a class="row" href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><span class="name">Read Aloud</span><span class="what">An e-book reader that listens while you read aloud and marks each word right or wrong.</span><span class="src">playoftime.online/aloud</span></a></li>
+      <li><a class="row" href="revizor/"><span class="name">The Government Inspector</span><span class="what">Gogol’s comedy as an audiobook in Russian, read by me.</span><span class="src">Listen</span></a></li>
+      <li><a class="row" href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener"><span class="name">English but Simple</span><span class="what">A community on Reddit.</span><span class="src">r/English_but_Simple</span></a></li>
+      <li><a class="row" href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><span class="name">Question of the Day</span><span class="what">A Telegram channel.</span><span class="src">@q_of_t_d</span></a></li>
+      <li><a class="row" href="https://t.me/baaqod" target="_blank" rel="noopener"><span class="name">Accumulator</span><span class="what">A Telegram channel.</span><span class="src">@baaqod</span></a></li>
+      <li><a class="row" href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><span class="name">Photo Session</span><span class="what">A website.</span><span class="src">dreamsmoker</span></a></li>
     </ul>
   </section>
 
-  <section id="writing" class="wrap" aria-labelledby="writing-h">
-    <div class="head"><h2 id="writing-h">Writing</h2><span>articles and book chapters</span></div>
-    <ul class="writing">
-      <li>
-        <a class="item" href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">
-          <span class="yr">1997</span>
-          <div><h3>How different kinds of users picture their work with a computer</h3><p>Graduate research at Moscow State University. In Russian.</p></div>
-          <span class="src">usability.ru</span>
-        </a>
-      </li>
-      <li>
-        <a class="item" href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener">
-          <span class="yr">Article</span>
-          <div><h3>Four Times Inadequate</h3><p>From the series “User Interfaces: Ergonomics and Usability”. In Russian.</p></div>
-          <span class="src">guimachine.ru</span>
-        </a>
-      </li>
-      <li>
-        <div class="item">
-          <span class="yr">Books</span>
-          <div><h3>Book chapters</h3><p>The list is being put together.</p></div>
-          <span class="src">soon</span>
-        </div>
-      </li>
+  <section id="writing" aria-labelledby="writing-h">
+    <h2 id="writing-h">Writing</h2>
+    <ul class="list">
+      <li><a class="row" href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener"><span class="name">How different kinds of users picture their work with a computer</span><span class="what">Graduate research, Moscow State University, 1997. In Russian.</span><span class="src">usability.ru</span></a></li>
+      <li><a class="row" href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener"><span class="name">Four Times Inadequate</span><span class="what">From the series “User Interfaces: Ergonomics and Usability”. In Russian.</span><span class="src">guimachine.ru</span></a></li>
+      <li><div class="row"><span class="name">Book chapters</span><span class="what">The list is being put together.</span><span class="src">Soon</span></div></li>
     </ul>
   </section>
 
-  <section id="about" class="wrap" aria-labelledby="about-h">
-    <div class="head"><h2 id="about-h">About</h2></div>
-    <div class="about">
-      <div>
-        <p>I trained as a psychologist at Moscow State University, in work and industrial psychology, and have spent my career watching how people really use things rather than how they say they do.</p>
-        <p>These days I build small products of my own, most of them about attention, timing and practice.</p>
-      </div>
-      <dl class="facts">
-        <div><dt>Education</dt><dd>MSU, Psychology, 1997</dd></div>
-        <div><dt>Usethics</dt><dd>20 years at the helm</dd></div>
-        <div><dt>In research</dt><dd>25+ years</dd></div>
-      </dl>
-    </div>
+  <section id="about" class="about" aria-labelledby="about-h">
+    <h2 id="about-h">About</h2>
+    <p>I trained as a psychologist at Moscow State University, in work and industrial psychology, and graduated in 1997. I have spent my career watching how people really use things rather than how they say they do.</p>
+    <p>These days I build small products of my own, most of them about attention, timing and practice.</p>
   </section>
 </main>
 
-<footer>
-  <div class="wrap"><span>baa.playoftime.online</span><span>© 2026 Alexander Belyshkin</span></div>
-</footer>
+<footer><div class="wrap"><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></div></footer>
 
 <script>
-// The Play of Time card runs its own stopwatch: 0.000 → 3.000, hold, again.
+// The Play of Time line runs its own stopwatch: 0.000 → 3.000, hold, again.
 (function () {
   var el = document.getElementById("timer");
   if (!el || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;

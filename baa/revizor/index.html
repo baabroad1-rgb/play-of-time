@@ -5,106 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Government Inspector — audiobook</title>
 <meta name="description" content="Nikolai Gogol's comedy The Government Inspector (Revizor) as an audiobook in Russian, read by Alexander Belyshkin.">
-<meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<meta name="color-scheme" content="light">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
+/* Layout: one narrow left-aligned column. White page, black text, hairlines. Hierarchy from size and weight only. */
 :root {
-  --bg: #F3F5F4;
-  --surface: #FFFFFF;
-  --fg: #131A18;
-  --muted: #5B6763;
-  --rule: #DCE2DF;
-  --accent: #2740D8;
-  --accent-soft: #E6E9FB;
-  --good: #1E8A4C;
-  --bad: #C8372D;
-  --tile-a: #1B2A8F;
-  --tile-b: #10201A;
-  --tile-c: #FBF7EC;
-  --tile-c-fg: #1D1B16;
-  --on-dark: #F2F5F3;
-  --shadow: 0 1px 2px rgba(19, 26, 24, 0.05), 0 8px 24px rgba(19, 26, 24, 0.06);
-  --display: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-  --body: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --bg: #FFFFFF;
+  --fg: #000000;
+  --rule: #000000;
+  --body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0E1312; --surface: #171D1B; --fg: #E6EBE8; --muted: #93A09B; --rule: #29322F;
-    --accent: #98A5FF; --accent-soft: #1E2547; --good: #4CC27F; --bad: #F0776C;
-    --tile-a: #24349F; --tile-b: #0A1512; --tile-c: #24221C; --tile-c-fg: #EFEADB; --on-dark: #F2F5F3;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0E1312; --surface: #171D1B; --fg: #E6EBE8; --muted: #93A09B; --rule: #29322F;
-  --accent: #98A5FF; --accent-soft: #1E2547; --good: #4CC27F; --bad: #F0776C;
-  --tile-a: #24349F; --tile-b: #0A1512; --tile-c: #24221C; --tile-c-fg: #EFEADB; --on-dark: #F2F5F3;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .wrap {
-  max-width: 1080px;
+  max-width: 760px;
   margin: 0 auto;
   padding-left: max(20px, env(safe-area-inset-left, 0px));
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 28px; font-size: 15px; }
+.top .me { font-weight: 600; }
+.top nav { display: flex; gap: 20px; }
+.top a:hover, footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
+h1 { margin: 0; font-weight: 600; font-size: clamp(32px, 6vw, 52px); line-height: 1.08; letter-spacing: -0.035em; text-wrap: balance; }
+h2 { margin: 0 0 14px; font-weight: 600; font-size: 15px; letter-spacing: 0; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-block: 28px 40px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-
-.page { max-width: 720px; padding-block: 28px 56px; display: flex; flex-direction: column; gap: 28px; }
-.back { align-self: flex-start; text-decoration: none; font-weight: 500; font-size: 14.5px; color: var(--muted); }
-.back:hover { color: var(--accent); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.kind { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
-h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 52px); line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance; }
-.ru { margin: 10px 0 0; font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 20px; color: var(--muted); }
-.lede { margin: 14px 0 0; color: var(--muted); font-size: 17px; max-width: 34em; }
-.player { background: var(--surface); border: 1px solid var(--rule); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-.now { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.now strong { font-family: var(--display); font-weight: 600; font-size: 20px; }
-.now span { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.page { padding-bottom: 24px; }
+.hero { padding-block: clamp(32px, 7vw, 72px) 36px; }
+.hero .ru { margin: 12px 0 0; font-size: 19px; }
+.hero .lede { margin: 18px 0 0; max-width: 32em; }
+.now { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 12px; }
+.now strong { font-weight: 600; }
+.now span { font-size: 14px; font-variant-numeric: tabular-nums; }
 audio { width: 100%; display: block; }
-.acts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.err { margin: 12px 0 0; font-size: 15px; font-weight: 600; }
+.acts { list-style: none; margin: 36px 0 0; padding: 0; border-top: 1px solid var(--rule); }
 .acts li { border-bottom: 1px solid var(--rule); }
 .acts button {
-  width: 100%; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; align-items: center;
-  padding: 14px 4px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  width: 100%; display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
+  padding: 16px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.acts button:hover .t { color: var(--accent); }
-.acts .n { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-family: var(--display); font-weight: 700; font-size: 14px; }
-.acts .t { font-family: var(--display); font-weight: 600; font-size: 17px; }
-.acts .s { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.acts [aria-current="true"] .n { background: var(--accent); color: var(--surface); }
-.acts [aria-current="true"] .t { color: var(--accent); }
-.err { margin: 0; color: var(--bad); font-size: 14.5px; }
-.note { margin: 0; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.acts .n { display: none; }
+.acts .t { font-weight: 400; }
+.acts .s { font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.acts button:hover .t { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.acts [aria-current="true"] .t { font-weight: 600; }
+.acts [aria-current="true"] .t::before { content: "▸ "; }
+.note { margin: 20px 0 0; font-size: 14px; }
 </style>
 </head>
 <body>
+<header class="wrap top">
+  <a class="me" href="../">Alexander Belyshkin</a>
+  <nav aria-label="Main"><a href="../#projects">Projects</a><a href="../#writing">Writing</a><a href="../#about">About</a></nav>
+</header>
+
 <main class="wrap page">
-  <a class="back" href="../">← Alexander Belyshkin</a>
-  <header>
-    <p class="kind">Audiobook · in Russian</p>
+  <div class="hero">
     <h1>The Government Inspector</h1>
     <p class="ru">Н. В. Гоголь. «Ревизор»</p>
-    <p class="lede">Nikolai Gogol's comedy in five acts, read aloud by Alexander Belyshkin.</p>
-  </header>
+    <p class="lede">Nikolai Gogol’s comedy in five acts as an audiobook in Russian, read by Alexander Belyshkin.</p>
+  </div>
 
-  <section class="player" aria-label="Player">
+  <section aria-label="Player">
     <div class="now"><strong id="now">Act I</strong><span id="count">1 of 5</span></div>
     <audio id="audio" controls preload="metadata"></audio>
     <p class="err" id="err" hidden>This part did not load. Try again in a moment.</p>
@@ -113,6 +90,8 @@ audio { width: 100%; display: block; }
   <ol class="acts" id="acts"></ol>
   <p class="note">The player remembers where you stopped on this device.</p>
 </main>
+
+<footer><div class="wrap"><span>© 2026 Alexander Belyshkin</span><a href="../">baa.playoftime.online</a></div></footer>
 
 <script>
 (function () {
