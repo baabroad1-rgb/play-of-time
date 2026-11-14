@@ -6,82 +6,41 @@
 <title>The Government Inspector — audiobook</title>
 <meta name="description" content="Nikolai Gogol's comedy The Government Inspector (Revizor) as an audiobook in Russian, read by Alexander Belyshkin.">
 <meta name="color-scheme" content="light">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: one narrow left-aligned column. White page, black text, hairlines. Hierarchy from size and weight only. */
-:root {
-  --bg: #FFFFFF;
-  --fg: #000000;
-  --rule: #000000;
-  --body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color-scheme: light;
-}
+:root { --bg: #FFFFFF; --fg: #000000; --body: "Helvetica Neue", Helvetica, Arial, sans-serif; color-scheme: light; }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 24px; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--body);
-  font-size: 17px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-}
-a { color: inherit; text-decoration: none; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: clamp(18px, 2.1vw, 21px); line-height: 1.4; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
-.wrap {
-  max-width: 760px;
-  margin: 0 auto;
-  padding-left: max(20px, env(safe-area-inset-left, 0px));
-  padding-right: max(20px, env(safe-area-inset-right, 0px));
-}
-.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 28px; font-size: 15px; }
-.top .me { font-weight: 600; }
-.top nav { display: flex; gap: 20px; }
-.top a:hover, footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
-h1 { margin: 0; font-weight: 600; font-size: clamp(32px, 6vw, 52px); line-height: 1.08; letter-spacing: -0.035em; text-wrap: balance; }
-h2 { margin: 0 0 14px; font-weight: 600; font-size: 15px; letter-spacing: 0; }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-block: 28px 40px; font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-
-.page { padding-bottom: 24px; }
-.hero { padding-block: clamp(32px, 7vw, 72px) 36px; }
-.hero .ru { margin: 12px 0 0; font-size: 19px; }
-.hero .lede { margin: 18px 0 0; max-width: 32em; }
-.now { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 12px; }
-.now strong { font-weight: 600; }
-.now span { font-size: 14px; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: clamp(28px, 6vw, 72px) 48px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.back { display: inline-block; margin-bottom: clamp(28px, 5vw, 56px); }
+.intro { margin: 0 0 clamp(36px, 7vw, 80px); max-width: 21em; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.14; letter-spacing: -0.02em; font-weight: 400; }
+.intro strong { font-weight: 700; }
+.player { border-top: 1px solid var(--fg); padding-block: 14px 26px; }
+.now { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 14px; }
+.now strong { font-weight: 700; }
+.now span { font-variant-numeric: tabular-nums; }
 audio { width: 100%; display: block; }
-.err { margin: 12px 0 0; font-size: 15px; font-weight: 600; }
-.acts { list-style: none; margin: 36px 0 0; padding: 0; border-top: 1px solid var(--rule); }
-.acts li { border-bottom: 1px solid var(--rule); }
-.acts button {
-  width: 100%; display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
-  padding: 16px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
-}
+.err { margin: 12px 0 0; font-weight: 700; }
+.acts { list-style: none; margin: 0; padding: 0; }
+.acts li { border-top: 1px solid var(--fg); }
+.acts button { width: 100%; display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 14px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .acts .n { display: none; }
-.acts .t { font-weight: 400; }
-.acts .s { font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.acts button:hover .t { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-.acts [aria-current="true"] .t { font-weight: 600; }
-.acts [aria-current="true"] .t::before { content: "▸ "; }
-.note { margin: 20px 0 0; font-size: 14px; }
+.acts .s { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.acts button:hover .t { text-decoration: underline; text-underline-offset: 0.18em; }
+.acts [aria-current="true"] .t { font-weight: 700; }
+.note, footer { font-size: 15px; }
+.note { margin: 0; padding-block: 14px 40px; border-top: 1px solid var(--fg); }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); }
 </style>
 </head>
 <body>
-<header class="wrap top">
-  <a class="me" href="../">Alexander Belyshkin</a>
-  <nav aria-label="Main"><a href="../#projects">Artifacts</a><a href="../#writing">Texts</a></nav>
-</header>
+<main class="wrap">
+  <a class="back" href="../">← Alexander Belyshkin</a>
+  <h1 class="intro"><strong>The Government Inspector.</strong> Gogol’s play, all five acts, read in Russian by Alexander Belyshkin.</h1>
 
-<main class="wrap page">
-  <div class="hero">
-    <h1>The Government Inspector</h1>
-    <p class="ru">Н. В. Гоголь. «Ревизор»</p>
-    <p class="lede">Gogol’s comedy in five acts, read aloud by Alexander Belyshkin. In Russian.</p>
-  </div>
-
-  <section aria-label="Player">
+  <section class="player" aria-label="Player">
     <div class="now"><strong id="now">Act I</strong><span id="count">1 of 5</span></div>
     <audio id="audio" controls preload="metadata"></audio>
     <p class="err" id="err" hidden>This part did not load. Try again in a moment.</p>
@@ -89,9 +48,8 @@ audio { width: 100%; display: block; }
 
   <ol class="acts" id="acts"></ol>
   <p class="note">The player remembers where you stopped on this device.</p>
+  <footer><span>© 2026 Alexander Belyshkin</span><a href="../">baa.playoftime.online</a></footer>
 </main>
-
-<footer><div class="wrap"><span>© 2026 Alexander Belyshkin</span><a href="../">baa.playoftime.online</a></div></footer>
 
 <script>
 (function () {

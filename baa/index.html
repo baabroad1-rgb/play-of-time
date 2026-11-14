@@ -6,105 +6,111 @@
 <!--head:start-->
 <title>Alexander Belyshkin</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Alexander Belyshkin. One life’s experience, and the artifacts accumulated along the way.">
+<meta name="description" content="Alexander Belyshkin is a psychologist. He ran Usethics, a usability studio, from 2001 to 2026, and now makes small tools for practising things.">
 <meta name="color-scheme" content="light">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
-/* Layout: one narrow left-aligned column. White page, black text, hairlines. Hierarchy from size and weight only. */
+/* Layout: one type size, two weights. A plain opening paragraph, then a two-column index: label left, entries right. */
 :root {
   --bg: #FFFFFF;
   --fg: #000000;
-  --rule: #000000;
-  --body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --body: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--body);
-  font-size: 17px;
-  line-height: 1.55;
+  font-size: clamp(18px, 2.1vw, 21px);
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; text-decoration: none; }
+a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .wrap {
-  max-width: 760px;
+  max-width: 980px;
   margin: 0 auto;
+  padding-block: clamp(28px, 6vw, 72px) 48px;
   padding-left: max(20px, env(safe-area-inset-left, 0px));
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
-.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 28px; font-size: 15px; }
-.top .me { font-weight: 600; }
-.top nav { display: flex; gap: 20px; }
-.top a:hover, footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
-h1 { margin: 0; font-weight: 600; font-size: clamp(32px, 6vw, 52px); line-height: 1.08; letter-spacing: -0.035em; text-wrap: balance; }
-h2 { margin: 0 0 14px; font-weight: 600; font-size: 15px; letter-spacing: 0; }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-block: 28px 40px; font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-
-.hero { padding-block: clamp(40px, 9vw, 96px) clamp(48px, 9vw, 96px); }
-.hero p { margin: 22px 0 0; max-width: 32em; font-size: clamp(18px, 2.2vw, 21px); line-height: 1.45; }
-section { padding-bottom: clamp(48px, 8vw, 80px); }
-.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-.list li { border-bottom: 1px solid var(--rule); }
-.row {
-  display: grid; grid-template-columns: 30% minmax(0, 1fr) 180px;
-  column-gap: 24px; row-gap: 2px; align-items: baseline; padding-block: 16px;
+.intro {
+  margin: 0 0 clamp(48px, 9vw, 112px);
+  max-width: 21em;
+  font-size: clamp(26px, 4.4vw, 44px);
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  font-weight: 400;
 }
-.name { font-weight: 600; min-width: 0; overflow-wrap: break-word; }
-.what { min-width: 0; font-size: 16px; }
-.src { font-size: 14px; white-space: nowrap; justify-self: end; }
-a.row .src::after { content: " →"; }
-a.row:hover .name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.intro strong { font-weight: 700; }
+section {
+  display: grid;
+  grid-template-columns: 9em minmax(0, 1fr);
+  column-gap: 24px;
+  padding-block: 14px 26px;
+  border-top: 1px solid var(--fg);
+}
+h1, h2 { margin: 0; font-size: inherit; font-weight: 400; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; max-width: 30em; }
+li a { font-weight: 700; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); font-size: 15px; }
 @media (max-width: 640px) {
-  .row { grid-template-columns: minmax(0, 1fr) auto; }
-  .what { grid-column: 1 / -1; grid-row: 2; }
+  section { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
+  h2 { font-size: 15px; }
 }
 </style>
 <!--head:end-->
 </head>
 <body>
 <!--body:start-->
-<header class="wrap top">
-  <a class="me" href="#top">Alexander Belyshkin</a>
-  <nav aria-label="Main"><a href="#projects">Artifacts</a><a href="#writing">Texts</a></nav>
-</header>
+<main class="wrap">
+  <h1 class="intro"><strong>Alexander Belyshkin</strong> is a psychologist. He ran a usability studio for twenty-five years. He now makes small tools for practising things, and asks one new question a day.</h1>
 
-<main class="wrap" id="top">
-  <div class="hero">
-    <h1>Alexander Belyshkin</h1>
-    <p>One life’s experience, and the artifacts accumulated along the way.</p>
-  </div>
-
-  <section id="projects" aria-labelledby="projects-h">
-    <h2 id="projects-h">Artifacts</h2>
-    <ul class="list">
-      <li><a class="row" href="https://usethics.ru/" target="_blank" rel="noopener"><span class="name">Usethics</span><span class="what">2001–2026</span><span class="src">usethics.ru</span></a></li>
-      <li><a class="row" href="https://playoftime.online/" target="_blank" rel="noopener"><span class="name">Play of Time</span><span class="what">Can you stop time? Time as an instrument of self-control.</span><span class="src">playoftime.online</span></a></li>
-      <li><a class="row" href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><span class="name">Read Aloud</span><span class="what">Don’t spend your breath without reading; don’t spend your reading without mastering.</span><span class="src">playoftime.online/aloud</span></a></li>
-      <li><a class="row" href="revizor/"><span class="name">The Government Inspector</span><span class="what">Gogol’s comedy, read aloud by Alexander Belyshkin. In Russian.</span><span class="src">Listen</span></a></li>
-      <li><a class="row" href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener"><span class="name">English but Simple</span><span class="what"></span><span class="src">r/English_but_Simple</span></a></li>
-      <li><a class="row" href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><span class="name">Question of the Day</span><span class="what">A new original question every day.</span><span class="src">@q_of_t_d</span></a></li>
-      <li><a class="row" href="https://t.me/baaqod" target="_blank" rel="noopener"><span class="name">Accumulator</span><span class="what"></span><span class="src">@baaqod</span></a></li>
-      <li><a class="row" href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><span class="name">Photo Session</span><span class="what"></span><span class="src">dreamsmoker</span></a></li>
+  <section>
+    <h2>Tools</h2>
+    <ul>
+      <li><a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a> A stopwatch. The task is to stop it at exactly three seconds. It is harder than it sounds.</li>
+      <li><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener">Read Aloud</a> Follows along while you read an English book aloud and marks the words that came out wrong.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Listening</h2>
+    <ul>
+      <li><a href="revizor/">The Government Inspector</a> Gogol’s play, all five acts, read in Russian by one man.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Daily</h2>
+    <ul>
+      <li><a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a> One new question a day. On Telegram.</li>
+      <li><a href="https://t.me/baaqod" target="_blank" rel="noopener">Accumulator</a> On Telegram.</li>
+      <li><a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> On Reddit.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Pictures</h2>
+    <ul>
+      <li><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">Photo Session</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2>Work</h2>
+    <ul>
+      <li><a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a> A usability studio. 2001–2026.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Writing</h2>
+    <ul>
+      <li><a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">How different kinds of users picture their work with a computer</a> Graduate research, Moscow State University, 1997. In Russian.</li>
+      <li><a href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener">Four Times Inadequate</a> In Russian.</li>
     </ul>
   </section>
 
-  <section id="writing" aria-labelledby="writing-h">
-    <h2 id="writing-h">Texts</h2>
-    <ul class="list">
-      <li><a class="row" href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener"><span class="name">How different kinds of users picture their work with a computer</span><span class="what">Moscow State University, 1997. In Russian.</span><span class="src">usability.ru</span></a></li>
-      <li><a class="row" href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener"><span class="name">Four Times Inadequate</span><span class="what">In Russian.</span><span class="src">guimachine.ru</span></a></li>
-      <li><div class="row"><span class="name">Book chapters</span><span class="what">The list is being put together.</span><span class="src">Soon</span></div></li>
-    </ul>
-  </section>
+  <footer><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></footer>
 </main>
-
-<footer><div class="wrap"><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></div></footer>
 <!--body:end-->
 </body>
 </html>
