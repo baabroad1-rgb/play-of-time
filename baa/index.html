@@ -53,12 +53,16 @@ section {
   border-top: 1px solid var(--fg);
 }
 h1, h2 { margin: 0; font-size: inherit; font-weight: 400; }
-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; max-width: 30em; }
-li a { font-weight: 700; }
+.col { display: grid; gap: 26px; max-width: 30em; min-width: 0; }
+.col p { margin: 0; }
+.lead h3 { margin: 0 0 6px; font-size: 1.55em; line-height: 1.12; letter-spacing: -0.02em; font-weight: 700; }
+.minor { list-style: none; margin: 0; padding: 12px 0 0; display: grid; gap: 8px; border-top: 1px solid var(--fg); font-size: 0.8em; }
+.minor a { font-weight: 700; }
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); font-size: 15px; }
 @media (max-width: 640px) {
   section { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
   h2 { font-size: 15px; }
+  .lead h3 { font-size: 1.4em; }
 }
 </style>
 <!--head:end-->
@@ -70,28 +74,50 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 
   <section>
     <h2>First, to makers</h2>
-    <ul>
-      <li><a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">How different kinds of users picture their work with a computer</a> His graduate research, 1997: what people believe they do at a computer, set against what they do. In Russian.</li>
-      <li><a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a> The company he founded in 2001 and ran for more than twenty years. It showed the people who make products how those products are really used.</li>
-      <li><a href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener">Four Times Inadequate</a> An article from those years. In Russian.</li>
-    </ul>
+    <div class="col">
+      <p class="why">The people who build a product know how it is meant to be used. They rarely see how it is used. For more than twenty years his work was to put the second in front of them.</p>
+      <div class="lead">
+        <h3><a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a></h3>
+        <p>He founded the company in 2001 and led it for more than twenty years. It was the first studio in Russia to do nothing but usability: watching real people use a product, and bringing what it saw back to the people who made it. Thousands of projects went through it, and the method was his.</p>
+      </div>
+      <ul class="minor">
+        <li><a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">How different kinds of users picture their work with a computer</a> His graduate research, 1997. In Russian.</li>
+        <li><a href="https://guimachine.ru/?page_id=960" target="_blank" rel="noopener">Four Times Inadequate</a> An article. In Russian.</li>
+      </ul>
+    </div>
   </section>
   <section>
     <h2>Then, to anyone</h2>
-    <ul>
-      <li><a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a> A stopwatch to stop at exactly three seconds. The game happens in your head; the app only shows you the result.</li>
-      <li><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener">Read Aloud</a> Read an English book aloud and see, word by word, how it actually came out.</li>
-    </ul>
+    <div class="col">
+      <p class="why">The same gap runs through a single person: what you feel you did, and what you did. So he started building instruments that hand your own result back to you, at once and in numbers.</p>
+      <div class="lead">
+        <h3><a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a></h3>
+        <p>A stopwatch to stop at exactly three seconds. The game happens in your head; the app only shows you the result.</p>
+      </div>
+      <div class="lead">
+        <h3><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener">Read Aloud</a></h3>
+        <p>Read an English book aloud and see, word by word, how it actually came out.</p>
+      </div>
+    </div>
   </section>
   <section>
     <h2>Now, to himself</h2>
-    <ul>
-      <li><a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a> One new question every day. On Telegram.</li>
-      <li><a href="revizor/">The Government Inspector</a> Gogol’s play, all five acts, in his own voice. In Russian.</li>
-      <li><a href="https://t.me/baaqod" target="_blank" rel="noopener">Accumulator</a> On Telegram.</li>
-      <li><a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> On Reddit.</li>
-      <li><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">Photo Session</a></li>
-    </ul>
+    <div class="col">
+      <p class="why">He runs the same practice on himself, daily, and publishes what comes out of it.</p>
+      <div class="lead">
+        <h3><a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a></h3>
+        <p>One new question every day. On Telegram.</p>
+      </div>
+      <div class="lead">
+        <h3><a href="revizor/">The Government Inspector</a></h3>
+        <p>Gogol’s play, all five acts, in his own voice. In Russian.</p>
+      </div>
+      <ul class="minor">
+        <li><a href="https://t.me/baaqod" target="_blank" rel="noopener">Accumulator</a> On Telegram.</li>
+        <li><a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> On Reddit.</li>
+        <li><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">Photo Session</a></li>
+      </ul>
+    </div>
   </section>
 
   <footer><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></footer>
