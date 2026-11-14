@@ -12,7 +12,7 @@ name: Выложить baa на хостинг
 # FTP-пользователь infousil_github в неё не попадает. Поэтому здесь свой
 # FTP-аккаунт infousil_baa, домашняя папка которого и есть эта папка —
 # отсюда server-dir: /. Его данные лежат в секретах BAA_LOGIN и
-# BAA_PASSWORD; сервер тот же, что у остальных выкладок (FTP_HOST).
+# BAA_PASSWORD; имя сервера записано прямо в шаге выкладки.
 # Ничего на сервере не удаляет.
 
 on:
@@ -36,7 +36,10 @@ jobs:
       - name: Залить baa/ на baa.playoftime.online
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
+          # Имя сервера Beget записано явно, а не через секрет FTP_HOST: 14.11.2026
+          # после перевыпуска сертификатов подключение по FTP_HOST стало
+          # отваливаться по таймауту. Имя сервера не секрет.
+          server: infousil.beget.tech
           username: ${{ secrets.BAA_LOGIN }}
           password: ${{ secrets.BAA_PASSWORD }}
           protocol: ftps
