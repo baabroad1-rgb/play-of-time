@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A user interface checklist — Alexander Belyshkin</title>
+<meta name="description" content="A checklist anyone can run against an interface, with no subjective items. By Vlad Golovach and Alexander Belyshkin.">
+<meta name="color-scheme" content="light">
+<link rel="stylesheet" href="../article.css">
+</head>
+<body>
+<main class="wrap">
+  <a class="back" href="../../">← Alexander Belyshkin</a>
+  <h1>A user interface checklist</h1>
+  <p class="meta">Vlad Golovach and Alexander Belyshkin. Translated from Russian; <a href="http://www.romver.ru/services/services.php?razdel=571" target="_blank" rel="noopener">a copy of the original</a> is on romver.ru. The checklist describes desktop software of its time.</p>
+
+  <article>
+    <p>Checklists are an effective and economical way to raise the quality of software products. Applied to the interface, they do not require expensive usability testing, and a fair number of interface checklists can be found freely on the internet.</p>
+    <p>Naturally, each case calls for a checklist of its own, because it has to take into account the particular software being developed and what the development tools can do. This checklist is therefore more of a template that sets out the main sections, all the more so because the items carry no scores. Even so, for companies that do not check ergonomics and consistency at all, even a list like this can be a serious help in improving the ergonomics of a software interface.</p>
+    <p>This checklist is absolute: none of its items calls for a subjective answer such as “the navigation is done well”. Anyone can therefore check an interface against it, and the checker needs no special training. The other side of an absolute list is, of course, that it is bound to be incomplete.</p>
+    <p>It also matters that no checklist can make an interface good. At best a list guarantees the absence of gross errors. That, on the other hand, a checklist does very well.</p>
+
+    <h2>Buttons</h2>
+    <ul>
+      <li>Every button that starts an action is labelled with a verb in the infinitive (“search”), not another part of speech or verb form (“done”). A button may be labelled “OK” only if no verb fits.</li>
+      <li>The clickable size of a button matches its visible or logical size.</li>
+      <li>Adjacent buttons are separated by empty space where a click does nothing.</li>
+      <li>No two different button states look the same.</li>
+      <li>Unavailable commands do not disappear from the screen; they are disabled.</li>
+      <li>Frequently used buttons carry both text and an icon; rarely used buttons carry text only.</li>
+      <li>Modal dialogs have no Apply button.</li>
+    </ul>
+
+    <h2>Input fields</h2>
+    <ul>
+      <li>Input fields are prefilled with the most likely values.</li>
+      <li>If a field takes a number, the limits of the range are shown in a tooltip.</li>
+      <li>If a field takes a number from a limited range, it has a spinner.</li>
+      <li>A field is no shorter, and where possible no longer, than the data entered in it.</li>
+      <li>A field meant for a noticeable amount of text is multi-line.</li>
+      <li>Multi-line fields are as tall as they can be; there is no room left to enlarge them.</li>
+    </ul>
+
+    <h2>Lists</h2>
+    <ul>
+      <li>Lists are preset to the most likely values.</li>
+      <li>A list of more than 50 items has a filter or a search mode.</li>
+      <li>There are no frequently used short lists (fewer than five items); these are shown as groups of radio buttons or checkboxes.</li>
+      <li>A list is no narrower than the items in it.</li>
+      <li>List items are sorted: by structure (shared attributes), alphabetically, or by frequency (only in lists of fewer than seven items).</li>
+      <li>In an alphabetical list of more than 50 items, the first three items are the most frequent ones. They also appear in their alphabetical places.</li>
+      <li>Multi-line multiple-selection lists have a checkbox beside every item (there are no old-style lists).</li>
+      <li>Multi-line lists are at least four lines tall.</li>
+      <li>Where there is room, extended combo boxes are used, not single-line ones.</li>
+    </ul>
+
+    <h2>Checkboxes and radio buttons</h2>
+    <ul>
+      <li>A group of more than ten checkboxes has one more that sets or clears them all.</li>
+      <li>In a group of radio buttons one is always selected by default.</li>
+      <li>Checkboxes and radio buttons are arranged vertically within their groups.</li>
+      <li>If a window contains, apart from its terminating buttons, only a set of radio buttons, double-clicking a radio button selects it and closes the window.</li>
+    </ul>
+
+    <h2>Interaction</h2>
+    <ul>
+      <li>When a long operation (more than a minute) finishes, the system beeps through the computer’s built-in speaker.</li>
+      <li>If the interface uses no direct manipulation, the system has no cursors of its own. If it does, custom cursors are used only where the operating system has no equivalent.</li>
+    </ul>
+
+    <h2>System messages and error handling</h2>
+    <ul>
+      <li>In input forms, values are validated as they are entered. If the data is incorrect, the system tells the user at once, without waiting for the whole form to be filled in.</li>
+      <li>A message about incorrect data appears next to the control that holds it.</li>
+      <li>The text of such a message does not say that an error has been made. It only tells the user what type and format of data is acceptable.</li>
+      <li>A problem message has three parts: the first briefly describes the problem, the second says how to solve it, and the third says how to avoid it in future.</li>
+      <li>Status messages (“Synchronisation completed successfully”) appear only in the status bar.</li>
+    </ul>
+
+    <h2>Keyboard</h2>
+    <ul>
+      <li>In input forms, pressing Tab moves through the form in the correct order.</li>
+      <li>A form is submitted not only by its terminating button but also by pressing Enter in its last field.</li>
+      <li>The most frequently used controls, menus included, have keyboard shortcuts.</li>
+      <li>Every menu item has an Alt combination (shown by underlining).</li>
+      <li>Alt combinations and hot keys are the standard ones.</li>
+      <li>If there are more than 40 hot keys, the interface offers a way to change them.</li>
+      <li>Pressing Tab moves from control to control within a form from top to bottom and left to right.</li>
+    </ul>
+
+    <h2>Visuals</h2>
+    <ul>
+      <li>Shadows on all controls fall in the same direction: down and to the right.</li>
+      <li>Colour is never the only indicator; where it is used, the system provides another indication as well.</li>
+    </ul>
+
+    <h2>Icons</h2>
+    <ul>
+      <li>Within a group of icons, no two are similar in colour and shape.</li>
+      <li>No icon gives a standard meaning a non-standard picture.</li>
+      <li>Icons contain no text.</li>
+      <li>Icons with the same meaning in different sizes share the same features or picture.</li>
+    </ul>
+
+    <h2>Windows</h2>
+    <ul>
+      <li>Resizable windows have a resize indicator.</li>
+      <li>A window’s title matches the name of the element that opened it. If that element has no explicit name, the title gives the name of the screen form.</li>
+      <li>The type of each window (modal or modeless, whether it can be minimised or maximised) was chosen deliberately, to suit the users’ tasks.</li>
+      <li>Dialog windows have no menus or toolbars.</li>
+      <li>Apply buttons are used only in palette windows (in place of OK buttons).</li>
+    </ul>
+
+    <h2>Status bar</h2>
+    <ul>
+      <li>The status bar shows only the current state of the system and buttons (not looking like buttons) for functions meant for experienced users only.</li>
+      <li>Progress indicators appear in the status bar. The exception is wizards, where they may appear inside the window.</li>
+    </ul>
+
+    <h2>Menus</h2>
+    <ul>
+      <li>Menu items begin with a capital letter.</li>
+      <li>Every top-level menu item opens a drop-down menu.</li>
+      <li>There are no more than two levels of submenu.</li>
+      <li>If a menu has icons, only the most frequently used items carry them.</li>
+      <li>Items that open submenus look different from terminal items.</li>
+    </ul>
+
+    <h2>Context menus</h2>
+    <ul>
+      <li>Every object visible in the interface has a context menu specific to it.</li>
+      <li>A context menu has no more than ten items.</li>
+      <li>Items in a context menu are ordered from most to least frequently used.</li>
+      <li>Every item in a context menu is also available elsewhere in the interface; no command can be called from a context menu only.</li>
+    </ul>
+
+    <h2>Structure of forms</h2>
+    <ul>
+      <li>A group of interactive elements (form fields, menu items and the like) has no more than seven of them.</li>
+      <li>The Cancel button is always the rightmost.</li>
+      <li>Multi-page forms say that they are multi-page; the user always sees how many screens remain (“Screen x of y”).</li>
+      <li>If a form has several buttons, one is the default. If it has only one button, that button cannot be the default. Buttons dangerous to the user are never the default.</li>
+      <li>If there is room in the window, the most frequently used terminating button is larger than the others.</li>
+      <li>Buttons sit in the section they act on directly.</li>
+      <li>Terminating buttons, the ones that control the window, are placed in a row at the bottom or in a column on the right.</li>
+      <li>Buttons that apply to a whole set of tabs are placed outside the set.</li>
+      <li>If a window or tab fills up automatically, for example with incoming messages, the name of the element that opens it shows the number of objects in it and, separately, the number of new ones. Example: Documents (8/3).</li>
+      <li>Menu items and buttons that lead to further action by the user end in an ellipsis (…). “Save as…” needs one, because the user has to choose a file name. “About” does not, because the window it opens has no controls of its own.</li>
+      <li>Labels of interface elements are placed consistently.</li>
+      <li>Interface elements unavailable at the moment are disabled, not hidden.</li>
+    </ul>
+
+    <h2>Input forms</h2>
+    <ul>
+      <li>Every form that collects information has options such as “Other” and “Not applicable”.</li>
+      <li>All required fields are marked, and the marking is explained.</li>
+      <li>Every form that collects information says why the data is collected and what will and will not be done with it.</li>
+    </ul>
+
+    <h2>Text</h2>
+    <ul>
+      <li>All main interface elements have tooltips whose text states the result of using the element.</li>
+      <li>The interface contains no jargon.</li>
+      <li>The interface contains no negative wording. A checkbox “Do not show notes” is unacceptable; it should be “Show notes”.</li>
+      <li>No element has different names in different places (the interface glossary is not only written down but verified).</li>
+      <li>Every confirmation names the object on which the action is being confirmed.</li>
+      <li>For readability, long numbers are split into groups of three digits with a non-breaking space: 1 234 567.</li>
+      <li>List items follow one rule for capitals and full stops. All items begin with a lower-case letter and end without punctuation, except the last, which ends with a full stop. If even one item contains more than one sentence, all items begin with a capital and end with a full stop.</li>
+      <li>Every list is preceded by at least one paragraph of text.</li>
+      <li>In tables, all columns of numbers are right-aligned.</li>
+      <li>There is no full stop at the end of a heading (if it is set apart from the text), a figure caption or a table entry.</li>
+      <li>Labels of interface elements begin with a capital letter and end with a colon.</li>
+    </ul>
+  </article>
+
+  <footer><span>© Vlad Golovach, Alexander Belyshkin</span><a href="../../">baa.playoftime.online</a></footer>
+</main>
+</body>
+</html>
