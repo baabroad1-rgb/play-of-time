@@ -9,6 +9,10 @@
 
 ## 14 ноября 2026
 
+### Analytics: график Error distribution (гистограмма ошибок периода) в блоке графиков
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d77ce40401cb00c02304f983382c8ef38d0c0900)
+
 ### baa: интервью PC Week подписано названием вместо заглушки
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/39029e751785507ac7eb93f6717026b05f6481b3)
@@ -2780,4 +2784,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 248.
+Всего записей: 249.
