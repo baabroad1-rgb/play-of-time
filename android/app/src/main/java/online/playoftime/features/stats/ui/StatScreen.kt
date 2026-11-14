@@ -710,9 +710,24 @@ private fun AnalyticsContent(
                     PaceMetric.LUCKY -> data.paceChartLucky
                     PaceMetric.MEAN  -> data.paceChartEarlyMs
                     PaceMetric.FACES -> data.paceChartHappy
+                    PaceMetric.DIST  -> emptyList()
                 }
                 val isSession = selectedPeriod == PeriodFilter.SESSION
-                if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
+                val periodBars = if (metric == PaceMetric.DIST) remember(data, selectedPeriod) {
+                    val sess = data.sessions.sortedBy { it.startTime }
+                    when (selectedPeriod) {
+                        PeriodFilter.ALL_TIME -> sess
+                        PeriodFilter.SESSION -> listOfNotNull(sess.getOrNull(sess.size - 1 - data.periodOffset))
+                        else -> {
+                            val (from, to) = selectedPeriod.rangeMsForOffset(data.periodOffset)
+                            sess.filter { it.endTime >= from && it.startTime <= to }
+                        }
+                    }.flatMap { it.attemptBars }
+                } else emptyList()
+                if (metric == PaceMetric.DIST) {
+                    ErrorDistributionChart(periodBars, data.toleranceMs.toDouble())
+                    Spacer(Modifier.height(6.dp))
+                } else if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
                     // Faces в сессии — ряд маленьких рожиц, по одной на попытку
                     // (Alex 2026-10-19).
                     SessionFacesStrip(data.paceChartHappy, data.paceChartSad)
@@ -799,6 +814,10 @@ private fun AnalyticsContent(
                     PaceMetric.FACES -> CardMetricRow(
                         label = "Happy / Sad",
                         value = "${data.facesHappy} / ${data.facesSad}"
+                    )
+                    PaceMetric.DIST -> CardMetricRow(
+                        label = "Early / Late",
+                        value = groupDigits("${data.earlyCount} / ${data.lateCount}")
                     )
                 }
             }
@@ -2413,6 +2432,75 @@ private fun MiniHistogram(
     }
 }
 
+/**
+ * Error distribution за период — та же гистограмма, что MiniHistogram под
+ * полосками попыток сессии (71 бакет, симметрично вокруг нуля, цвета: чистая
+ * тройка — зелёный, в допуске — блёклый зелёный, ранние — красный, поздние —
+ * синий), только крупно и с подписями осей.
+ */
+@Composable
+private fun ErrorDistributionChart(
+    bars        : List<online.playoftime.features.stats.domain.entity.AttemptBarData>,
+    toleranceMs : Double
+) {
+    val textColor = MaterialTheme.colorScheme.baseTextColor
+    if (bars.size < 2) {
+        BasicText("Not enough attempts in this period.", style = labelStyle(12.sp, color = textColor.copy(alpha = 0.6f)))
+        return
+    }
+    // Крайние 1,5 % с каждой стороны не растягивают шкалу.
+    val sortedAbs = bars.map { abs(it.errorMs) }.sorted()
+    val scaleMax = sortedAbs[((sortedAbs.size - 1) * 0.97).toInt()].coerceAtLeast(1.0)
+    val rangeMin = -scaleMax
+    val bucketCount = 71
+    val bucketW = (2.0 * scaleMax) / bucketCount
+    val counts = IntArray(bucketCount); val wins = IntArray(bucketCount); val clean = IntArray(bucketCount)
+    bars.forEach { b ->
+        val idx = ((b.errorMs - rangeMin) / bucketW).toInt().coerceIn(0, bucketCount - 1)
+        counts[idx]++
+        if (b.isWin) wins[idx]++
+        if (b.isClean) clean[idx]++
+    }
+    val maxCount = counts.max().coerceAtLeast(1)
+    val axis = textColor.copy(alpha = 0.55f)
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth()) {
+            BasicText(groupDigits("$maxCount"), style = labelStyle(10.sp, color = axis))
+        }
+        Canvas(Modifier.fillMaxWidth().height(140.dp)) {
+            val w = size.width
+            val gap = w / bucketCount
+            val barW = (gap * 0.7f).coerceIn(1.dp.toPx(), 5.dp.toPx())
+            val cornerR = androidx.compose.ui.geometry.CornerRadius(1.5.dp.toPx())
+            drawLine(Color.White.copy(alpha = 0.25f), Offset(w / 2f, 0f), Offset(w / 2f, size.height), strokeWidth = 1.dp.toPx())
+            drawLine(Color.White.copy(alpha = 0.15f), Offset(0f, size.height), Offset(w, size.height), strokeWidth = 1.dp.toPx())
+            counts.forEachIndexed { i, count ->
+                if (count == 0) return@forEachIndexed
+                val barH = (count.toFloat() / maxCount) * size.height * 0.95f
+                val c = rangeMin + (i + 0.5) * bucketW
+                val inTol = toleranceMs > 0 && abs(c) <= toleranceMs
+                val color = when {
+                    clean[i] > 0         -> resultGreenColor
+                    wins[i] > 0 || inTol -> easedGreen(c)
+                    c < 0.0              -> resultRedColor
+                    else                 -> resultBlueColor
+                }
+                val x = (gap * i + (gap - barW) / 2).coerceIn(0f, w - barW)
+                drawRoundRect(color.copy(alpha = 0.9f), topLeft = Offset(x, size.height - barH), size = Size(barW, barH), cornerRadius = cornerR)
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+            BasicText("−${formatMeanMs(scaleMax.toFloat())} ms", style = labelStyle(10.sp, color = axis))
+            Spacer(Modifier.weight(1f))
+            BasicText("0", style = labelStyle(10.sp, color = axis))
+            Spacer(Modifier.weight(1f))
+            BasicText("+${formatMeanMs(scaleMax.toFloat())} ms", style = labelStyle(10.sp, color = axis))
+        }
+        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late",
+            modifier = Modifier.padding(top = 2.dp), style = labelStyle(10.sp, color = axis))
+    }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 //  Pace Sparkline Chart (with axes and legend)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2426,7 +2514,10 @@ private enum class PaceMetric(val title: String, val legend: String, val formatY
     LUCKY("Lucky index",      "lucky",      { "%.2f".format(it) }),
     HIT  ("Hit rate",         "hit rate",   { "%.1f%%".format(it) }),
     // Эффективность 0..1 → в процентах, 1 знак (см. комментарий в PaceSparklineChart).
-    PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) })
+    PACE ("Pace of learning", "efficiency", { "%.1f%%".format(it * 100) }),
+    // Гистограмма ошибок периода (Alex 14.11.2026: «добавить график error
+    // distribution… повторить гистограмму, которая под диаграммой ошибок»).
+    DIST ("Error distribution", "attempts", { "%.0f".format(it) })
 }
 
 // Цвета рожиц на графике Faces: весёлая — зелёная, грустная — серая (как
