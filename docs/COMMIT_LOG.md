@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.63
 
+### Error distribution: чистые тройки под нулём, график по умолчанию
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bb55e6660c496463ec4bba21b421b0b756a2b386)
+
 ### Error distribution: заголовок-подпись сверху, высота столбика подписана, Early/Late под нулём
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a823ca07db00a9c644a280d26ebf410d833dc85b)
@@ -2916,4 +2920,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 271.
+Всего записей: 272.
