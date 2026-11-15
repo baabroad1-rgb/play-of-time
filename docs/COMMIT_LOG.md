@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.63
 
+### Выкладка APK: шаг заливки не дольше 10 минут
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c671a5887b0ac1b8d2cf2ad2b02378233656815c)
+
 ### Error distribution: чистые тройки под нулём, график по умолчанию
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bb55e6660c496463ec4bba21b421b0b756a2b386)
@@ -2920,4 +2924,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 272.
+Всего записей: 273.
