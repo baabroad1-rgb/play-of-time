@@ -9,6 +9,13 @@
 
 ## 15 ноября 2026 — версия v15.58
 
+### baa: глава «Usability in Russia» в книге Global Usability (Springer, 2011)
+
+Найдена поиском по зарубежным публикациям; добавлена первой в список
+текстов раздела про Usethics со ссылкой на страницу издательства.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7c5d541d42723b680c1ec453a166424bc7b83ebe)
+
 ### Выкладка APK: запасной путь по SFTP, если FTP Beget не подключился
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/db342248a256a82aecd525fac6a7b7c1db8e0f9c)
@@ -2840,4 +2847,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 257.
+Всего записей: 258.
