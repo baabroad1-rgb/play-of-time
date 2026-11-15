@@ -725,7 +725,7 @@ private fun AnalyticsContent(
                     }.flatMap { it.attemptBars }
                 } else emptyList()
                 if (metric == PaceMetric.DIST) {
-                    ErrorDistributionChart(periodBars, data.toleranceMs.toDouble())
+                    ErrorDistributionChart(periodBars, data.rangeEarlyMs, data.rangeLateMs)
                     Spacer(Modifier.height(6.dp))
                 } else if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
                     // Faces в сессии — ряд маленьких рожиц, по одной на попытку
@@ -2447,54 +2447,53 @@ private fun MiniHistogram(
 @Composable
 private fun ErrorDistributionChart(
     bars        : List<online.playoftime.features.stats.domain.entity.AttemptBarData>,
-    toleranceMs : Double
+    earlyEdgeMs : Double,
+    lateEdgeMs  : Double
 ) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     if (bars.size < 2) {
         BasicText("Not enough attempts in this period.", style = labelStyle(12.sp, color = textColor.copy(alpha = 0.6f)))
         return
     }
-    // Крайние 1,5 % с каждой стороны не растягивают шкалу.
-    val sortedAbs = bars.map { abs(it.errorMs) }.sorted()
-    val scaleMax = sortedAbs[((sortedAbs.size - 1) * 0.97).toInt()].coerceAtLeast(1.0)
+    // Края — те же, что у Range of deviations: P3 и P97 знаковых ошибок,
+    // по 3 % отрезано с каждой стороны (Alex 15.11: «почему в Range −60 +63,
+    // а на гистограмме ±78, и ещё 440 значений не показано?» — раньше край
+    // был один, по 97-му перцентилю |ошибки|).
+    val leftMs = (-earlyEdgeMs).coerceAtLeast(1.0)
+    val rightMs = lateEdgeMs.coerceAtLeast(1.0)
     // Ширина столбика не уже шага, с которым телефон присылает касания
-    // (Alex 15.11: «что за выбросы?» — при столбике ~2 мс и шаге касаний
-    // 4–8 мс получалась гребёнка: одни столбики полные, соседние пустые).
-    // Центр ровно на нуле: центральный столбик — ошибка 0 ± полшага.
+    // (иначе гребёнка). Сетка от нуля: центральный столбик — 0 ± полшага.
     val storage = org.koin.compose.koinInject<online.playoftime.core.data.LocalStorageService>()
     val touchCell = storage.getTouchCellMs().toDouble().coerceAtLeast(1.0)
-    val bucketW = maxOf(touchCell, 2.0 * scaleMax / 71)
-    val half = kotlin.math.ceil(scaleMax / bucketW - 0.5).toInt().coerceAtLeast(1)
-    val bucketCount = 2 * half + 1
-    val rangeMin = -(half + 0.5) * bucketW
-    // Промахи за краем шкалы в крайние столбцы не сваливаем (Alex 15.11:
-    // крайние столбцы были завышены) — их число пишем подписью.
+    val bucketW = maxOf(touchCell, (leftMs + rightMs) / 71)
+    val nLeft = kotlin.math.ceil(leftMs / bucketW - 0.5).toInt().coerceAtLeast(1)
+    val nRight = kotlin.math.ceil(rightMs / bucketW - 0.5).toInt().coerceAtLeast(1)
+    val bucketCount = nLeft + nRight + 1
+    val rangeMin = -(nLeft + 0.5) * bucketW
     val counts = IntArray(bucketCount)
     var outside = 0
     bars.forEach { b ->
         val idx = kotlin.math.floor((b.errorMs - rangeMin) / bucketW).toInt()
         if (idx in 0 until bucketCount) counts[idx]++ else outside++
     }
-    val center = bucketCount / 2
+    val center = nLeft
     val maxCount = counts.max().coerceAtLeast(1)
     val axis = textColor.copy(alpha = 0.55f)
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth()) {
-            BasicText(groupDigits("$maxCount"), style = labelStyle(10.sp, color = axis))
-        }
+        BasicText(groupDigits("$maxCount"), style = labelStyle(10.sp, color = axis))
         Canvas(Modifier.fillMaxWidth().height(140.dp)) {
             val w = size.width
             val gap = w / bucketCount
             val barW = (gap * 0.7f).coerceIn(1.dp.toPx(), 5.dp.toPx())
             val cornerR = androidx.compose.ui.geometry.CornerRadius(1.5.dp.toPx())
-            drawLine(Color.White.copy(alpha = 0.25f), Offset(w / 2f, 0f), Offset(w / 2f, size.height), strokeWidth = 1.dp.toPx())
+            val zeroX = gap * (center + 0.5f)
+            drawLine(Color.White.copy(alpha = 0.25f), Offset(zeroX, 0f), Offset(zeroX, size.height), strokeWidth = 1.dp.toPx())
             drawLine(Color.White.copy(alpha = 0.15f), Offset(0f, size.height), Offset(w, size.height), strokeWidth = 1.dp.toPx())
             counts.forEachIndexed { i, count ->
                 if (count == 0) return@forEachIndexed
                 val barH = (count.toFloat() / maxCount) * size.height * 0.95f
-                // Зелёный — только центральный столбец (ошибка 0, чистая тройка),
-                // левее — красные, правее — синие (Alex 15.11.2026: зелёные были
-                // разбросаны — допуски разных квестов за весь период).
+                // Зелёный — только центральный столбик (ошибка 0), левее —
+                // красные, правее — синие.
                 val color = when {
                     i == center -> resultGreenColor
                     i < center  -> resultRedColor
@@ -2504,15 +2503,18 @@ private fun ErrorDistributionChart(
                 drawRoundRect(color.copy(alpha = 0.9f), topLeft = Offset(x, size.height - barH), size = Size(barW, barH), cornerRadius = cornerR)
             }
         }
+        // Подписи: края — как в Range of deviations, «0» — под нулём.
         Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
-            BasicText("−${formatMeanMs(scaleMax.toFloat())} ms", style = labelStyle(10.sp, color = axis))
-            Spacer(Modifier.weight(1f))
-            BasicText("0", style = labelStyle(10.sp, color = axis))
-            Spacer(Modifier.weight(1f))
-            BasicText("+${formatMeanMs(scaleMax.toFloat())} ms", style = labelStyle(10.sp, color = axis))
+            Box(Modifier.weight(center + 0.5f)) {
+                BasicText("−${formatMeanMs(leftMs.toFloat())}ms", style = labelStyle(10.sp, color = axis))
+                BasicText("0", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
+            }
+            Box(Modifier.weight(nRight + 0.5f)) {
+                BasicText("+${formatMeanMs(rightMs.toFloat())}ms", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
+            }
         }
-        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late" +
-            if (outside > 0) " · ${groupDigits("$outside")} beyond ±${formatMeanMs(scaleMax.toFloat())} ms not shown" else "",
+        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late. Same range as above: the extreme 3% is cut off at each end" +
+            if (outside > 0) " (${groupDigits("$outside")} attempts)." else ".",
             modifier = Modifier.padding(top = 2.dp), style = labelStyle(10.sp, color = axis))
     }
 }
