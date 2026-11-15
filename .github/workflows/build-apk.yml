@@ -194,9 +194,9 @@ jobs:
           exit 1
 
       - name: Положить APK на хостинг в downloads/
-        # Не дольше 10 минут (15.11.2026: шаг завис на 25+ минут и держал
+        # Не дольше 15 минут (15.11.2026: шаг завис на 25+ минут и держал
         # очередь сборок; обычная заливка занимает 1–2 минуты).
-        timeout-minutes: 10
+        timeout-minutes: 15
         # Служебные сборки (например мостовая версия под старым
         # идентификатором) не должны подменять приложение на сайте.
         if: github.event_name != 'workflow_dispatch' || inputs.publish_to_site
@@ -223,37 +223,43 @@ jobs:
           DEST="${{ inputs.dest_dir || '/downloads/next' }}"
           echo "папка назначения: $DEST"
 
-          # Запасной путь по SFTP (15.11.2026, как в deploy-baa.yml): с вечера
-          # 14.11 порт FTP (21) Beget не отвечает серверам GitHub, порт SSH (22)
-          # открыт. Сначала пробуем FTP; не подключился — тот же аккаунт по
-          # SFTP. Там путь берём относительно домашней папки аккаунта (без
-          # ведущего «/») и сначала проверяем, что в ней есть downloads/ —
-          # чтобы не насыпать файлов не туда.
-          if lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cls -1" >/dev/null 2>&1; then
-            URL="$FTP_HOST"; D="$DEST"; PRE="$COMMON"
-            echo "подключение: FTP"
+          # 15.11.2026: FTP Beget то не подключается вовсе, то подключается, но
+          # зависает на передаче файла — и прежний порядок «удалить старые APK,
+          # потом залить новый» оставил сайт без APK (404). Теперь:
+          #   • основной путь — SFTP (тот же аккаунт), запасной — FTP;
+          #   • каждая попытка ограничена по времени;
+          #   • сначала заливаем новый и проверяем, что он лёг, и только потом
+          #     удаляем прежние APK.
+          # По SFTP путь — относительно домашней папки аккаунта (без ведущего
+          # «/»); перед заливкой проверяем, что в ней есть downloads/.
+          NAME=$(basename "$APK")
+          SFTP_PRE='set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 3;'
+          sftp_ok() {
+            timeout 60 lftp -c "$SFTP_PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" sftp://infousil.beget.tech; cls -1" > /tmp/home.txt 2>/dev/null \
+              && grep -qx "downloads/\?" /tmp/home.txt
+          }
+          if sftp_ok; then
+            URL="sftp://infousil.beget.tech"; D="${DEST#/}"; PRE="$SFTP_PRE"; echo "подключение: SFTP"
           else
-            URL="sftp://infousil.beget.tech"; D="${DEST#/}"
-            PRE='set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 3;'
-            echo "FTP не подключился — пробую SFTP"
-            lftp -c "$PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$URL\"; cls -1" > /tmp/home.txt
-            echo "в домашней папке:"; cat /tmp/home.txt
-            grep -qx "downloads/\?" /tmp/home.txt || { echo "Это не папка сайта (нет downloads/) — не заливаю"; exit 1; }
+            URL="$FTP_HOST"; D="$DEST"; PRE="$COMMON"; echo "SFTP не вышел — FTP"
           fi
-          L() { lftp -c "$PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$URL\"; $1"; }
+          L() { timeout "$2" lftp -c "$PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$URL\"; $1"; }
 
-          L "mkdir -p -f \"$D\"" || true
-
+          L "mkdir -p -f \"$D\"" 60 || true
           echo "=== что сейчас в $D ==="
-          L "cd \"$D\"; ls" || { echo "Не удалось подключиться или зайти в папку назначения"; exit 1; }
+          L "cd \"$D\"; ls" 60 || { echo "Не удалось зайти в папку назначения"; exit 1; }
 
-          # Удаление старых APK не должно валить сборку: если их там нет,
-          # lftp возвращает ошибку, а это нормальная ситуация.
-          echo "=== убираю прежние APK (если есть) ==="
-          L "cd \"$D\"; glob -a rm -f *.apk" || echo "прежних APK не было"
+          echo "=== заливаю $NAME ==="
+          L "cd \"$D\"; put \"$APK\"" 300 || { echo "Заливка не удалась — прежние APK на месте"; exit 1; }
+          L "cd \"$D\"; cls -1" 60 > /tmp/after.txt
+          cat /tmp/after.txt
+          grep -qx "$NAME" /tmp/after.txt || { echo "Нового APK в папке нет — прежние не трогаю"; exit 1; }
 
-          echo "=== заливаю $APK ==="
-          L "cd \"$D\"; put \"$APK\"; ls"
+          echo "=== убираю прежние APK ==="
+          for f in $(grep '\.apk$' /tmp/after.txt | grep -vx "$NAME"); do
+            L "cd \"$D\"; rm \"$f\"" 60 || echo "не удалось удалить $f"
+          done
+          L "cd \"$D\"; ls" 60
 
       - name: Завести релиз с этим APK
         uses: softprops/action-gh-release@v2
