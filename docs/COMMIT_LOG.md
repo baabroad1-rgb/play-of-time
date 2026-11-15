@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.61
 
+### baa: адрес почты под вопросом к посетителю
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/58dd8c0549e49c107ce6fbf50c097e1fb2de86f7)
+
 ### baa: Usethics закрыт в 2026 году
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/9386b09b4c256c827fe81530572d29d816855da8)
@@ -2881,4 +2885,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 264.
+Всего записей: 265.
