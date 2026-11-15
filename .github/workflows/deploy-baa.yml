@@ -51,6 +51,8 @@ jobs:
           echo "== мой адрес"; curl -s --max-time 10 https://api.ipify.org || true; echo
 
       - name: Залить baa/ на baa.playoftime.online
+        id: ftp
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           # Имя сервера Beget записано явно, а не через секрет FTP_HOST: 14.11.2026
@@ -67,6 +69,26 @@ jobs:
             **/.git*
             **/.git*/**
             **/*.md
+
+      # Запасной путь. С вечера 14.11.2026 порт FTP (21) сервера Beget не
+      # отвечает серверам GitHub, а порт SSH (22) открыт — это показал шаг
+      # диагностики выше. Если обычная выкладка не подключилась, заливаем те
+      # же файлы по SFTP тем же аккаунтом. Перед заливкой проверяем, что
+      # попали именно в папку сайта (в ней лежит index.html), чтобы не
+      # насыпать файлов не туда. Ничего на сервере не удаляет.
+      - name: Залить по SFTP, если FTP не подключился
+        if: steps.ftp.outcome == 'failure'
+        env:
+          BAA_LOGIN: ${{ secrets.BAA_LOGIN }}
+          LFTP_PASSWORD: ${{ secrets.BAA_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get install -y -q lftp >/dev/null
+          conn="set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 3;"
+          lftp --env-password -u "$BAA_LOGIN" -e "$conn cls -1; bye" sftp://infousil.beget.tech > /tmp/listing.txt
+          echo "В папке на сервере:"; cat /tmp/listing.txt
+          grep -qx "index.html" /tmp/listing.txt || { echo "Это не папка сайта — не заливаю"; exit 1; }
+          lftp --env-password -u "$BAA_LOGIN" -e "$conn mirror -R --verbose --exclude-glob '*.md' --exclude-glob '.git*' ./baa/ ./; bye" sftp://infousil.beget.tech
 
       # Проверка, что страница реально открывается и совпадает с репозиторием.
       # Сертификат на новом поддомене может появиться не сразу, поэтому
