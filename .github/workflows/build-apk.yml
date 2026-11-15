@@ -219,19 +219,38 @@ jobs:
           # него окажется старое с отдачей истории, и переедет без прогресса.
           DEST="${{ inputs.dest_dir || '/downloads/next' }}"
           echo "папка назначения: $DEST"
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; mkdir -p -f \"$DEST\"" || true
 
-          echo "=== что сейчас в $DEST ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; ls" || {
-            echo "Не удалось подключиться или зайти в папку назначения"; exit 1; }
+          # Запасной путь по SFTP (15.11.2026, как в deploy-baa.yml): с вечера
+          # 14.11 порт FTP (21) Beget не отвечает серверам GitHub, порт SSH (22)
+          # открыт. Сначала пробуем FTP; не подключился — тот же аккаунт по
+          # SFTP. Там путь берём относительно домашней папки аккаунта (без
+          # ведущего «/») и сначала проверяем, что в ней есть downloads/ —
+          # чтобы не насыпать файлов не туда.
+          if lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cls -1" >/dev/null 2>&1; then
+            URL="$FTP_HOST"; D="$DEST"; PRE="$COMMON"
+            echo "подключение: FTP"
+          else
+            URL="sftp://infousil.beget.tech"; D="${DEST#/}"
+            PRE='set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 3;'
+            echo "FTP не подключился — пробую SFTP"
+            lftp -c "$PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$URL\"; cls -1" > /tmp/home.txt
+            echo "в домашней папке:"; cat /tmp/home.txt
+            grep -qx "downloads/\?" /tmp/home.txt || { echo "Это не папка сайта (нет downloads/) — не заливаю"; exit 1; }
+          fi
+          L() { lftp -c "$PRE open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$URL\"; $1"; }
+
+          L "mkdir -p -f \"$D\"" || true
+
+          echo "=== что сейчас в $D ==="
+          L "cd \"$D\"; ls" || { echo "Не удалось подключиться или зайти в папку назначения"; exit 1; }
 
           # Удаление старых APK не должно валить сборку: если их там нет,
           # lftp возвращает ошибку, а это нормальная ситуация.
           echo "=== убираю прежние APK (если есть) ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; glob -a rm -f *.apk" || echo "прежних APK не было"
+          L "cd \"$D\"; glob -a rm -f *.apk" || echo "прежних APK не было"
 
           echo "=== заливаю $APK ==="
-          lftp -c "$COMMON open -u \"$FTP_USER\",\"$FTP_PASSWORD\" \"$FTP_HOST\"; cd \"$DEST\"; put \"$APK\"; ls"
+          L "cd \"$D\"; put \"$APK\"; ls"
 
       - name: Завести релиз с этим APK
         uses: softprops/action-gh-release@v2
