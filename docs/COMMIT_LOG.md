@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.65
 
+### baa: новая работа в 2026 — методолог
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2946e7737d4830ac619841c51db5e565989bf1a1)
+
 ### baa: убран пафос из текста; правило «без пафоса» в CLAUDE.md
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/438b015b654796666e9d80b83de502ee62a9e094)
@@ -2947,4 +2951,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 277.
+Всего записей: 278.
