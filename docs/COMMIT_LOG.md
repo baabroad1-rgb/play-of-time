@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.62
 
+### Error distribution: края как у Range of deviations (P3/P97 по сторонам)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ce113852059ca3bab4818269702aaaa80f90a79d)
+
 ### baa: фотопроект одной короткой строкой, без «self»
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d4342a844554e3bb9f57373aff81c47a9c93285f)
@@ -2908,4 +2912,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 269.
+Всего записей: 270.
