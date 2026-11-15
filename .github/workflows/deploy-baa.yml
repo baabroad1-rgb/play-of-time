@@ -33,6 +33,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Диагностика связи с FTP Beget. Добавлена 15.11.2026: выкладка сутки
+      # падала на таймауте, и из лога было не понять, на каком шаге —
+      # имя не находится, порт закрыт или сервер молчит после подключения.
+      # Ничего не меняет и секретов не печатает; ошибка здесь выкладку не
+      # останавливает.
+      - name: Проверить связь с FTP-сервером
+        continue-on-error: true
+        run: |
+          host=infousil.beget.tech
+          echo "== адрес"; getent hosts "$host" || echo "имя не находится"
+          for port in 21 22 990; do
+            if timeout 10 bash -c "</dev/tcp/$host/$port" 2>/dev/null; then echo "порт $port: открыт"; else echo "порт $port: не отвечает"; fi
+          done
+          echo "== приветствие FTP (ждём строку 220)"
+          timeout 20 bash -c "exec 3<>/dev/tcp/$host/21 && head -n 1 <&3" || echo "приветствия нет"
+          echo "== мой адрес"; curl -s --max-time 10 https://api.ipify.org || true; echo
+
       - name: Залить baa/ на baa.playoftime.online
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
