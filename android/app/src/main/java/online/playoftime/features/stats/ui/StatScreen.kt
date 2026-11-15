@@ -725,7 +725,7 @@ private fun AnalyticsContent(
                     }.flatMap { it.attemptBars }
                 } else emptyList()
                 if (metric == PaceMetric.DIST) {
-                    ErrorDistributionChart(periodBars, data.rangeEarlyMs, data.rangeLateMs)
+                    ErrorDistributionChart(periodBars, data.rangeEarlyMs, data.rangeLateMs, data.earlyCount, data.lateCount)
                     Spacer(Modifier.height(6.dp))
                 } else if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
                     // Faces в сессии — ряд маленьких рожиц, по одной на попытку
@@ -815,10 +815,8 @@ private fun AnalyticsContent(
                         label = "Happy / Sad",
                         value = "${data.facesHappy} / ${data.facesSad}"
                     )
-                    PaceMetric.DIST -> CardMetricRow(
-                        label = "Early / Late",
-                        value = groupDigits("${data.earlyCount} / ${data.lateCount}")
-                    )
+                    // Early / Late — внутри графика, под нулём.
+                    PaceMetric.DIST -> Unit
                 }
             }
             }
@@ -2448,7 +2446,9 @@ private fun MiniHistogram(
 private fun ErrorDistributionChart(
     bars        : List<online.playoftime.features.stats.domain.entity.AttemptBarData>,
     earlyEdgeMs : Double,
-    lateEdgeMs  : Double
+    lateEdgeMs  : Double,
+    earlyCount  : Long,
+    lateCount   : Long
 ) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     if (bars.size < 2) {
@@ -2480,7 +2480,12 @@ private fun ErrorDistributionChart(
     val maxCount = counts.max().coerceAtLeast(1)
     val axis = textColor.copy(alpha = 0.55f)
     Column(Modifier.fillMaxWidth()) {
-        BasicText(groupDigits("$maxCount"), style = labelStyle(10.sp, color = axis))
+        // Подпись — заголовком над графиком (Alex 15.11.2026).
+        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late · the extreme 3% is cut off at each end, as in Range of deviations" +
+            if (outside > 0) " (${groupDigits("$outside")} attempts)" else "",
+            modifier = Modifier.padding(bottom = 6.dp), style = labelStyle(11.sp, color = textColor.copy(alpha = 0.75f)))
+        // Высота самого высокого столбика — подписана явно («что за 782?»).
+        BasicText("tallest bar: ${groupDigits("$maxCount")} attempts", style = labelStyle(10.sp, color = axis))
         Canvas(Modifier.fillMaxWidth().height(140.dp)) {
             val w = size.width
             val gap = w / bucketCount
@@ -2513,9 +2518,27 @@ private fun ErrorDistributionChart(
                 BasicText("+${formatMeanMs(rightMs.toFloat())}ms", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
             }
         }
-        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late. Same range as above: the extreme 3% is cut off at each end" +
-            if (outside > 0) " (${groupDigits("$outside")} attempts)." else ".",
-            modifier = Modifier.padding(top = 2.dp), style = labelStyle(10.sp, color = axis))
+        // Early / Late — под нулём: ранние слева от него, поздние справа;
+        // едут вместе с нулём (Alex 15.11.2026).
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(center + 0.5f)) {
+                BasicText(groupDigits("$earlyCount") + " ", modifier = Modifier.align(Alignment.CenterEnd),
+                    style = metricValueStyle(resultRedColor))
+            }
+            Box(Modifier.width(1.dp).height(18.dp).background(Color.White.copy(alpha = 0.4f)))
+            Box(Modifier.weight(nRight + 0.5f)) {
+                BasicText(" " + groupDigits("$lateCount"), modifier = Modifier.align(Alignment.CenterStart),
+                    style = metricValueStyle(resultBlueColor))
+            }
+        }
+        Row(Modifier.fillMaxWidth()) {
+            Box(Modifier.weight(center + 0.5f)) {
+                BasicText("early ", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
+            }
+            Box(Modifier.weight(nRight + 0.5f)) {
+                BasicText(" late", modifier = Modifier.align(Alignment.CenterStart), style = labelStyle(10.sp, color = axis))
+            }
+        }
     }
 }
 
