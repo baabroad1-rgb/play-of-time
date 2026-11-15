@@ -2368,14 +2368,20 @@ private fun MiniHistogram(
     // 71 бакет и тонкие столбики-иглы — тот же стиль, что DistribChart на
     // главном экране (Alex 2026-07-23: «как на рисунке 1, не skyline»).
     val scaleMax = maxOf(abs(minE), abs(maxE)).coerceAtLeast(1.0)
-    val rangeMin = -scaleMax
-    val bucketCount = 71
-    val bucketW = (2.0 * scaleMax) / bucketCount
+    // Столбик не уже шага касаний и клетки уровня (Alex 15.11: «проверь, а к
+    // остальным данным это не относится?» — та же гребёнка, что была в Error
+    // distribution). Сетка от нуля: центральный столбик — 0 ± полшага.
+    val storage = org.koin.compose.koinInject<online.playoftime.core.data.LocalStorageService>()
+    val levelCell = bars.maxOf { Math.pow(10.0, (3 - it.accuracy.coerceIn(0, 3)).toDouble()) }
+    val bucketW = maxOf(storage.getTouchCellMs().toDouble().coerceAtLeast(1.0), levelCell, 2.0 * scaleMax / 71)
+    val half = kotlin.math.ceil(scaleMax / bucketW - 0.5).toInt().coerceAtLeast(1)
+    val bucketCount = 2 * half + 1
+    val rangeMin = -(half + 0.5) * bucketW
     val counts  = IntArray(bucketCount)
     val wins    = IntArray(bucketCount)
     val clean   = IntArray(bucketCount)
     bars.forEach { b ->
-        val idx = ((b.errorMs - rangeMin) / bucketW).toInt().coerceIn(0, bucketCount - 1)
+        val idx = kotlin.math.floor((b.errorMs - rangeMin) / bucketW).toInt().coerceIn(0, bucketCount - 1)
         counts[idx]++
         if (b.isWin) wins[idx]++
         if (b.isClean) clean[idx]++
