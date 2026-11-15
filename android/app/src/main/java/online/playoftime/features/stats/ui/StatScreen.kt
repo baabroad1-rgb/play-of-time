@@ -2454,13 +2454,15 @@ private fun ErrorDistributionChart(
     val rangeMin = -scaleMax
     val bucketCount = 71
     val bucketW = (2.0 * scaleMax) / bucketCount
-    val counts = IntArray(bucketCount); val wins = IntArray(bucketCount); val clean = IntArray(bucketCount)
+    // Промахи за краем шкалы в крайние столбцы не сваливаем (Alex 15.11:
+    // крайние столбцы были завышены) — их число пишем подписью.
+    val counts = IntArray(bucketCount)
+    var outside = 0
     bars.forEach { b ->
-        val idx = ((b.errorMs - rangeMin) / bucketW).toInt().coerceIn(0, bucketCount - 1)
-        counts[idx]++
-        if (b.isWin) wins[idx]++
-        if (b.isClean) clean[idx]++
+        val idx = ((b.errorMs - rangeMin) / bucketW).toInt()
+        if (idx in 0 until bucketCount) counts[idx]++ else outside++
     }
+    val center = bucketCount / 2
     val maxCount = counts.max().coerceAtLeast(1)
     val axis = textColor.copy(alpha = 0.55f)
     Column(Modifier.fillMaxWidth()) {
@@ -2477,13 +2479,13 @@ private fun ErrorDistributionChart(
             counts.forEachIndexed { i, count ->
                 if (count == 0) return@forEachIndexed
                 val barH = (count.toFloat() / maxCount) * size.height * 0.95f
-                val c = rangeMin + (i + 0.5) * bucketW
-                val inTol = toleranceMs > 0 && abs(c) <= toleranceMs
+                // Зелёный — только центральный столбец (ошибка 0, чистая тройка),
+                // левее — красные, правее — синие (Alex 15.11.2026: зелёные были
+                // разбросаны — допуски разных квестов за весь период).
                 val color = when {
-                    clean[i] > 0         -> resultGreenColor
-                    wins[i] > 0 || inTol -> easedGreen(c)
-                    c < 0.0              -> resultRedColor
-                    else                 -> resultBlueColor
+                    i == center -> resultGreenColor
+                    i < center  -> resultRedColor
+                    else        -> resultBlueColor
                 }
                 val x = (gap * i + (gap - barW) / 2).coerceIn(0f, w - barW)
                 drawRoundRect(color.copy(alpha = 0.9f), topLeft = Offset(x, size.height - barH), size = Size(barW, barH), cornerRadius = cornerR)
@@ -2496,7 +2498,8 @@ private fun ErrorDistributionChart(
             Spacer(Modifier.weight(1f))
             BasicText("+${formatMeanMs(scaleMax.toFloat())} ms", style = labelStyle(10.sp, color = axis))
         }
-        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late",
+        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late" +
+            if (outside > 0) " · ${groupDigits("$outside")} beyond ±${formatMeanMs(scaleMax.toFloat())} ms not shown" else "",
             modifier = Modifier.padding(top = 2.dp), style = labelStyle(10.sp, color = axis))
     }
 }
