@@ -702,7 +702,8 @@ private fun AnalyticsContent(
             // Что рисует график — выбор в выпадающем списке, который стоит на
             // месте заголовка блока (Alex 2026-10-07).
             // По умолчанию — Mean error (Alex 2026-10-19).
-            var metric by rememberSaveable { mutableStateOf(PaceMetric.MEAN) }
+            // По умолчанию — Error distribution (Alex 15.11.2026).
+            var metric by rememberSaveable { mutableStateOf(PaceMetric.DIST) }
             StatCard("", pl, header = { PaceMetricDropdown(metric) { metric = it } }) {
                 val series = when (metric) {
                     PaceMetric.PACE  -> data.paceChartValues
@@ -725,7 +726,7 @@ private fun AnalyticsContent(
                     }.flatMap { it.attemptBars }
                 } else emptyList()
                 if (metric == PaceMetric.DIST) {
-                    ErrorDistributionChart(periodBars, data.rangeEarlyMs, data.rangeLateMs, data.earlyCount, data.lateCount)
+                    ErrorDistributionChart(periodBars, data.rangeEarlyMs, data.rangeLateMs, data.earlyCount, data.lateCount, data.periodPrecise.toLong())
                     Spacer(Modifier.height(6.dp))
                 } else if (metric == PaceMetric.FACES && isSession && series.isNotEmpty()) {
                     // Faces в сессии — ряд маленьких рожиц, по одной на попытку
@@ -2448,7 +2449,8 @@ private fun ErrorDistributionChart(
     earlyEdgeMs : Double,
     lateEdgeMs  : Double,
     earlyCount  : Long,
-    lateCount   : Long
+    lateCount   : Long,
+    cleanCount  : Long
 ) {
     val textColor = MaterialTheme.colorScheme.baseTextColor
     if (bars.size < 2) {
@@ -2525,7 +2527,8 @@ private fun ErrorDistributionChart(
                 BasicText(groupDigits("$earlyCount") + " ", modifier = Modifier.align(Alignment.CenterEnd),
                     style = metricValueStyle(resultRedColor))
             }
-            Box(Modifier.width(1.dp).height(18.dp).background(Color.White.copy(alpha = 0.4f)))
+            // Чистые тройки — посередине, ровно под нулём (Alex 15.11.2026).
+            BasicText(groupDigits("$cleanCount"), style = metricValueStyle(resultGreenColor))
             Box(Modifier.weight(nRight + 0.5f)) {
                 BasicText(" " + groupDigits("$lateCount"), modifier = Modifier.align(Alignment.CenterStart),
                     style = metricValueStyle(resultBlueColor))
@@ -2535,6 +2538,7 @@ private fun ErrorDistributionChart(
             Box(Modifier.weight(center + 0.5f)) {
                 BasicText("early ", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
             }
+            BasicText("clean", style = labelStyle(10.sp, color = axis))
             Box(Modifier.weight(nRight + 0.5f)) {
                 BasicText(" late", modifier = Modifier.align(Alignment.CenterStart), style = labelStyle(10.sp, color = axis))
             }
