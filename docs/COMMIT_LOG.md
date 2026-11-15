@@ -9,6 +9,14 @@
 
 ## 15 ноября 2026 — версия v15.58
 
+### Выкладка APK: запасной путь по SFTP, если FTP Beget не подключился
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/db342248a256a82aecd525fac6a7b7c1db8e0f9c)
+
+### CHANGELOG: FTP Beget всё ещё недоступен (15.11)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b9f3a2dc3df754f5ea948f631f2280a4c8de4d37)
+
 ### Выкладка baa: запасной путь по SFTP
 
 Диагностика показала: порт 21 сервера Beget серверам GitHub не отвечает,
@@ -26,6 +34,10 @@
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/72cd3a05335ccd688e64a77f1b010e65b2d694b4)
 
 ## 14 ноября 2026 — версия v15.57
+
+### CHANGELOG: выкладка 15.56/15.57 упёрлась в FTP Beget
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7e143b8e84bb134da197c2d327a1505bb2470383)
 
 ### Выкладка baa: имя FTP-сервера Beget записано явно
 
@@ -2828,4 +2840,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 254.
+Всего записей: 257.
