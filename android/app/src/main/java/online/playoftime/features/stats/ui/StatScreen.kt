@@ -2451,15 +2451,22 @@ private fun ErrorDistributionChart(
     // Крайние 1,5 % с каждой стороны не растягивают шкалу.
     val sortedAbs = bars.map { abs(it.errorMs) }.sorted()
     val scaleMax = sortedAbs[((sortedAbs.size - 1) * 0.97).toInt()].coerceAtLeast(1.0)
-    val rangeMin = -scaleMax
-    val bucketCount = 71
-    val bucketW = (2.0 * scaleMax) / bucketCount
+    // Ширина столбика не уже шага, с которым телефон присылает касания
+    // (Alex 15.11: «что за выбросы?» — при столбике ~2 мс и шаге касаний
+    // 4–8 мс получалась гребёнка: одни столбики полные, соседние пустые).
+    // Центр ровно на нуле: центральный столбик — ошибка 0 ± полшага.
+    val storage = org.koin.compose.koinInject<online.playoftime.core.data.LocalStorageService>()
+    val touchCell = storage.getTouchCellMs().toDouble().coerceAtLeast(1.0)
+    val bucketW = maxOf(touchCell, 2.0 * scaleMax / 71)
+    val half = kotlin.math.ceil(scaleMax / bucketW - 0.5).toInt().coerceAtLeast(1)
+    val bucketCount = 2 * half + 1
+    val rangeMin = -(half + 0.5) * bucketW
     // Промахи за краем шкалы в крайние столбцы не сваливаем (Alex 15.11:
     // крайние столбцы были завышены) — их число пишем подписью.
     val counts = IntArray(bucketCount)
     var outside = 0
     bars.forEach { b ->
-        val idx = ((b.errorMs - rangeMin) / bucketW).toInt()
+        val idx = kotlin.math.floor((b.errorMs - rangeMin) / bucketW).toInt()
         if (idx in 0 until bucketCount) counts[idx]++ else outside++
     }
     val center = bucketCount / 2
