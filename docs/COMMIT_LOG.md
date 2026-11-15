@@ -9,6 +9,10 @@
 
 ## 15 ноября 2026 — версия v15.60
 
+### Error distribution: столбик не уже шага касаний, сетка от нуля — без гребёнки
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/86898006bd46f020e099e5c79e58d94c1f1e270c)
+
 ### baa: глава в книге Kluwer (2001) в раздел про лабораторию
 
 «Psychological Support of Work Safety and Labor Protection» — глава в
@@ -2858,4 +2862,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 260.
+Всего записей: 261.
