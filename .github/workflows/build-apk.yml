@@ -194,9 +194,9 @@ jobs:
           exit 1
 
       - name: Положить APK на хостинг в downloads/
-        # Не дольше 15 минут (15.11.2026: шаг завис на 25+ минут и держал
-        # очередь сборок; обычная заливка занимает 1–2 минуты).
-        timeout-minutes: 15
+        # Не дольше 50 минут: на медленном канале до Beget (16.11.2026 ~12 КБ/с)
+        # 25 МБ с докачкой идут долго, но шаг не должен висеть бесконечно.
+        timeout-minutes: 50
         # Служебные сборки (например мостовая версия под старым
         # идентификатором) не должны подменять приложение на сайте.
         if: github.event_name != 'workflow_dispatch' || inputs.publish_to_site
@@ -249,14 +249,29 @@ jobs:
           echo "=== что сейчас в $D ==="
           L "cd \"$D\"; ls" 60 || { echo "Не удалось зайти в папку назначения"; exit 1; }
 
-          echo "=== заливаю $NAME ==="
-          L "cd \"$D\"; put \"$APK\"" 300 || { echo "Заливка не удалась — прежние APK на месте"; exit 1; }
+          # 16.11.2026: заливка на Beget бывает очень медленной (~12 КБ/с), и
+          # оборванная заливка оставляла под настоящим именем обрезанный APK —
+          # телефон его не ставил («не удаётся распарсить пакет»). Теперь
+          # файл льётся под именем .part (next_apk.php берёт только *.apk),
+          # обрыв докачивается с места (put -c), и имя меняется на настоящее
+          # только когда размер на сервере совпал с собранным байт в байт.
+          SIZE=$(stat -c %s "$APK")
+          echo "=== заливаю $NAME ($SIZE байт) ==="
+          done_ok=0
+          for try in $(seq 1 8); do
+            L "cd \"$D\"; put -c \"$APK\" -o \"$NAME.part\"" 300 || echo "попытка $try оборвалась — докачаю"
+            REMOTE=$(L "cd \"$D\"; cls -s --block-size=1 \"$NAME.part\"" 60 | awk '{print $1}' | head -1)
+            echo "на сервере: ${REMOTE:-0} из $SIZE"
+            if [ "$REMOTE" = "$SIZE" ]; then done_ok=1; break; fi
+          done
+          [ "$done_ok" = 1 ] || { echo "Файл не долился — прежние APK на месте"; exit 1; }
+          L "cd \"$D\"; rm -f \"$NAME\"; mv \"$NAME.part\" \"$NAME\"" 60
           L "cd \"$D\"; cls -1" 60 > /tmp/after.txt
           cat /tmp/after.txt
           grep -qx "$NAME" /tmp/after.txt || { echo "Нового APK в папке нет — прежние не трогаю"; exit 1; }
 
           echo "=== убираю прежние APK ==="
-          for f in $(grep '\.apk$' /tmp/after.txt | grep -vx "$NAME"); do
+          for f in $(grep -E '\.apk(\.part)?$' /tmp/after.txt | grep -vx "$NAME"); do
             L "cd \"$D\"; rm \"$f\"" 60 || echo "не удалось удалить $f"
           done
           L "cd \"$D\"; ls" 60
