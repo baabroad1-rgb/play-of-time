@@ -479,7 +479,7 @@ internal fun RivalCompareSection(
         CompCard {
             LevelTimeChart(curveYou, curveAi, youName)
             BasicText(
-                "Up — quest and its sub-quests: 2.3 is the quest itself, 2.3.1, 2.3.2… below it are its eased steps. Across — time of the selected period.",
+                "Each band is a quest; inside it, from the top: the quest itself, then its eased steps .1, .2… A bar inside the 3.5 band means being on 3.5. Each pair of bars is one hour, day or month of the period.",
                 modifier = Modifier.padding(top = 6.dp),
                 style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = Color.White.copy(alpha = 0.8f))
             )
@@ -534,12 +534,16 @@ internal fun RivalCompareSection(
 }
 
 /**
- * Один график (Alex 12.11.2026: «1. один; 2. перемещение по уровням включая
- * подуровни; 4. по вертикали уровень, по горизонтали время, в зависимости от
- * фильтра, однозначно читается»). Y — квест: 1.1 … 3.5 по порядку, ступени
- * индульгенций — тонкие линии под своим квестом (−0.15 за ступень). X — время
- * попыток выбранного периода; подписи — часы, дни или месяцы по длине периода.
- * Линия ступенчатая: уровень держится до следующей попытки.
+ * Диаграмма прохождения по квестам: игрок и Fly Doppelgänger.
+ * Alex 17.11.2026: «есть ошибка — судя по ней ни я, ни муха 3.5 не достигали;
+ * в целом неряшливый и неинформативный». Подквесты с поблажкой (3.5.1, 3.5.2)
+ * рисовались строками НИЖЕ «3.5», и столбик игрока на 3.5 с поблажкой не
+ * доставал до строки «3.5». Теперь каждый квест — своя полоса (фон через
+ * одну, номер крупно по центру); внутри полосы сверху вниз: сам квест, .1,
+ * .2 … — столбик в полосе «3.5» значит «на 3.5». Отрезки времени
+ * календарные; в отрезке пара столбиков (игрок / Fly), высота — лучшее
+ * положение в отрезке; не играли — пусто. В легенде — высший квест периода и
+ * с какой даты.
  */
 @Composable
 private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Float>>, youName: String) {
@@ -548,57 +552,66 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
         BasicText("No attempts in this period.", style = TextStyle(fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f)))
         return
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-        BasicText("■ $youName", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = youColor))
-        BasicText("■ ${RivalEngine.NAME}", style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = aiColor))
+    val qs = online.playoftime.core.utils.questList
+    fun qLabel(q: Int) = qs.getOrNull(q)?.let { "${it.levelId}.${it.taskId}" } ?: ""
+    val dayFmt = java.text.SimpleDateFormat("d MMM", java.util.Locale.ENGLISH)
+    // Высший квест периода и когда впервые на него вышел.
+    fun reached(pts: List<Pair<Long, Float>>): String {
+        if (pts.isEmpty()) return "—"
+        val top = pts.maxOf { it.second.toInt() / 100 }
+        val since = pts.first { it.second.toInt() / 100 == top }.first
+        return "${qLabel(top)} since ${dayFmt.format(java.util.Date(since))}"
+    }
+    Column(Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        BasicText("■ $youName — ${reached(you)}", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = youColor))
+        BasicText("■ ${RivalEngine.NAME} — ${reached(ai)}", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = aiColor))
     }
     val t0 = all.minOf { it.first }; val t1 = all.maxOf { it.first }.coerceAtLeast(t0 + 60_000)
-    // Строки по вертикали — каждый подквест отдельно, снизу вверх:
-    // 1.1.2, 1.1.1, 1.1, 1.2.1, 1.2 … (Alex 12.11.2026: «по вертикали
-    // детальность с подквестами, подпиши цифрой каждый подквест»).
-    val qs = online.playoftime.core.utils.questList
+    val span = t1 - t0
     val codes = all.map { it.second.toInt() }
     val qMin = codes.minOf { it / 100 }; val qMax = codes.maxOf { it / 100 }
     val maxSub = codes.groupBy { it / 100 }.mapValues { (_, l) -> l.maxOf { it % 100 } }
-    val rowsList = (qMin..qMax).flatMap { q -> ((maxSub[q] ?: 0) downTo 0).map { sub -> q * 100 + sub } }
-    val rowOf = rowsList.withIndex().associate { it.value to it.index }
-    fun label(code: Int): String {
-        val q = qs.getOrNull(code / 100) ?: return ""
-        return "${q.levelId}.${q.taskId}" + if (code % 100 > 0) ".${code % 100}" else ""
+    // Полосы снизу вверх; в полосе слотов = подквестов + 1 (сам квест — верхний).
+    val bandSlots = (qMin..qMax).map { q -> (maxSub[q] ?: 0) + 1 }
+    val slotsTotal = bandSlots.sum()
+    val bandBase = IntArray(bandSlots.size)          // сколько слотов ниже полосы
+    for (i in 1 until bandSlots.size) bandBase[i] = bandBase[i - 1] + bandSlots[i - 1]
+    // Позиция кода в слотах от низа: верх слота «сам квест» = верх полосы.
+    fun slotTop(code: Int): Float {
+        val q = code / 100 - qMin; val sub = code % 100
+        return (bandBase[q] + bandSlots[q] - sub).toFloat()
     }
-    val n = rowsList.size
-    val span = t1 - t0
-    val fmt = java.text.SimpleDateFormat(when {
-        span < 36L * 3600_000 -> "HH:mm"
-        span < 75L * 86400_000 -> "d MMM"
-        else -> "MMM yy"
-    }, java.util.Locale.ENGLISH)
-    val paint = remember {
-        android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 30f; isFakeBoldText = true; isAntiAlias = true }
+    val bold = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(235, 235, 235); textSize = 32f; isFakeBoldText = true; isAntiAlias = true }
     }
-    val subPaint = remember {
-        android.graphics.Paint().apply { color = android.graphics.Color.rgb(170, 170, 170); textSize = 26f; isAntiAlias = true }
+    val small = remember {
+        android.graphics.Paint().apply { color = android.graphics.Color.rgb(150, 150, 150); textSize = 22f; isAntiAlias = true }
     }
-    val rowDp = if (n <= 6) 34 else if (n <= 14) 24 else 18
-    Canvas(Modifier.fillMaxWidth().height((n * rowDp + 70).dp)) {
-        val left = 110f; val top = 18f
-        val bottom = size.height - 46f
-        val w = size.width - left - 12f
-        fun x(t: Long) = left + w * (t - t0).toFloat() / (t1 - t0)
-        // Нижний подквест — на одну строку выше оси, чтобы его столбик был виден.
-        fun y(code: Float) = bottom - (bottom - top) * ((rowOf[code.toInt()] ?: 0) + 1) / n
-        rowsList.forEach { code ->
-            val yy = y(code.toFloat())
-            val base = code % 100 == 0
-            drawLine(if (base) Color(0xFF7A7A7A) else Color(0xFF353535), Offset(left, yy), Offset(left + w, yy), strokeWidth = if (base) 2.5f else 1.2f)
-            drawContext.canvas.nativeCanvas.drawText(label(code), 4f, yy + 10f, if (base) paint else subPaint)
+    val slotDp = when { slotsTotal <= 6 -> 26; slotsTotal <= 14 -> 18; slotsTotal <= 28 -> 12; else -> 9 }
+    Canvas(Modifier.fillMaxWidth().height((slotsTotal * slotDp + 48).dp)) {
+        val left = 96f; val top = 8f
+        val bottom = size.height - 40f
+        val w = size.width - left - 8f
+        val slotH = (bottom - top) / slotsTotal
+        fun yOfSlots(sl: Float) = bottom - slotH * sl
+        // Полосы квестов: фон через одну, номер по центру, подквесты — тонкие линии.
+        (qMin..qMax).forEachIndexed { i, q ->
+            val yb = yOfSlots(bandBase[i].toFloat()); val yt = yOfSlots((bandBase[i] + bandSlots[i]).toFloat())
+            if (i % 2 == 0) drawRect(Color.White.copy(alpha = 0.04f), topLeft = Offset(left, yt), size = androidx.compose.ui.geometry.Size(w, yb - yt))
+            drawLine(Color.White.copy(alpha = 0.22f), Offset(left, yt), Offset(left + w, yt), strokeWidth = 2f)
+            val lab = qLabel(q)
+            drawContext.canvas.nativeCanvas.drawText(lab, 6f, (yt + yb) / 2 + 11f, bold)
+            for (sub in 1..(maxSub[q] ?: 0)) {
+                val ys = yOfSlots((bandBase[i] + bandSlots[i] - sub).toFloat())
+                drawLine(Color.White.copy(alpha = 0.07f), Offset(left, ys), Offset(left + w, ys), strokeWidth = 1f)
+                if (slotH >= 16f) {
+                    val sl = ".$sub"
+                    drawContext.canvas.nativeCanvas.drawText(sl, left - 8f - small.measureText(sl), ys + 8f, small)
+                }
+            }
         }
-        // Отрезки — календарные, как в остальной аналитике (Alex 17.11.2026:
-        // «сделать нормальную диаграмму сравнения»): до 3 ч — по 10 минут, до
-        // 36 ч — часы, до 75 дней — дни, дальше — месяцы; больше 40 отрезков —
-        // склеиваем соседние. В отрезке — пара столбиков (игрок слева, Fly
-        // справа), высота — высший подквест, достигнутый в отрезке; не играли —
-        // столбиков нет. Под парой — подпись отрезка.
+        // Календарные отрезки: до 3 ч — 10 минут, до 36 ч — часы, до 75 дней —
+        // дни, дальше — месяцы; больше 40 — склеиваются.
         val cal = java.util.Calendar.getInstance()
         val unit: Int; val amount: Int; val labFmt: String
         when {
@@ -625,38 +638,37 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
             while (lo < hi) { val mid = (lo + hi + 1) / 2; if (bStarts[mid] <= t) lo = mid else hi = mid - 1 }
             return lo
         }
-        fun best(pts: List<Pair<Long, Float>>): Array<Int?> {
-            val out = arrayOfNulls<Int>(nb)
+        fun best(pts: List<Pair<Long, Float>>): Array<Float?> {
+            val out = arrayOfNulls<Float>(nb)
             pts.forEach { (t, v) ->
-                val b = bucketOf(t); val r = rowOf[v.toInt()] ?: return@forEach
-                if (out[b] == null || r > out[b]!!) out[b] = r
+                val b = bucketOf(t); val st = slotTop(v.toInt())
+                if (out[b] == null || st > out[b]!!) out[b] = st
             }
             return out
         }
         val bw = w / nb
-        val groupGap = (bw * 0.22f).coerceAtMost(14f)
+        val groupGap = (bw * 0.25f).coerceIn(2f, 16f)
         val barW = (bw - groupGap) / 2
-        fun yRow(r: Int) = bottom - (bottom - top) * (r + 1) / n
-        listOf(Triple(best(you), youColor, 0), Triple(best(ai), aiColor, 1)).forEach { (rows, c, side) ->
-            rows.forEachIndexed { b, r ->
-                if (r == null) return@forEachIndexed
-                val yy = yRow(r)
-                drawRect(c.copy(alpha = 0.85f), topLeft = Offset(left + b * bw + groupGap / 2 + side * barW, yy),
-                    size = androidx.compose.ui.geometry.Size(barW - 1f, (bottom - yy).coerceAtLeast(3f)))
+        val r = androidx.compose.ui.geometry.CornerRadius((barW / 3).coerceAtMost(6f))
+        listOf(Triple(best(you), youColor, 0), Triple(best(ai), aiColor, 1)).forEach { (vals, c, side) ->
+            vals.forEachIndexed { b, sl ->
+                if (sl == null) return@forEachIndexed
+                val yy = yOfSlots(sl)
+                drawRoundRect(c.copy(alpha = 0.9f), topLeft = Offset(left + b * bw + groupGap / 2 + side * barW, yy),
+                    size = androidx.compose.ui.geometry.Size(barW - 1.5f, (bottom - yy).coerceAtLeast(3f)), cornerRadius = r)
             }
         }
-        drawLine(Color(0xFF7A7A7A), Offset(left, bottom), Offset(left + w, bottom), strokeWidth = 2f)
-        // Подписи отрезков: столько, сколько влезает без наложения.
+        drawLine(Color.White.copy(alpha = 0.35f), Offset(left, bottom), Offset(left + w, bottom), strokeWidth = 2f)
         val bl = java.text.SimpleDateFormat(labFmt, java.util.Locale.ENGLISH)
-        val sample = paint.measureText(bl.format(java.util.Date(bStarts.first()))) + 16f
+        val sample = small.measureText(bl.format(java.util.Date(bStarts.first()))) * 1.4f + 14f
         val every = kotlin.math.ceil(sample / bw).toInt().coerceAtLeast(1)
+        val tick = android.graphics.Paint(small).apply { textSize = 26f; color = android.graphics.Color.rgb(200, 200, 200) }
         bStarts.forEachIndexed { b, t ->
             if (b % every != 0) return@forEachIndexed
             val lab = bl.format(java.util.Date(t))
-            val tw = paint.measureText(lab)
+            val tw = tick.measureText(lab)
             val cx = left + b * bw + bw / 2
-            drawLine(Color(0xFF555555), Offset(cx, bottom), Offset(cx, bottom + 8f), strokeWidth = 2f)
-            drawContext.canvas.nativeCanvas.drawText(lab, (cx - tw / 2).coerceIn(left - 20f, left + w - tw), size.height - 6f, paint)
+            drawContext.canvas.nativeCanvas.drawText(lab, (cx - tw / 2).coerceIn(left - 20f, left + w - tw), size.height - 8f, tick)
         }
     }
 }
