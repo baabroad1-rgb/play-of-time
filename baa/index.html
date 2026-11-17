@@ -219,7 +219,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 addEventListener("message", function (e) {
   if (e.origin !== "https://playoftime.online" || !e.data || typeof e.data.aloudTryHeight !== "number") return;
   var f = document.getElementById("aloud-try");
-  if (f) f.style.height = Math.max(120, Math.min(900, Math.ceil(e.data.aloudTryHeight))) + "px";
+  if (f) f.style.height = Math.max(120, Math.min(2400, Math.ceil(e.data.aloudTryHeight))) + "px";
 });
 </script>
 <!--body:end-->
