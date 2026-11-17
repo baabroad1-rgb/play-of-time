@@ -7,7 +7,11 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
-## 17 ноября 2026
+## 17 ноября 2026 — версия v15.67
+
+### Analytics: убрана Range of deviations, Descriptive statistics с модами; двойник — Fly Doppelgänger
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/e958fa9d6d50df866d24d8f98d95336041957d4d)
 
 ### Error distribution: ось повторений, отметки мс, счётчики разнесены без подписей
 
@@ -2963,4 +2967,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 280.
+Всего записей: 281.
