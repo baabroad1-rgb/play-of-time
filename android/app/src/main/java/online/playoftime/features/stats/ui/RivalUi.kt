@@ -593,39 +593,70 @@ private fun LevelTimeChart(you: List<Pair<Long, Float>>, ai: List<Pair<Long, Flo
             drawLine(if (base) Color(0xFF7A7A7A) else Color(0xFF353535), Offset(left, yy), Offset(left + w, yy), strokeWidth = if (base) 2.5f else 1.2f)
             drawContext.canvas.nativeCanvas.drawText(label(code), 4f, yy + 10f, if (base) paint else subPaint)
         }
-        for (i in 0..3) {
-            val t = t0 + (t1 - t0) * i / 3
-            val lab = fmt.format(java.util.Date(t))
+        // Отрезки — календарные, как в остальной аналитике (Alex 17.11.2026:
+        // «сделать нормальную диаграмму сравнения»): до 3 ч — по 10 минут, до
+        // 36 ч — часы, до 75 дней — дни, дальше — месяцы; больше 40 отрезков —
+        // склеиваем соседние. В отрезке — пара столбиков (игрок слева, Fly
+        // справа), высота — высший подквест, достигнутый в отрезке; не играли —
+        // столбиков нет. Под парой — подпись отрезка.
+        val cal = java.util.Calendar.getInstance()
+        val unit: Int; val amount: Int; val labFmt: String
+        when {
+            span < 3L * 3600_000 -> { unit = java.util.Calendar.MINUTE; amount = 10; labFmt = "HH:mm" }
+            span < 36L * 3600_000 -> { unit = java.util.Calendar.HOUR_OF_DAY; amount = 1; labFmt = "HH:00" }
+            span < 75L * 86400_000 -> { unit = java.util.Calendar.DAY_OF_MONTH; amount = 1; labFmt = "d MMM" }
+            else -> { unit = java.util.Calendar.MONTH; amount = 1; labFmt = "MMM yy" }
+        }
+        cal.timeInMillis = t0
+        cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+        when (unit) {
+            java.util.Calendar.MINUTE -> cal.set(java.util.Calendar.MINUTE, cal.get(java.util.Calendar.MINUTE) / 10 * 10)
+            java.util.Calendar.HOUR_OF_DAY -> cal.set(java.util.Calendar.MINUTE, 0)
+            java.util.Calendar.DAY_OF_MONTH -> { cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.HOUR_OF_DAY, 0) }
+            else -> { cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.DAY_OF_MONTH, 1) }
+        }
+        val starts = mutableListOf<Long>()
+        while (cal.timeInMillis <= t1 && starts.size < 2000) { starts += cal.timeInMillis; cal.add(unit, amount) }
+        val merge = ((starts.size + 39) / 40).coerceAtLeast(1)
+        val bStarts = starts.filterIndexed { i, _ -> i % merge == 0 }
+        val nb = bStarts.size.coerceAtLeast(1)
+        fun bucketOf(t: Long): Int {
+            var lo = 0; var hi = nb - 1
+            while (lo < hi) { val mid = (lo + hi + 1) / 2; if (bStarts[mid] <= t) lo = mid else hi = mid - 1 }
+            return lo
+        }
+        fun best(pts: List<Pair<Long, Float>>): Array<Int?> {
+            val out = arrayOfNulls<Int>(nb)
+            pts.forEach { (t, v) ->
+                val b = bucketOf(t); val r = rowOf[v.toInt()] ?: return@forEach
+                if (out[b] == null || r > out[b]!!) out[b] = r
+            }
+            return out
+        }
+        val bw = w / nb
+        val groupGap = (bw * 0.22f).coerceAtMost(14f)
+        val barW = (bw - groupGap) / 2
+        fun yRow(r: Int) = bottom - (bottom - top) * (r + 1) / n
+        listOf(Triple(best(you), youColor, 0), Triple(best(ai), aiColor, 1)).forEach { (rows, c, side) ->
+            rows.forEachIndexed { b, r ->
+                if (r == null) return@forEachIndexed
+                val yy = yRow(r)
+                drawRect(c.copy(alpha = 0.85f), topLeft = Offset(left + b * bw + groupGap / 2 + side * barW, yy),
+                    size = androidx.compose.ui.geometry.Size(barW - 1f, (bottom - yy).coerceAtLeast(3f)))
+            }
+        }
+        drawLine(Color(0xFF7A7A7A), Offset(left, bottom), Offset(left + w, bottom), strokeWidth = 2f)
+        // Подписи отрезков: столько, сколько влезает без наложения.
+        val bl = java.text.SimpleDateFormat(labFmt, java.util.Locale.ENGLISH)
+        val sample = paint.measureText(bl.format(java.util.Date(bStarts.first()))) + 16f
+        val every = kotlin.math.ceil(sample / bw).toInt().coerceAtLeast(1)
+        bStarts.forEachIndexed { b, t ->
+            if (b % every != 0) return@forEachIndexed
+            val lab = bl.format(java.util.Date(t))
             val tw = paint.measureText(lab)
-            val px = (x(t) - tw / 2).coerceIn(left - 20f, left + w - tw)
-            drawLine(Color(0xFF444444), Offset(x(t), bottom), Offset(x(t), bottom + 8f), strokeWidth = 2f)
-            drawContext.canvas.nativeCanvas.drawText(lab, px, size.height - 6f, paint)
-        }
-        // Полупрозрачные столбики (Alex 13.11.2026): период делится на равные
-        // отрезки времени, высота столбика — подквест, где игрок был в конце
-        // отрезка (без попыток — держится прежний). Оба поверх друг друга,
-        // перекрытие видно по смешению цветов.
-        val buckets = 20
-        val bw = w / buckets
-        fun bars(pts: List<Pair<Long, Float>>): List<Float?> {
-            var last: Float? = null
-            var j = 0
-            return List(buckets) { b ->
-                val end = t0 + (t1 - t0) * (b + 1) / buckets
-                while (j < pts.size && pts[j].first <= end) { last = pts[j].second; j++ }
-                last
-            }
-        }
-        // Рядом, не друг на друге (Alex 13.11: «что за цвета? где тут я и где ИИ?» —
-        // наложение смешивало жёлтый с фиолетовым): в отрезке слева игрок, справа ИИ.
-        listOf(Triple(you, youColor, 0), Triple(ai, aiColor, 1)).forEach { (pts, c, side) ->
-            bars(pts).forEachIndexed { b, v ->
-                if (v == null) return@forEachIndexed
-                val yy = y(v)
-                val half = (bw - 6f) / 2
-                drawRect(c.copy(alpha = 0.7f), topLeft = Offset(left + b * bw + 3f + side * half, yy),
-                    size = androidx.compose.ui.geometry.Size(half - 1f, (bottom - yy).coerceAtLeast(3f)))
-            }
+            val cx = left + b * bw + bw / 2
+            drawLine(Color(0xFF555555), Offset(cx, bottom), Offset(cx, bottom + 8f), strokeWidth = 2f)
+            drawContext.canvas.nativeCanvas.drawText(lab, (cx - tw / 2).coerceIn(left - 20f, left + w - tw), size.height - 6f, paint)
         }
     }
 }
