@@ -56,9 +56,11 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -2486,19 +2488,44 @@ private fun ErrorDistributionChart(
         BasicText("${groupDigits("${bars.size}")} attempts · early ← → late · the extreme 3% is cut off at each end, as in Range of deviations" +
             if (outside > 0) " (${groupDigits("$outside")} attempts)" else "",
             modifier = Modifier.padding(bottom = 6.dp), style = labelStyle(11.sp, color = textColor.copy(alpha = 0.75f)))
-        // Высота самого высокого столбика — подписана явно («что за 782?»).
-        BasicText("tallest bar: ${groupDigits("$maxCount")} attempts", style = labelStyle(10.sp, color = axis))
-        Canvas(Modifier.fillMaxWidth().height(140.dp)) {
-            val w = size.width
+        // Оси (Alex 17.11.2026): слева — сколько повторений (вместо «tallest
+        // bar»), внизу — промежуточные отметки в мс между нулём и краями.
+        fun niceStep(raw: Double): Double {
+            val p = Math.pow(10.0, kotlin.math.floor(kotlin.math.log10(raw.coerceAtLeast(1e-9))))
+            return listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * p }.first { it >= raw }
+        }
+        val yStep = niceStep(maxCount / 4.0).coerceAtLeast(1.0)
+        val yTop = (kotlin.math.ceil(maxCount / yStep) * yStep).coerceAtLeast(1.0)
+        val xStep = niceStep(maxOf(leftMs, rightMs) / 3.0).coerceAtLeast(1.0)
+        val axisArgb = android.graphics.Color.argb((axis.alpha * 255).toInt(), (axis.red * 255).toInt(), (axis.green * 255).toInt(), (axis.blue * 255).toInt())
+        val tickPaint = remember(axisArgb) {
+            android.graphics.Paint().apply { color = axisArgb; isAntiAlias = true }
+        }
+        val axisW = 34.dp
+        Canvas(Modifier.fillMaxWidth().height(170.dp)) {
+            tickPaint.textSize = 10.sp.toPx()
+            val left = axisW.toPx()
+            val bottom = size.height - 16.dp.toPx()
+            val top = 6.dp.toPx()
+            val w = size.width - left
             val gap = w / bucketCount
             val barW = (gap * 0.7f).coerceIn(1.dp.toPx(), 5.dp.toPx())
             val cornerR = androidx.compose.ui.geometry.CornerRadius(1.5.dp.toPx())
-            val zeroX = gap * (center + 0.5f)
-            drawLine(Color.White.copy(alpha = 0.25f), Offset(zeroX, 0f), Offset(zeroX, size.height), strokeWidth = 1.dp.toPx())
-            drawLine(Color.White.copy(alpha = 0.15f), Offset(0f, size.height), Offset(w, size.height), strokeWidth = 1.dp.toPx())
+            val zeroX = left + gap * (center + 0.5f)
+            fun xOf(ms: Double) = (zeroX + ms / bucketW * gap).toFloat()
+            fun yOf(c: Double) = (bottom - (bottom - top) * c / yTop).toFloat()
+            // Горизонтальная сетка и подписи повторений.
+            var c = 0.0
+            while (c <= yTop + 1e-6) {
+                val y = yOf(c)
+                drawLine(Color.White.copy(alpha = if (c == 0.0) 0.2f else 0.07f), Offset(left, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                val lab = groupDigits("%.0f".format(c))
+                drawContext.canvas.nativeCanvas.drawText(lab, left - 4.dp.toPx() - tickPaint.measureText(lab), y + 3.5.dp.toPx(), tickPaint)
+                c += yStep
+            }
             counts.forEachIndexed { i, count ->
                 if (count == 0) return@forEachIndexed
-                val barH = (count.toFloat() / maxCount) * size.height * 0.95f
+                val barTop = yOf(count.toDouble())
                 // Зелёный — только центральный столбик (ошибка 0), левее —
                 // красные, правее — синие.
                 val color = when {
@@ -2506,42 +2533,39 @@ private fun ErrorDistributionChart(
                     i < center  -> resultRedColor
                     else        -> resultBlueColor
                 }
-                val x = (gap * i + (gap - barW) / 2).coerceIn(0f, w - barW)
-                drawRoundRect(color.copy(alpha = 0.9f), topLeft = Offset(x, size.height - barH), size = Size(barW, barH), cornerRadius = cornerR)
+                val x = (left + gap * i + (gap - barW) / 2).coerceIn(left, size.width - barW)
+                drawRoundRect(color.copy(alpha = 0.9f), topLeft = Offset(x, barTop), size = Size(barW, bottom - barTop), cornerRadius = cornerR)
+            }
+            drawLine(Color.White.copy(alpha = 0.3f), Offset(zeroX, top), Offset(zeroX, bottom), strokeWidth = 1.dp.toPx())
+            // Отметки по горизонтали: 0, ±шаг … и края, как в Range of deviations.
+            val marks = mutableListOf(0.0 to "0")
+            var m = xStep
+            while (m < leftMs - xStep * 0.45) { marks += -m to "−${formatMeanMs(m.toFloat())}"; m += xStep }
+            m = xStep
+            while (m < rightMs - xStep * 0.45) { marks += m to "+${formatMeanMs(m.toFloat())}"; m += xStep }
+            marks += -leftMs to "−${formatMeanMs(leftMs.toFloat())}ms"
+            marks += rightMs to "+${formatMeanMs(rightMs.toFloat())}ms"
+            marks.forEach { (ms, lab) ->
+                val x = xOf(ms)
+                drawLine(Color.White.copy(alpha = 0.3f), Offset(x, bottom), Offset(x, bottom + 3.dp.toPx()), strokeWidth = 1.dp.toPx())
+                val tw = tickPaint.measureText(lab)
+                drawContext.canvas.nativeCanvas.drawText(lab, (x - tw / 2).coerceIn(left, size.width - tw), size.height - 2.dp.toPx(), tickPaint)
             }
         }
-        // Подписи: края — как в Range of deviations, «0» — под нулём.
-        Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
-            Box(Modifier.weight(center + 0.5f)) {
-                BasicText("−${formatMeanMs(leftMs.toFloat())}ms", style = labelStyle(10.sp, color = axis))
-                BasicText("0", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
-            }
-            Box(Modifier.weight(nRight + 0.5f)) {
-                BasicText("+${formatMeanMs(rightMs.toFloat())}ms", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
-            }
-        }
-        // Early / Late — под нулём: ранние слева от него, поздние справа;
-        // едут вместе с нулём (Alex 15.11.2026).
-        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(center + 0.5f)) {
-                BasicText(groupDigits("$earlyCount") + " ", modifier = Modifier.align(Alignment.CenterEnd),
-                    style = metricValueStyle(resultRedColor))
-            }
-            // Чистые тройки — посередине, ровно под нулём (Alex 15.11.2026).
-            BasicText(groupDigits("$cleanCount"), style = metricValueStyle(resultGreenColor))
-            Box(Modifier.weight(nRight + 0.5f)) {
-                BasicText(" " + groupDigits("$lateCount"), modifier = Modifier.align(Alignment.CenterStart),
-                    style = metricValueStyle(resultBlueColor))
+        // Early · clean · late — пошире и без подписей (Alex 17.11.2026):
+        // ранние — посередине левой части, чистые — под нулём, поздние —
+        // посередине правой.
+        val zeroFr = (center + 0.5f) / bucketCount
+        fun Modifier.centerAt(fr: Float) = this.layout { meas, cons ->
+            val pl = meas.measure(cons.copy(minWidth = 0))
+            layout(cons.maxWidth, pl.height) {
+                pl.place((fr * cons.maxWidth - pl.width / 2f).toInt().coerceIn(0, (cons.maxWidth - pl.width).coerceAtLeast(0)), 0)
             }
         }
-        Row(Modifier.fillMaxWidth()) {
-            Box(Modifier.weight(center + 0.5f)) {
-                BasicText("early ", modifier = Modifier.align(Alignment.CenterEnd), style = labelStyle(10.sp, color = axis))
-            }
-            BasicText("clean", style = labelStyle(10.sp, color = axis))
-            Box(Modifier.weight(nRight + 0.5f)) {
-                BasicText(" late", modifier = Modifier.align(Alignment.CenterStart), style = labelStyle(10.sp, color = axis))
-            }
+        Box(Modifier.fillMaxWidth().padding(start = axisW, top = 8.dp)) {
+            BasicText(groupDigits("$earlyCount"), modifier = Modifier.centerAt(zeroFr / 2), style = metricValueStyle(resultRedColor))
+            BasicText(groupDigits("$cleanCount"), modifier = Modifier.centerAt(zeroFr), style = metricValueStyle(resultGreenColor))
+            BasicText(groupDigits("$lateCount"), modifier = Modifier.centerAt((1 + zeroFr) / 2), style = metricValueStyle(resultBlueColor))
         }
     }
 }
