@@ -990,7 +990,7 @@ class RivalEngine(
     data class DiaryEntry(val n: Int, val time: Long, val sessionId: Int, val text: String)
 
     companion object {
-        const val NAME = "Doppelgänger"
+        const val NAME = "Fly Doppelgänger"  // Alex 17.11.2026: «назовём его Fly Doppelgänger»
 
         /**
          * Квест крупно, с точностью до индульгенции (Alex 11.11.2026: «крупным —

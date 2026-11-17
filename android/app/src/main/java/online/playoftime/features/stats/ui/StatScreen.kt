@@ -663,40 +663,26 @@ private fun AnalyticsContent(
         // (moved above RANGE OF DEVIATIONS per design)
         item {
             Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_GEOM)) {
-            StatCard("Geometric Mean ÷ Spread", pl) {
+            // «Descriptive statistics» (Alex 17.11.2026): геометрические средние
+            // и моды (самая частая ошибка), перенесённые из Range of deviations.
+            StatCard("Descriptive statistics", pl) {
                 // Early/Late остаются в своих цветах — цвет здесь несёт смысл
                 // (красный = рано, синий = поздно), как и на макете.
+                BasicText("Geometric mean ×/÷ spread", style = labelStyle(10.sp, color = metricLabelGray))
                 DeviationRow("Early",    data.deviationEarly, resultRedColor,  negated = true)
                 DeviationRow("Absolute", data.deviationAll,   metricLabelGray)
                 DeviationRow("Late",     data.deviationLate,  resultBlueColor)
+                Spacer(Modifier.height(6.dp))
+                BasicText("Mode — the most frequent error", style = labelStyle(10.sp, color = metricLabelGray))
+                ModeRow("Early", data.topEarly.firstOrNull(), resultRedColor)
+                ModeRow("Late",  data.topLate.firstOrNull(),  resultBlueColor)
             }
             }
         }
 
-        // ── RANGE OF DEVIATIONS (со встроенными MODES OF DEVIATION) ──────
-        item {
-            Box(Modifier.helpZoneDisposable(helpZones, HelpTopic.STAT_RANGE)) {
-            StatCard("Range of deviations", pl) {
-                RangeBar(
-                    earlyMs    = data.rangeEarlyMs,
-                    lateMs     = data.rangeLateMs,
-                    earlyCount = data.earlyCount,
-                    greenCount = data.periodWins,
-                    preciseCount = data.periodPrecise,
-                    easedEarlyCount = data.easedEarlyCount,
-                    lateCount  = data.lateCount,
-                    topEarly   = data.topEarly,
-                    topLate    = data.topLate
-                )
-                Spacer(Modifier.height(4.dp))
-                val textColor = MaterialTheme.colorScheme.baseTextColor
-                BasicText(
-                    text  = "The range of your results, 97% on both sides: the extreme 3% is cut off at each end.",
-                    style = labelStyle(11.sp, color = textColor.copy(alpha = 0.48f))
-                )
-            }
-            }
-        }
+        // Карточка Range of deviations убрана (Alex 17.11.2026: «прибей
+        // совсем»); моды перенесены в Descriptive statistics, края 3 % —
+        // в гистограмму Error distribution.
 
         // ── PACE OF LEARNING ─────────────────────────────────────────────
         item {
@@ -2485,7 +2471,7 @@ private fun ErrorDistributionChart(
     val axis = textColor.copy(alpha = 0.55f)
     Column(Modifier.fillMaxWidth()) {
         // Подпись — заголовком над графиком (Alex 15.11.2026).
-        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late · the extreme 3% is cut off at each end, as in Range of deviations" +
+        BasicText("${groupDigits("${bars.size}")} attempts · early ← → late · the extreme 3% is cut off at each end" +
             if (outside > 0) " (${groupDigits("$outside")} attempts)" else "",
             modifier = Modifier.padding(bottom = 6.dp), style = labelStyle(11.sp, color = textColor.copy(alpha = 0.75f)))
         // Оси (Alex 17.11.2026): слева — сколько повторений (вместо «tallest
@@ -3041,6 +3027,22 @@ private fun DeviationRow(
                 // «−18ms  ×/÷1.4».
                 groupDigits("%s  %s".format(formatMs(displayMs), fmtFold(profile.stdPct)))
             else "—",
+            style = metricValueStyle()
+        )
+    }
+}
+
+/** Мода: самая частая ошибка и сколько раз она выпала, «−4ms × 212». */
+@Composable
+private fun ModeRow(
+    label      : String,
+    mode       : online.playoftime.features.stats.domain.entity.TopDeviation?,
+    labelColor : Color
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        BasicText(label, modifier = Modifier.weight(1f), style = metricLabelStyle(color = labelColor))
+        FitValueText(
+            text  = mode?.let { groupDigits("%s × %d".format(formatMs(it.errorMs), it.count)) } ?: "—",
             style = metricValueStyle()
         )
     }

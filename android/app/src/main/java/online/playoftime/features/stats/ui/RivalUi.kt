@@ -291,7 +291,7 @@ internal fun RivalAboutCard(open: Boolean, onToggle: () -> Unit, diaryModel: Str
 internal const val RIVAL_ABOUT_KEY = "about"
 
 private const val ABOUT_WHO =
-    "Doppelgänger (German for “double-goer”) is an artificial player — your double in this game. " +
+    "Fly Doppelgänger (German for “double-goer”) is an artificial player — your double in this game, with a fly’s brain. " +
     "He started knowing nothing and caught up with you attempt for attempt: for every attempt you make, " +
     "he makes one of his own, and he goes through the quests at his own pace."
 

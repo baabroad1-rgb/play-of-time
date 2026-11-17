@@ -3360,3 +3360,8 @@ Alex: «не ставится, говорит не может распарсит
 
 ## 17.11.2026 — Error distribution: оси и разнесённые счётчики
 Alex: «промежуточные значения между 0 и разбросами влево-вправо, чтобы задать понимание масштаба; вертикальную ось, по которой понятно, сколько было повторений; разнеси пошире early clean late и убери подписи». `ErrorDistributionChart`: слева ось числа попыток (круглый шаг ~4 деления, сетка), строка «tallest bar» убрана; внизу отметки 0, ±шаг (круглый, ~3 на сторону) и края P3/P97 с «ms»; ранние — посередине левой части, чистые — под нулём, поздние — посередине правой, без подписей early/clean/late.
+
+## 17.11.2026 — Range of deviations убрана, Descriptive statistics, «Fly Doppelgänger»
+Alex: «карточку Range of deviations прибей совсем; значения моды перенеси в группу Geometric means; может, назвать её Descriptive statistics?» Карточка Range of deviations снята с экрана (RangeBar остался в коде, не вызывается). Карточка «Geometric Mean ÷ Spread» переименована в «Descriptive statistics»: подзаголовок «Geometric mean ×/÷ spread» (Early / Absolute / Late) и «Mode — the most frequent error» (Early / Late: «−4ms × 212», первая мода из topEarly/topLate). Подпись Error distribution больше не ссылается на Range of deviations.
+«Давай назовём его Fly Doppelgänger» — `RivalEngine.NAME = "Fly Doppelgänger"` (везде в интерфейсе), в тексте «кто это» — «… your double in this game, with a fly’s brain».
+Отдельная задача (TASKS): «нормальная диаграмма сравнения с Fly Doppelgänger».
