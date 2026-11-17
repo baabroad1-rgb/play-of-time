@@ -6,8 +6,9 @@
 <title>The Government Inspector — audiobook</title>
 <meta name="description" content="Nikolai Gogol's comedy The Government Inspector (Revizor) as an audiobook in Russian, read by Alexander Belyshkin.">
 <meta name="color-scheme" content="light">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
 <style>
-:root { --bg: #FFFFFF; --fg: #000000; --body: "Helvetica Neue", Helvetica, Arial, sans-serif; color-scheme: light; }
+:root { --bg: #FFFFFF; --fg: #000000; --body: "Source Serif 4", Georgia, "Times New Roman", serif; --sans: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif; color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: clamp(18px, 2.1vw, 21px); line-height: 1.4; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
@@ -15,22 +16,22 @@ a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .wrap { max-width: 980px; margin: 0 auto; padding-block: clamp(28px, 6vw, 72px) 48px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
 .back { display: inline-block; margin-bottom: clamp(28px, 5vw, 56px); }
-.intro { margin: 0 0 clamp(36px, 7vw, 80px); max-width: 21em; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.14; letter-spacing: -0.02em; font-weight: 400; }
+.intro { font-family: var(--sans); margin: 0 0 clamp(36px, 7vw, 80px); max-width: 21em; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.14; letter-spacing: -0.02em; font-weight: 400; }
 .intro strong { font-weight: 700; }
 .player { border-top: 1px solid var(--fg); padding-block: 14px 26px; }
-.now { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 14px; }
+.now { font-family: var(--sans); display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 14px; }
 .now strong { font-weight: 700; }
 .now span { font-variant-numeric: tabular-nums; }
 audio { width: 100%; display: block; }
 .err { margin: 12px 0 0; font-weight: 700; }
 .acts { list-style: none; margin: 0; padding: 0; }
 .acts li { border-top: 1px solid var(--fg); }
-.acts button { width: 100%; display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 14px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.acts button { font-family: var(--sans); width: 100%; display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 14px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .acts .n { display: none; }
 .acts .s { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .acts button:hover .t { text-decoration: underline; text-underline-offset: 0.18em; }
 .acts [aria-current="true"] .t { font-weight: 700; }
-.note, footer { font-size: 15px; }
+.note, footer { font-family: var(--sans); font-size: 15px; }
 .note { margin: 0; padding-block: 14px 40px; border-top: 1px solid var(--fg); }
 footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); }
 </style>

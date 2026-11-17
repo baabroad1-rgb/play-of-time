@@ -1,21 +1,21 @@
 /* Shared by every article page: same type as the index, one reading column. */
-:root { --bg: #FFFFFF; --fg: #000000; --body: "Helvetica Neue", Helvetica, Arial, sans-serif; color-scheme: light; }
+:root { --bg: #FFFFFF; --fg: #000000; --body: "Source Serif 4", Georgia, "Times New Roman", serif; --sans: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif; color-scheme: light; }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: clamp(18px, 2.1vw, 21px); line-height: 1.45; -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: clamp(18px, 2.1vw, 21px); line-height: 1.55; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 .wrap { max-width: 980px; margin: 0 auto; padding-block: clamp(28px, 6vw, 72px) 48px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
 .back { display: inline-block; margin-bottom: clamp(28px, 5vw, 56px); }
-h1 { margin: 0 0 18px; max-width: 18em; font-size: clamp(30px, 5vw, 52px); line-height: 1.06; letter-spacing: -0.025em; font-weight: 700; text-wrap: balance; }
-.meta { margin: 0 0 clamp(36px, 7vw, 72px); padding-bottom: 14px; border-bottom: 1px solid var(--fg); font-size: 0.8em; max-width: 44em; }
+h1 { font-family: var(--sans); margin: 0 0 18px; max-width: 18em; font-size: clamp(30px, 5vw, 52px); line-height: 1.06; letter-spacing: -0.025em; font-weight: 700; text-wrap: balance; }
+.meta { font-family: var(--sans); margin: 0 0 clamp(36px, 7vw, 72px); padding-bottom: 14px; border-bottom: 1px solid var(--fg); font-size: 0.8em; max-width: 44em; }
 article { max-width: 32em; }
 article p { margin: 0 0 1em; }
-article h2 { margin: 2em 0 0.6em; font-size: 1.3em; line-height: 1.15; letter-spacing: -0.015em; font-weight: 700; }
+article h2 { font-family: var(--sans); margin: 2em 0 0.6em; font-size: 1.3em; line-height: 1.15; letter-spacing: -0.015em; font-weight: 700; }
 article ul, article ol { margin: 0 0 1em; padding-left: 1.2em; }
 article li { margin-bottom: 0.4em; }
 .formula { font-variant-numeric: tabular-nums; font-weight: 700; }
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--fg); font-size: 15px; }
+footer { font-family: var(--sans); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--fg); font-size: 15px; }
 .meta a.pdf { font-weight: 700; }
 @media print {
   body { font-size: 11pt; line-height: 1.4; }
