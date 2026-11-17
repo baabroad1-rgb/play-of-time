@@ -96,6 +96,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 .try button:hover { background: var(--bg); color: var(--fg); }
 .try-out { margin: 0; min-width: 0; flex: 1 1 14em; font-variant-numeric: tabular-nums; }
 .try-out b { font-size: 1.5em; font-weight: 700; letter-spacing: -0.01em; }
+.aloud { display: block; width: 100%; height: 230px; border: 0; background: var(--bg); }
 </style>
 <!--head:end-->
 </head>
@@ -150,7 +151,9 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
         <button type="button" id="try-btn">Start</button>
         <p class="try-out" id="try-out" aria-live="polite">Press Start, count three seconds in your head, press Stop.</p>
       </div>
-      <p><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Each word turns green or red as you say it. Afterwards you see how many words came out right, which ones did not, and whether you sound American or British.</p>
+      <p><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Try it on the paragraph below: press the button, allow the microphone, and read.</p>
+      <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
+      <noscript><p>Read Aloud listens while you read an English book aloud. Each word turns green or red as you say it. Afterwards you see how many words came out right, which ones did not, and whether you sound American or British.</p></noscript>
     </div>
   </section>
 
@@ -210,6 +213,14 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
     }
   });
 })();
+</script>
+<script>
+// The Read Aloud frame reports its height, so it never scrolls inside itself.
+addEventListener("message", function (e) {
+  if (e.origin !== "https://playoftime.online" || !e.data || typeof e.data.aloudTryHeight !== "number") return;
+  var f = document.getElementById("aloud-try");
+  if (f) f.style.height = Math.max(120, Math.min(900, Math.ceil(e.data.aloudTryHeight))) + "px";
+});
 </script>
 <!--body:end-->
 </body>
