@@ -91,6 +91,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
   section { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding-block: 14px 44px; }
   h2 { position: static; grid-auto-flow: column; justify-content: start; gap: 10px; }
   .who img { width: 72px; height: 72px; }
+  .rider img { height: 72px; }
   .intro { font-size: clamp(30px, 8.6vw, 40px); }
   .lede { margin-bottom: 56px; }
   .pot-btn { width: 100%; }
@@ -117,6 +118,8 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 .pot-last li.three { color: #2E8B00; }
 .pot-last:has(ol:empty) { display: none; }
 .aloud { display: block; width: 100%; height: 230px; border: 0; background: var(--bg); }
+.rider { margin: 28px 0 0; display: flex; justify-content: flex-end; }
+.rider img { width: auto; height: 96px; display: block; }   /* the size of the portrait at the top */
 </style>
 <!--head:end-->
 </head>
@@ -218,6 +221,12 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
   </section>
 
   <footer><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></footer>
+  <figure class="rider">
+    <picture>
+      <source srcset="assets/rider.webp?v=2" type="image/webp">
+      <img src="assets/rider.png?v=2" width="56" height="96" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
+    </picture>
+  </figure>
 </main>
 <script>
 // Play of Time, the same press cycle as the game (StopWatchButton.kt): RUN → STOP → RESET.
