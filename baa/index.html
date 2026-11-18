@@ -181,10 +181,11 @@ details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-of
 section.myself { display: block; padding-block: 18px clamp(40px, 6vw, 60px); }
 section.myself h2 { position: static; display: block; margin: 0 0 14px; font-family: var(--sans); font-size: clamp(22px, 3vw, 28px); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; }
 /* step figure and name sit in the left column, where the years used to be */
-section.interest { display: grid; grid-template-columns: 10em minmax(0, 1fr); column-gap: 32px; }
+section.interest { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 24px; }
 section.interest .stephead { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; position: sticky; top: 16px; align-self: start; }
 section.interest .stephead > span { display: grid; gap: 2px; }
 section.interest > h2, section.interest > .col { grid-column: 2; }
+.stephead .nw { white-space: nowrap; }
 @media (max-width: 680px) {
   section.interest { display: block; }
   section.interest .stephead { position: static; flex-direction: row; align-items: center; gap: 14px; margin-bottom: 8px; }
@@ -224,7 +225,7 @@ section.interest > h2, section.interest > .col { grid-column: 2; }
   </section>
 
   <section class="interest" id="co">
-    <div class="stephead"><svg viewBox="0 0 64 40" role="img" aria-label="Co-regulation"><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><circle class="fig-dot" cx="57" cy="20" r="2.4"/></svg><span><span class="num">Step 3 of 4</span><span class="term">Co-regulation</span></span></div>
+    <div class="stephead"><svg viewBox="0 0 64 40" role="img" aria-label="Co-regulation"><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><circle class="fig-dot" cx="57" cy="20" r="2.4"/></svg><span><span class="num">Step 3 of 4</span><span class="term"><span class="nw">Co-regulation</span></span></span></div>
     <h2>Who sees what you can’t?</h2>
     <div class="col">
       <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back.</p>
@@ -233,7 +234,7 @@ section.interest > h2, section.interest > .col { grid-column: 2; }
   </section>
 
   <section class="interest" id="auto">
-    <div class="stephead"><svg viewBox="0 0 64 40" role="img" aria-label="Automated co-regulation"><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><rect class="fig-dev" x="52.5" y="15.5" width="9" height="9" rx="1.5"/></svg><span><span class="num">Step 4 of 4</span><span class="term">Automated co-regulation</span></span></div>
+    <div class="stephead"><svg viewBox="0 0 64 40" role="img" aria-label="Automated co-regulation"><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><rect class="fig-dev" x="52.5" y="15.5" width="9" height="9" rx="1.5"/></svg><span><span class="num">Step 4 of 4</span><span class="term">Automated <span class="nw">co-regulation</span></span></span></div>
     <h2>Can a device be the other?</h2>
     <div class="col">
       <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this.</p>
