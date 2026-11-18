@@ -181,6 +181,15 @@ details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-of
 .fig-dev { fill: #fff; stroke: #000; stroke-width: 1.6; }
 section.myself { display: block; padding-block: 18px clamp(40px, 6vw, 60px); }
 section.myself h2 { position: static; display: block; margin: 0 0 14px; font-family: var(--sans); font-size: clamp(22px, 3vw, 28px); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; }
+/* step figure and name sit in the left column, where the years used to be */
+section.interest { display: grid; grid-template-columns: 10em minmax(0, 1fr); column-gap: 32px; }
+section.interest .stephead { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; position: sticky; top: 16px; align-self: start; }
+section.interest .stephead > span { display: grid; gap: 2px; }
+section.interest > h2, section.interest > .col { grid-column: 2; }
+@media (max-width: 680px) {
+  section.interest { display: block; }
+  section.interest .stephead { position: static; flex-direction: row; align-items: center; gap: 14px; margin-bottom: 8px; }
+}
 </style>
 <!--head:end-->
 </head>
