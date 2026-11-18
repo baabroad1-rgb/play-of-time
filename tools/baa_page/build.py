@@ -118,7 +118,7 @@ def steps_html():
 MAP = '  <nav class="steps" aria-label="Four steps">' + '<span class="arr" aria-hidden="true">→</span>'.join(
     f'<a href="#{st["id"]}">{svg(st["fig"], "")}<span>{st["term"]}</span></a>' for st in STEPS) + '</nav>\n\n'
 
-INTRO = '''  <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997, I have been learning to build such loops and helping others build them.</h1>
+INTRO = '''  <h1 class="intro">People don’t see what they actually do unless a useful feedback loop shows them.</h1>
   <p class="lede">Four steps, from no feedback at all to feedback from a device.</p>
 
 '''
