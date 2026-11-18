@@ -164,11 +164,11 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
       <p><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. Every attempt tells you how precise you were, whether you are rushing or holding back, and your lucky index: how often you hit, divided by how often pure chance would.</p>
       <div class="pot" id="pot">
         <button type="button" class="pot-btn" id="pot-btn" aria-describedby="pot-hint">
-          <span class="pot-time" id="pot-time">0.000</span>
+          <span class="pot-time" id="pot-time">0.00</span>
           <span class="pot-act"><svg viewBox="0 0 24 24" aria-hidden="true" id="pot-icon"></svg><span id="pot-label">RUN</span></span>
         </button>
         <div class="pot-side">
-          <p class="pot-hint" id="pot-hint">Press RUN, then press STOP at exactly 3.000. It reacts the moment you press, not when you let go.</p>
+          <p class="pot-hint" id="pot-hint">Press RUN, then press STOP at exactly 3.00. It reacts the moment you press, not when you let go.</p>
           <p class="pot-res" id="pot-res" aria-live="polite"></p>
           <div class="pot-last"><span class="pot-cap">Last three</span><ol id="pot-last"></ol></div>
         </div>
@@ -233,15 +233,28 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
   var state = "RUN", t0 = 0, raf = 0, lastPressAt = -1e9, lastType = "";
   function load() { try { var a = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(a) ? a.slice(0, 3) : []; } catch (e) { return []; } }
   function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a.slice(0, 3))); } catch (e) {} }
-  function kind(ms) { return ms === 3000 ? "three" : ms < 3000 ? "early" : "late"; }
-  function fmt(ms) { return (ms / 1000).toFixed(3); }
+  // Hundredths, as on the game's centiseconds level: the result is rounded to 0.01 s
+  // and only a rounded 3.00 is a hit (MainViewModel: round(error * 100) / 100).
+  function cs(ms) { return Math.round(ms / 10); }
+  function kind(ms) { var c = cs(ms); return c === 300 ? "three" : c < 300 ? "early" : "late"; }
+  function fmt(ms) { return (cs(ms) / 100).toFixed(2); }
   function showLast() {
     lastEl.innerHTML = load().map(function (ms) { return '<li class="' + kind(ms) + '">' + fmt(ms) + "</li>"; }).join("");
   }
   function setState(s) { state = s; label.textContent = s; icon.innerHTML = ICONS[s]; btn.setAttribute("aria-label", s); }
+  // As in the game (Constants.kt maxAttemptDuration): at 4.00 s the stopwatch resets
+  // itself to RUN and the attempt doesn't count.
+  var MAX_MS = 4000;
+  function overrun() {
+    cancelAnimationFrame(raf);
+    btn.className = "pot-btn"; timeEl.textContent = "0.00";
+    res.innerHTML = "<b>Past 4 seconds.</b> That attempt doesn’t count; press RUN to try again.";
+    setState("RUN");
+  }
   function tick() {
     var ms = performance.now() - t0;
-    timeEl.textContent = fmt(Math.floor(ms));
+    if (ms >= MAX_MS) { overrun(); return; }
+    timeEl.textContent = (Math.floor(ms / 10) / 100).toFixed(2);   // running: whole hundredths so far
     btn.classList.toggle("near", ms >= 2000);   // the game turns the icon green from 2 s on
     raf = requestAnimationFrame(tick);
   }
@@ -250,16 +263,17 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
       t0 = at; btn.className = "pot-btn"; res.textContent = "";
       setState("STOP"); raf = requestAnimationFrame(tick);
     } else if (state === "STOP") {
+      if (at - t0 >= MAX_MS) { overrun(); return; }
       cancelAnimationFrame(raf);
-      var ms = Math.round(at - t0), k = kind(ms), d = ms - 3000;
+      var ms = Math.round(at - t0), k = kind(ms), d = cs(ms) - 300;
       timeEl.textContent = fmt(ms);
       btn.className = "pot-btn " + k;
-      res.innerHTML = k === "three" ? "<b>Exactly 3.000.</b> That is rare."
-        : "<b>" + Math.abs(d) + " ms " + (d < 0 ? "early" : "late") + ".</b> Press RESET and try again.";
+      res.innerHTML = k === "three" ? "<b>Exactly 3.00.</b> Press RESET and try again."
+        : "<b>" + (Math.abs(d) / 100).toFixed(2) + " s " + (d < 0 ? "early" : "late") + ".</b> Press RESET and try again.";
       var a = load(); a.unshift(ms); save(a); showLast();
       setState("RESET");
     } else {
-      btn.className = "pot-btn"; timeEl.textContent = "0.000"; res.textContent = "";
+      btn.className = "pot-btn"; timeEl.textContent = "0.00"; res.textContent = "";
       setState("RUN");
     }
   }
