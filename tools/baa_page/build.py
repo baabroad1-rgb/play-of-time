@@ -73,7 +73,7 @@ STEPS = [
 '''),
   dict(id='co', fig='co', term='Co-regulation', q='Who sees what you can’t?',
     body='''      <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back.</p>
-      <p>For twenty years I was that person for companies. At <a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients. Now I do the same as a feedback methodologist.</p>
+      <p>For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients. Now I do the same as a feedback methodologist.</p>
 '''),
   dict(id='auto', fig='auto', term='Automated co-regulation', q='Can a device be the other?',
     body='''      <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this.</p>
