@@ -57,8 +57,6 @@ details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-of
 .fig { fill: none; stroke: #000; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .fig-dot { fill: #000; }
 .fig-dev { fill: #fff; stroke: #000; stroke-width: 1.6; }
-section.myself { display: block; padding-block: 18px clamp(40px, 6vw, 60px); }
-section.myself h2 { position: static; display: block; margin: 0 0 14px; font-family: var(--sans); font-size: clamp(22px, 3vw, 28px); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; }
 /* step figure and name sit in the left column, where the years used to be */
 section.interest { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 24px; }
 section.interest .stephead { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; align-items: flex-start; gap: 10px; margin: 0; position: sticky; top: 16px; align-self: start; }
@@ -90,10 +88,12 @@ STEPS = [
   dict(id='ring', fig='ring', term='Reflex ring', q='Can you correct yourself while you act?',
     body='''      <p>Nikolai Bernstein replaced the arc with a ring: an action is corrected as it goes, by what the senses report back. A hand reaching for a cup is steered all the way by the eye and by the feel of the arm.</p>
       <p>At the Laboratory of Work Psychology at Moscow State University, led by <a href="https://msupsyj.ru/en/author/people/705" target="_blank" rel="noopener">Anna B. Leonova</a>, this was the subject: what operator work at computers demands of a person, how interruptions affect it and how to reduce the damage, how to organise work so that it goes well, methods of self-regulation, and ways to assess and correct a person’s functional state, such as fatigue, stress or monotony.</p>
+      <p>On myself, from 2023 to 2026, I ran the same ring more slowly: I record what I do and come back to the record as an observer. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes; reading it, I watch myself reading. The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself: the same ring, with my voice. <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">A photo project</a> captured how I looked and what I was thinking, as in a dream.</p>
 '''),
   dict(id='co', fig='co', term='Co-regulation', q='Who sees what you can’t?',
     body='''      <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back.</p>
       <p>For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients. Now I do the same as a feedback methodologist.</p>
+      <p>On myself: I retell philosophical texts in plain English in the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>, and the readers show me where I am still unclear.</p>
 '''),
   dict(id='auto', fig='auto', term='Automated co-regulation', q='Can a device be the other?',
     body='''      <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this.</p>
@@ -123,16 +123,6 @@ INTRO = '''  <h1 class="intro">People don’t see what they actually do without 
 
 '''
 
-MYSELF = '''  <section class="myself" id="myself">
-    <h2>Tried on myself</h2>
-    <div class="col">
-      <p>Between clients, from 2023 to 2026, I tried feedback on myself. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes. The questions they raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. Philosophical texts in plain English go to the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>.</p>
-      <p>I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself to hear my own voice, and <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a> captured how I looked and what I was thinking, as in a dream. In 2026 I took a new job as a methodologist.</p>
-    </div>
-  </section>
-
-'''
-
 TAIL = f'''  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
@@ -151,7 +141,7 @@ TAIL = f'''  <section class="you">
 
 ''' + pubwrap + '\n'
 
-body = '<main class="wrap">\n' + who + INTRO + MAP + steps_html() + MYSELF + TAIL + footer + '</main>\n' + scripts
+body = '<main class="wrap">\n' + who + INTRO + MAP + steps_html() + TAIL + footer + '</main>\n' + scripts
 html = src[:src.index('<!--head:start-->')] + '<!--head:start-->\n' + head + '<style>\n' + style + EXTRA \
     + '</style>\n' + src[src.index('</style>\n') + len('</style>\n'):src.index('<!--body:start-->')] \
     + '<!--body:start-->\n' + body + src[src.index('<!--body:end-->'):]
