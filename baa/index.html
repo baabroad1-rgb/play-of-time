@@ -88,14 +88,29 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
   .who img { width: 72px; height: 72px; }
   .intro { font-size: clamp(30px, 8.6vw, 40px); }
   .lede { margin-bottom: 56px; }
-  .try button { flex: 1 1 100%; }
+  .pot-btn { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { h2 { position: static; } }
-.try { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 16px 0; border-block: 1px solid var(--fg); font-family: var(--sans); font-size: 16px; line-height: 1.35; }
-.try button { font: inherit; font-weight: 700; min-width: 6.5em; padding: 10px 18px; background: var(--fg); color: var(--bg); border: 1px solid var(--fg); cursor: pointer; }
-.try button:hover { background: var(--bg); color: var(--fg); }
-.try-out { margin: 0; min-width: 0; flex: 1 1 14em; font-variant-numeric: tabular-nums; }
-.try-out b { font-size: 1.5em; font-weight: 700; letter-spacing: -0.01em; }
+.pot { display: flex; flex-wrap: wrap; align-items: stretch; gap: 16px 22px; padding: 18px 0; border-block: 1px solid var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.35; }
+.pot-btn { flex: none; width: 210px; padding: 16px 12px 14px; display: grid; justify-items: center; gap: 8px; background: #2D2D2D; color: #FFFFFF; border: 0; border-radius: 18px; cursor: pointer; font: inherit; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.pot-btn:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+.pot-time { font-family: var(--sans); font-size: 46px; line-height: 1; font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.pot-act { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
+.pot-act svg { width: 20px; height: 20px; fill: currentColor; }
+.pot-btn.early .pot-time, .pot-btn.early .pot-act { color: #DE4264; }
+.pot-btn.late .pot-time, .pot-btn.late .pot-act { color: #0CA8CC; }
+.pot-btn.three .pot-time, .pot-btn.three .pot-act, .pot-btn.near .pot-act { color: #8EFF51; }
+.pot-side { flex: 1 1 15em; min-width: 0; display: grid; align-content: start; gap: 8px; }
+.pot-side p { margin: 0; }
+.pot-res { font-variant-numeric: tabular-nums; min-height: 1.35em; }
+.pot-res b { font-weight: 700; }
+.pot-last { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
+.pot-cap { font-size: 13px; }
+.pot-last ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 14px; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 17px; }
+.pot-last li.early { color: #C2284B; }
+.pot-last li.late { color: #0A86A3; }
+.pot-last li.three { color: #2E8B00; }
+.pot-last:has(ol:empty) { display: none; }
 .aloud { display: block; width: 100%; height: 230px; border: 0; background: var(--bg); }
 </style>
 <!--head:end-->
@@ -147,9 +162,16 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
       <h3>Tools that show it without me</h3>
       <p>Watching myself, I found that feedback works best when it is instant and exact. Nobody can sit beside you for that, so it takes an instrument. I built two, and anyone can use them.</p>
       <p><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. Every attempt tells you how precise you were, whether you are rushing or holding back, and your lucky index: how often you hit, divided by how often pure chance would.</p>
-      <div class="try" id="try">
-        <button type="button" id="try-btn">Start</button>
-        <p class="try-out" id="try-out" aria-live="polite">Press Start, count three seconds in your head, press Stop.</p>
+      <div class="pot" id="pot">
+        <button type="button" class="pot-btn" id="pot-btn" aria-describedby="pot-hint">
+          <span class="pot-time" id="pot-time">0.000</span>
+          <span class="pot-act"><svg viewBox="0 0 24 24" aria-hidden="true" id="pot-icon"></svg><span id="pot-label">RUN</span></span>
+        </button>
+        <div class="pot-side">
+          <p class="pot-hint" id="pot-hint">Press RUN, then press STOP at exactly 3.000. It reacts the moment you press, not when you let go.</p>
+          <p class="pot-res" id="pot-res" aria-live="polite"></p>
+          <div class="pot-last"><span class="pot-cap">Last three</span><ol id="pot-last"></ol></div>
+        </div>
       </div>
       <p><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Try it on the paragraph below: press the button, allow the microphone, and read.</p>
       <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
@@ -193,25 +215,71 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
   <footer><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></footer>
 </main>
 <script>
-// Three-second try: the time stays hidden while it runs, as when you count in your head.
+// Play of Time, the same press cycle as the game (StopWatchButton.kt): RUN → STOP → RESET.
+// The press counts the moment the finger or key goes down, not when it is released;
+// the time runs on the button; the last three results stay in this browser.
 (function () {
-  var btn = document.getElementById("try-btn"), out = document.getElementById("try-out");
-  if (!btn || !out) return;
-  var t0 = null;
-  btn.addEventListener("click", function () {
-    if (t0 === null) {
-      t0 = performance.now();
-      btn.textContent = "Stop";
-      out.textContent = "Counting…";
+  var btn = document.getElementById("pot-btn");
+  if (!btn) return;
+  var timeEl = document.getElementById("pot-time"), label = document.getElementById("pot-label"),
+      icon = document.getElementById("pot-icon"), res = document.getElementById("pot-res"),
+      lastEl = document.getElementById("pot-last");
+  var ICONS = {
+    RUN: '<path d="M20.25,11.567C20.583,11.759 20.583,12.241 20.25,12.433L6.75,20.227C6.417,20.42 6,20.179 6,19.794L6,4.206C6,3.821 6.417,3.58 6.75,3.773L20.25,11.567Z"/>',
+    STOP: '<path d="M5,4L19,4A1,1 0,0 1,20 5L20,19A1,1 0,0 1,19 20L5,20A1,1 0,0 1,4 19L4,5A1,1 0,0 1,5 4z"/>',
+    RESET: '<path d="M13.711,6.171C13.855,5.681 13.574,5.16 13.07,5.082C11.846,4.893 10.588,5.031 9.426,5.49C7.976,6.064 6.759,7.104 5.968,8.448C5.177,9.791 4.857,11.36 5.059,12.906C5.261,14.452 5.973,15.886 7.082,16.982C8.192,18.077 9.635,18.77 11.183,18.952C12.732,19.134 14.297,18.794 15.63,17.986C16.963,17.177 17.988,15.947 18.542,14.49C18.987,13.322 19.108,12.063 18.903,10.841C18.819,10.338 18.295,10.064 17.807,10.214C17.319,10.364 17.054,10.882 17.114,11.389C17.213,12.211 17.112,13.05 16.814,13.832C16.406,14.904 15.652,15.809 14.671,16.404C13.69,16.999 12.538,17.249 11.399,17.115C10.26,16.982 9.198,16.471 8.381,15.665C7.565,14.86 7.041,13.804 6.893,12.667C6.744,11.529 6.98,10.375 7.562,9.386C8.144,8.398 9.039,7.632 10.106,7.21C10.884,6.902 11.722,6.791 12.545,6.878C13.053,6.932 13.567,6.661 13.711,6.171Z"/><path d="M16.875,7.554C17.009,7.202 17.471,7.119 17.719,7.404L20.421,10.507C20.676,10.8 20.514,11.259 20.132,11.328L15.963,12.069C15.581,12.137 15.27,11.762 15.408,11.399L16.875,7.554Z"/>'
+  };
+  var KEY = "baa:pot-last3";
+  var state = "RUN", t0 = 0, raf = 0, lastPressAt = -1e9, lastType = "";
+  function load() { try { var a = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(a) ? a.slice(0, 3) : []; } catch (e) { return []; } }
+  function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a.slice(0, 3))); } catch (e) {} }
+  function kind(ms) { return ms === 3000 ? "three" : ms < 3000 ? "early" : "late"; }
+  function fmt(ms) { return (ms / 1000).toFixed(3); }
+  function showLast() {
+    lastEl.innerHTML = load().map(function (ms) { return '<li class="' + kind(ms) + '">' + fmt(ms) + "</li>"; }).join("");
+  }
+  function setState(s) { state = s; label.textContent = s; icon.innerHTML = ICONS[s]; btn.setAttribute("aria-label", s); }
+  function tick() {
+    var ms = performance.now() - t0;
+    timeEl.textContent = fmt(Math.floor(ms));
+    btn.classList.toggle("near", ms >= 2000);   // the game turns the icon green from 2 s on
+    raf = requestAnimationFrame(tick);
+  }
+  function press(at) {
+    if (state === "RUN") {
+      t0 = at; btn.className = "pot-btn"; res.textContent = "";
+      setState("STOP"); raf = requestAnimationFrame(tick);
+    } else if (state === "STOP") {
+      cancelAnimationFrame(raf);
+      var ms = Math.round(at - t0), k = kind(ms), d = ms - 3000;
+      timeEl.textContent = fmt(ms);
+      btn.className = "pot-btn " + k;
+      res.innerHTML = k === "three" ? "<b>Exactly 3.000.</b> That is rare."
+        : "<b>" + Math.abs(d) + " ms " + (d < 0 ? "early" : "late") + ".</b> Press RESET and try again.";
+      var a = load(); a.unshift(ms); save(a); showLast();
+      setState("RESET");
     } else {
-      var s = (performance.now() - t0) / 1000, d = s - 3;
-      t0 = null;
-      btn.textContent = "Again";
-      var how = Math.abs(d) < 0.0005 ? "Exactly three seconds." :
-        (Math.abs(d) * 1000).toFixed(0) + " ms " + (d < 0 ? "early" : "late") + ".";
-      out.innerHTML = "<b>" + s.toFixed(3) + " s</b> " + how;
+      btn.className = "pot-btn"; timeEl.textContent = "0.000"; res.textContent = "";
+      setState("RUN");
     }
+  }
+  // Press, not release: pointerdown, and touchstart for old iOS Safari that lacks pointer
+  // events (as in the web version). A second event for the same touch is ignored.
+  function onDown(e) {
+    if (e.type === "pointerdown" && e.button !== 0) return;
+    e.preventDefault();
+    var at = e.timeStamp && e.timeStamp > 1e12 ? performance.now() : (e.timeStamp || performance.now());
+    // The same touch arrives as both pointerdown and touchstart: drop the second of the pair only.
+    if (e.type !== lastType && lastType && at - lastPressAt < 300) { lastType = ""; return; }
+    lastPressAt = at; lastType = e.type; press(at);
+  }
+  btn.addEventListener("pointerdown", onDown);
+  btn.addEventListener("touchstart", onDown, { passive: false });
+  btn.addEventListener("click", function (e) { e.preventDefault(); });
+  btn.addEventListener("keydown", function (e) {
+    if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); press(e.timeStamp || performance.now()); }
   });
+  setState("RUN"); showLast();
 })();
 </script>
 <script>
