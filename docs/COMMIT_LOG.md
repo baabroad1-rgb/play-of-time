@@ -9,6 +9,10 @@
 
 ## 18 ноября 2026
 
+### baa: hidden draft of the four-step page (reflex arc to automated co-regulation)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bdc1e173ca3444c3193f616a7c631d8825a2546c)
+
 ### baa: вариант Б стал главной; лаборатория описана шире, со ссылкой на А. Б. Леонову
 
 Главная теперь — интересы как вопросы, годы и места мелкими подписями.
@@ -3158,4 +3162,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 307.
+Всего записей: 308.
