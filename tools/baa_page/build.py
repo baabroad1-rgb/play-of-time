@@ -25,9 +25,8 @@ aloud = grab('      <iframe class="aloud"', '</iframe>\n')
 footer = grab('  <footer>', '</footer>\n')
 scripts = src[src.index('</main>\n') + len('</main>\n'):src.index('<!--body:end-->')]
 pubwrap = grab('  <details class="pubwrap">', '</details>\n')
-# the toggle looks like a button: outlined pill, count, chevron that turns when open
-pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Publications, 1997–2011</span><span class="cnt">'
-    + str(pubwrap.count('class="yr"')) + '</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
+# the toggle: title and a chevron that turns when open
+pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Publications, 1997–2011</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
     '<path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>', pubwrap, count=1, flags=re.S)
 href = lambda part: re.search(r'href="([^"]*' + re.escape(part) + r'[^"]*)"', src).group(1)
 U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">[^<]+</a>)', src).group(1)
@@ -39,12 +38,11 @@ if DRAFT:
 
 EXTRA = '''
 /* ---- four steps ---- */
-details.pubwrap summary { display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 18px; border: 1px solid var(--fg); border-radius: 999px; list-style: none; user-select: none; -webkit-user-select: none; transition: background-color .15s, color .15s; }
+details.pubwrap summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; user-select: none; -webkit-user-select: none; }
 details.pubwrap summary::-webkit-details-marker { display: none; }
-details.pubwrap summary .cnt { font-weight: 500; font-variant-numeric: tabular-nums; }
 details.pubwrap summary .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
 details.pubwrap[open] summary .chev { transform: rotate(180deg); }
-@media (hover: hover) { details.pubwrap summary:hover { background: var(--fg); color: var(--bg); } }
+@media (hover: hover) { details.pubwrap summary:hover span { text-decoration: underline; text-underline-offset: 3px; } }
 details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { details.pubwrap summary .chev { transition: none; } }
 .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 clamp(40px, 7vw, 72px); font-family: var(--sans); font-size: 15px; }
