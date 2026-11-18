@@ -87,7 +87,7 @@ jobs:
           conn="set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 3;"
           lftp --env-password -u "$BAA_LOGIN" -e "$conn cls -1; bye" sftp://infousil.beget.tech > /tmp/listing.txt
           echo "В папке на сервере:"; cat /tmp/listing.txt
-          grep -qx "index.html" /tmp/listing.txt || { echo "Это не папка сайта — не заливаю"; exit 1; }
+          grep -qxE "index.html|robots.txt|revizor" /tmp/listing.txt || { echo "Это не папка сайта — не заливаю"; exit 1; }
           lftp --env-password -u "$BAA_LOGIN" -e "$conn mirror -R --verbose --exclude-glob '*.md' --exclude-glob '.git*' ./baa/ ./; bye" sftp://infousil.beget.tech
 
       # Заглушка Beget. 18.11.2026 после перевыпуска доменов и сертификатов Beget
