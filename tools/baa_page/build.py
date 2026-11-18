@@ -1,10 +1,12 @@
-# Builds two draft versions of baa.playoftime.online (variant B: interests as questions;
-# variant C: interests with a loop map on top) from the live index.html, so they share its
-# header, stopwatch, Read Aloud widget, scripts and footer.
+# Builds baa.playoftime.online/index.html: the interests carry the page, years and places are
+# small notes under each one (variant B of 18.11.2026, chosen by Alex "for now").
+# It takes the shared parts (portrait header, stopwatch, Read Aloud frame, footer, scripts,
+# publications) from the current baa/index.html, so run it from the repository root:
+#     python3 tools/baa_page/build.py
+# loop_map() is the ring of interests from variant C, kept here to rework later; nothing calls it.
 import re, sys, os
 
-ROOT = '/home/user/play-of-time/baa'
-DRAFT = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'baa')
 src = open(f'{ROOT}/index.html', encoding='utf-8').read()
 E = ' target="_blank" rel="noopener"'
 
@@ -13,23 +15,22 @@ def grab(a, b, s=src):
 
 head = src[src.index('<!--head:start-->') + len('<!--head:start-->\n'):src.index('<style>')]
 style = src[src.index('<style>') + len('<style>\n'):src.index('</style>')]
+style = style.split('\n/* ---- interests page ---- */')[0]
 who = grab('  <header class="who">', '</header>\n')
 pot = grab('      <div class="pot" id="pot">', '        </div>\n      </div>\n')
 aloud = grab('      <iframe class="aloud"', '</iframe>\n')
 footer = grab('  <footer>', '</footer>\n')
 scripts = src[src.index('</main>\n') + len('</main>\n'):src.index('<!--body:end-->')]
-pubs = grab('      <ol class="pubs">', '      </ol>\n')
+pubs = grab('<ol class="pubs">', '</ol>\n')
+pubs = '      ' + pubs
 blog = grab('      <h4>On the Usethics blog</h4>', '      </ol>\n')
 href = lambda part: re.search(r'href="([^"]*' + re.escape(part) + r'[^"]*)"', src).group(1)
 U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">[^<]+</a>)', src).group(1)
 
-# Draft pages: not indexed, no canonical, no structured data.
-head = re.sub(r'<link rel="canonical"[^>]*>\n', '', head)
-head = re.sub(r'<script type="application/ld\+json">.*?</script>\n', '', head, flags=re.S)
-head = re.sub(r'<meta name="robots" content="[^"]*">', '<meta name="robots" content="noindex, nofollow, noarchive">', head)
 
 EXTRA = '''
-/* ---- drafts: one centred reading column; interests carry the page, years are small notes ---- */
+/* ---- interests page ---- */
+/* one centred reading column; interests carry the page, years are small notes */
 .wrap { max-width: 760px; }
 .intro { max-width: none; }
 .lede { max-width: 32em; }
@@ -69,18 +70,18 @@ INTERESTS = [
     where=[('1997', f'graduate research at Moscow State University, <a href="http://usability.ru/Articles/osobennosti.htm"{E}>How different kinds of users picture their work with a computer</a>'),
            ('2001–2023', f'founded and ran <a href="https://usethics.ru/"{E}>Usethics</a>, the first Russian company doing only usability research: about 2,000 projects'),
            ('2011', f'<a href="https://link.springer.com/chapter/10.1007/978-0-85729-304-6_17"{E}>Usability in Russia</a>, a chapter in <i>Global Usability</i> (Springer)')]),
-  dict(id='interrupt', q='What happens when work is interrupted?', name='Interruption, and the way back',
-    body=f'''      <p>Someone edits a file in Word. We interrupt: look up a word in a paper dictionary, find a number in a phone book. Then we watch how they get back to the task.</p>
-      <p>Each person returns in their own way, and the ways repeat. We could see the strategies; the people using them mostly could not.</p>
+  dict(id='interrupt', q='What happens to a person at work?', name='A person at work',
+    body=f'''      <p>At the Laboratory of Work Psychology at Moscow State University, led by <a href="https://msupsyj.ru/en/author/people/705"{E}>Anna B. Leonova</a>, we studied people at work, much of it at computers: what operator work demands of a person, how interruptions affect it, how to reduce the damage, and how to organise the work so that it goes well. Alongside that, we worked on methods of self-regulation, and on ways to assess and correct a person’s functional state, such as fatigue, stress or monotony.</p>
+      <p>One study, for example: someone edits a file in Word, and we interrupt them with another task, such as looking up a word in a paper dictionary or finding a number in a phone book. Then we watch how they get back to the original task. Each person returns in their own way, and the ways repeat. We could see the strategies; the people using them mostly could not.</p>
 ''',
-    where=[('1997–2001', 'work psychology laboratory, Faculty of Psychology, Moscow State University'),
+    where=[('1997–2001', 'Laboratory of Work Psychology, Faculty of Psychology, Moscow State University'),
            ('', f'<a href="{U_INT}"{E}>How interruptions affect people working at a PC</a>, with Ivan Burmistrov (in Russian)'),
            ('2001', f'<a href="https://link.springer.com/chapter/10.1007/978-94-010-0784-9_8"{E}>Psychological Support of Work Safety and Labor Protection</a>, a chapter in a Kluwer volume')]),
   dict(id='time', q='Can you feel three seconds?', name='Time, felt from the inside',
     body='''      <p>Too much excitement and you press early. Too much restraint and you press late. Between them is a narrow working state that can be found again on purpose, and three seconds are enough to train it.</p>
       <p>Luck turns out not to be random either. How often you hit, divided by how often pure chance would, is a stable trait of each person. Try it:</p>
 ''' + pot,
-    where=[('2025–2026', '<a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a>, a stopwatch trainer built on S. G. Gellerstein’s timing drills for athletes')]),
+    where=[('2025–2026', '<a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a>, a stopwatch trainer built on S. G. Gellerstein’s timing drills for athletes; it continues the lab’s work on self-regulation')]),
   dict(id='self', q='Do you sound the way you think you do?', name='Hearing and seeing yourself',
     body='''      <p>Your own voice reaches you through the bones of your head; everyone else hears it through the air. So reading aloud needs an outside listener. Read Aloud is one: it scores every word as you say it. Try it on the paragraph below.</p>
 ''' + aloud + '''      <p>The same idea without software: <a href="revizor/">Gogol’s <i>The Government Inspector</i></a>, which I recorded as a radio play to hear my own voice, and <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a> that records how I look and what I think, in a dream.</p>
@@ -127,7 +128,7 @@ TAIL = f'''  <section class="you">
   <section class="bio">
     <h2>Where and when</h2>
     <ul>
-      <li>1997–2001 · Faculty of Psychology, Moscow State University: work psychology laboratory</li>
+      <li>1997–2001 · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</li>
       <li>2001–2023 · Usethics, founder and director</li>
       <li>2026 · methodologist</li>
     </ul>
@@ -180,13 +181,8 @@ def loop_map():
 
 def page(intro, extra_top, title_key):
     body = '<main class="wrap">\n' + who + intro + extra_top + interests(title_key) + TAIL + footer + '</main>\n' + scripts
-    html = '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' \
-        + head + '<style>\n' + style + EXTRA + '</style>\n</head>\n<body>\n' + body + '</body>\n</html>\n'
-    # the drafts sit two folders down: point relative links back to the site root
-    html = re.sub(r'(href|src|srcset)="(?!https?:|mailto:|#|/)([^"]+)"', lambda m: f'{m.group(1)}="../../{m.group(2)}"', html)
-    return html
+    return src[:src.index('<!--head:start-->')] + '<!--head:start-->\n' + head + '<style>\n' + style + EXTRA + '</style>\n<!--head:end-->\n</head>\n<body>\n<!--body:start-->\n' + body + '<!--body:end-->\n</body>\n</html>\n'
 
-os.makedirs(f'{ROOT}/{DRAFT}/b', exist_ok=True); os.makedirs(f'{ROOT}/{DRAFT}/c', exist_ok=True)
-open(f'{ROOT}/{DRAFT}/b/index.html', 'w', encoding='utf-8').write(page(INTRO_B, '', 'q'))
-open(f'{ROOT}/{DRAFT}/c/index.html', 'w', encoding='utf-8').write(page(INTRO_C, loop_map(), 'name'))
-print('built', DRAFT)
+if __name__ == '__main__':
+    open(f'{ROOT}/index.html', 'w', encoding='utf-8').write(page(INTRO_B, '', 'q'))
+    print('built baa/index.html')

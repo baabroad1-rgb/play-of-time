@@ -116,6 +116,21 @@ jobs:
           lftp --env-password -u "$BAA_LOGIN" -e "$conn put baa/index.html -o index.html; bye" sftp://infousil.beget.tech
           echo "index.html залит"
 
+      # Снятые с сайта папки. Выкладка ничего не удаляет, поэтому то, что убрано из
+      # репозитория, удаляется здесь по списку. 18.11.2026: черновики двух вариантов
+      # главной (выбран вариант Б, он стал главной).
+      - name: Удалить снятые с сайта папки
+        env:
+          BAA_LOGIN: ${{ secrets.BAA_LOGIN }}
+          LFTP_PASSWORD: ${{ secrets.BAA_PASSWORD }}
+          RETIRED: draft-e2547d480f
+        run: |
+          command -v lftp >/dev/null || sudo apt-get install -y -q lftp >/dev/null
+          conn="set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 3; set cmd:fail-exit no;"
+          for d in $RETIRED; do
+            lftp --env-password -u "$BAA_LOGIN" -e "$conn rm -r -f $d; bye" sftp://infousil.beget.tech && echo "убрано: $d"
+          done
+
       # Проверка, что страница реально открывается и совпадает с репозиторием.
       # Сертификат на новом поддомене может появиться не сразу, поэтому
       # несколько попыток с паузой.

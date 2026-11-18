@@ -127,6 +127,37 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
   .site { gap: 8px; }
   .badge { width: 54px; height: 54px; }
 }
+
+/* ---- interests page ---- */
+/* one centred reading column; interests carry the page, years are small notes */
+.wrap { max-width: 760px; }
+.intro { max-width: none; }
+.lede { max-width: 32em; }
+section.interest { display: block; padding-block: 18px clamp(48px, 7vw, 72px); border-top: 1px solid var(--fg); }
+.interest .num { display: block; font-family: var(--sans); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+.interest h2 { display: block; position: static; margin: 0 0 18px; font-family: var(--sans); font-size: clamp(28px, 4.2vw, 40px); line-height: 1.08; letter-spacing: -0.025em; font-weight: 700; text-wrap: balance; }
+.interest .col { max-width: none; }
+.where { margin-top: 6px; padding-top: 10px; border-top: 1px dotted var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.45; display: grid; gap: 2px; }
+.where b { font-weight: 700; }
+.back { font-family: var(--sans); font-size: 15px; }
+section.bio { display: block; padding-block: 18px 40px; border-top: 1px solid var(--fg); font-family: var(--sans); font-size: 15px; }
+section.bio h2, details.pubwrap summary { position: static; display: block; font-family: var(--sans); font-size: 15px; font-weight: 700; margin: 0 0 10px; }
+section.bio ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+details.pubwrap { padding-block: 18px 40px; border-top: 1px solid var(--fg); }
+details.pubwrap summary { cursor: pointer; margin: 0; }
+details.pubwrap[open] summary { margin-bottom: 16px; }
+details.pubwrap .col { max-width: none; }
+section.you { display: block; padding-block: 18px 56px; border-top: 1px solid var(--fg); }
+/* variant C: the loop map */
+.map { margin: 0 0 clamp(40px, 7vw, 72px); }
+.map svg { display: block; width: 100%; height: auto; }
+.map a { cursor: pointer; }
+.map a:hover text { text-decoration: underline; }
+.map .lbl { font-family: var(--sans); font-size: 15px; fill: var(--fg); }
+.map .nm { font-family: var(--sans); font-size: 13px; font-weight: 700; fill: var(--fg); }
+.map .ctr { font-family: var(--sans); font-size: 16px; font-weight: 700; fill: var(--fg); }
+.map ol { display: none; margin: 0; padding-left: 1.4em; font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+@media (max-width: 620px) { .map svg { display: none; } .map ol { display: block; } }
 </style>
 <!--head:end-->
 </head>
@@ -138,46 +169,35 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
     <p><strong>Alexander Belyshkin</strong><br>Feedback methodologist</p>
     <img class="mirror" src="assets/portrait.jpg?v=3" width="72" height="72" alt="" aria-hidden="true">
   </header>
-  <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997, I have been learning to build such loops and helping others build them.</h1>
-  <p class="lede">I started in a university lab, then built them for companies for twenty years, and then for myself. Now I make tools that let anyone build their own.</p>
+  <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997 I have been learning to build such loops, and helping others build them.</h1>
+  <p class="lede">Six questions I keep coming back to. Years and places are there only to show where each one came up.</p>
 
-  <section>
-    <h2><span class="yrs">1997–2001</span><span class="to">In the lab</span></h2>
+  <section class="interest" id="gap">
+    <span class="num">1 / 6</span>
+    <h2>Do people know what they actually do?</h2>
     <div class="col">
-      <h3>What happens when work is interrupted</h3>
-      <p>At the Laboratory of Work Psychology, part of the Faculty of Psychology at Moscow State University, we studied people working at computers.</p>
-      <p>Someone would be editing a file in Word, and we would interrupt them with another task: look up a word in a paper dictionary, or find a number in a phone book. Then we watched how they got back to the original task and which strategies they used.</p>
-      <p>We could see the strategies. The people using them mostly could not. Ivan Burmistrov and I wrote it up in <a href="https://medium.com/usethics-doc/-770336b7d596" target="_blank" rel="noopener">How interruptions affect people working at a PC</a> (in Russian).</p>
+      <p>Mostly not. From the inside you see what you meant to do. What you actually did shows only from the outside, in a record of it. Closing that gap is the thread through everything on this page.</p>
+      <p>I first measured it as research: how different kinds of users picture their own work at a computer, set against what they do. Then I spent twenty years showing it to the people who make products, because they can act on it.</p>
+      <div class="where"><span><b>1997</b> · graduate research at Moscow State University, <a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">How different kinds of users picture their work with a computer</a></span><span><b>2001–2023</b> · founded and ran <a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a>, the first Russian company doing only usability research: about 2,000 projects</span><span><b>2011</b> · <a href="https://link.springer.com/chapter/10.1007/978-0-85729-304-6_17" target="_blank" rel="noopener">Usability in Russia</a>, a chapter in <i>Global Usability</i> (Springer)</span></div>
     </div>
   </section>
 
-  <section>
-    <h2><span class="yrs">2001–2023</span><span class="to">For companies</span></h2>
+  <section class="interest" id="interrupt">
+    <span class="num">2 / 6</span>
+    <h2>What happens to a person at work?</h2>
     <div class="col">
-      <h3>Showing companies what their users do</h3>
-      <p>In the lab, what we saw ended up in academic papers. But the people who could act on it were the ones building software.</p>
-      <p>So in 2001 I founded <a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a>, the first Russian company dedicated solely to usability research, and ran it for about twenty years. We watched real people use real products and reported what we saw to the people who built them: around 2,000 projects for Russian and international clients. Usethics ceased operations in 2023.</p>
-      <p>I described the field in <a href="https://link.springer.com/chapter/10.1007/978-0-85729-304-6_17" target="_blank" rel="noopener">Usability in Russia</a>, a chapter in <i>Global Usability</i> (Springer, 2011).</p>
+      <p>At the Laboratory of Work Psychology at Moscow State University, led by <a href="https://msupsyj.ru/en/author/people/705" target="_blank" rel="noopener">Anna B. Leonova</a>, we studied people at work, much of it at computers: what operator work demands of a person, how interruptions affect it, how to reduce the damage, and how to organise the work so that it goes well. Alongside that, we worked on methods of self-regulation, and on ways to assess and correct a person’s functional state, such as fatigue, stress or monotony.</p>
+      <p>One study, for example: someone edits a file in Word, and we interrupt them with another task, such as looking up a word in a paper dictionary or finding a number in a phone book. Then we watch how they get back to the original task. Each person returns in their own way, and the ways repeat. We could see the strategies; the people using them mostly could not.</p>
+      <div class="where"><span><b>1997–2001</b> · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</span><span><a href="https://medium.com/usethics-doc/-770336b7d596" target="_blank" rel="noopener">How interruptions affect people working at a PC</a>, with Ivan Burmistrov (in Russian)</span><span><b>2001</b> · <a href="https://link.springer.com/chapter/10.1007/978-94-010-0784-9_8" target="_blank" rel="noopener">Psychological Support of Work Safety and Labor Protection</a>, a chapter in a Kluwer volume</span></div>
     </div>
   </section>
 
-  <section>
-    <h2><span class="yrs">2023–2026</span><span class="to">For myself</span></h2>
+  <section class="interest" id="time">
+    <span class="num">3 / 6</span>
+    <h2>Can you feel three seconds?</h2>
     <div class="col">
-      <h3>No clients</h3>
-      <p>After 2023 there were no clients, so there was no one to show anything to. I turned the same method on myself: do something, keep a record of it, then look at the record.</p>
-      <p>I read about 52 books a year. What I take from them goes to <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes. The questions they raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, another Telegram channel. Philosophical texts in plain English go to the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>.</p>
-      <p>I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself to hear my own voice. And <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a> captured how I looked and what I was thinking, as in a dream.</p>
-      <p>In 2026 I took a new job as a methodologist.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2><span class="yrs">2025–2026</span><span class="to">For anyone</span></h2>
-    <div class="col">
-      <h3>Tools that close the loop without me</h3>
-      <p>Watching myself, I found that feedback works best when it is instant and exact. Nobody can sit beside you all the time to give it, so it takes an instrument. I built two, and anyone can use them.</p>
-      <p><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. Every attempt tells you how precise you were, whether you are rushing or holding back, and your Lucky Index: how often you hit the target, divided by how often pure chance would.</p>
+      <p>Too much excitement and you press early. Too much restraint and you press late. Between them is a narrow working state that can be found again on purpose, and three seconds are enough to train it.</p>
+      <p>Luck turns out not to be random either. How often you hit, divided by how often pure chance would, is a stable trait of each person. Try it:</p>
       <div class="pot" id="pot">
         <button type="button" class="pot-btn" id="pot-btn" aria-describedby="pot-hint">
           <span class="pot-time" id="pot-time">0.00</span>
@@ -189,24 +209,61 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
           <div class="pot-last"><span class="pot-cap">Last three</span><ol id="pot-last"></ol></div>
         </div>
       </div>
-      <p><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Try it on the paragraph below: press the button, allow microphone access, and read it aloud.</p>
-      <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
-      <noscript><p>Read Aloud listens while you read an English book aloud. Each word turns green or red as you say it. Afterwards you see how many words came out right, which ones did not, and whether you sound American or British.</p></noscript>
+      <div class="where"><span><b>2025–2026</b> · <a href="https://playoftime.online/" target="_blank" rel="noopener">Play of Time</a>, a stopwatch trainer built on S. G. Gellerstein’s timing drills for athletes; it continues the lab’s work on self-regulation</span></div>
     </div>
   </section>
 
-  <section>
-    <h2><span class="yrs">Now</span><span class="to">For you</span></h2>
+  <section class="interest" id="self">
+    <span class="num">4 / 6</span>
+    <h2>Do you sound the way you think you do?</h2>
+    <div class="col">
+      <p>Your own voice reaches you through the bones of your head; everyone else hears it through the air. So reading aloud needs an outside listener. Read Aloud is one: it scores every word as you say it. Try it on the paragraph below.</p>
+      <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
+      <p>The same idea without software: <a href="revizor/">Gogol’s <i>The Government Inspector</i></a>, which I recorded as a radio play to hear my own voice, and <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a> that records how I look and what I think, in a dream.</p>
+      <div class="where"><span><b>2023–2026</b> · <a href="https://playoftime.online/aloud/" target="_blank" rel="noopener">Read Aloud</a>, an e-book reader that listens; the audiobook; the photo project</span></div>
+    </div>
+  </section>
+
+  <section class="interest" id="questions">
+    <span class="num">5 / 6</span>
+    <h2>What is today’s question?</h2>
+    <div class="col">
+      <p>Every day I write one new question. A question changes what you notice more than a statement does, so I have started to treat it as the basic unit of thinking. I call the idea Qology.</p>
+      <p>The material comes from reading, about 52 books a year. What I take from them goes to one channel, the questions they leave to another.</p>
+      <div class="where"><span><b>Now</b> · <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, a Telegram channel · <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, quotes from the books</span></div>
+    </div>
+  </section>
+
+  <section class="interest" id="plain">
+    <span class="num">6 / 6</span>
+    <h2>Can a hard thing be said simply?</h2>
+    <div class="col">
+      <p>A checklist that anyone can run on an interface without training. Philosophical texts retold in plain English. Both test whether an idea survives without its jargon.</p>
+      <p>Plain words are feedback too: if I cannot say something simply, I see what I have not understood yet. Which brings it back to the first question.</p>
+      <p class="back"><a href="#gap">↺ Back to the first question</a></p>
+      <div class="where"><span><b>2011</b> · <a href="texts/user-interface-checklist/">A user interface checklist</a>, with Vlad Golovach, translated here</span><span><b>Now</b> · <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>, a subreddit</span></div>
+    </div>
+  </section>
+
+  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
       <p>Write to me and let’s discuss it: <a href="mailto:alexandr.belyshkin@gmail.com">alexandr.belyshkin@gmail.com</a></p>
     </div>
   </section>
 
-  <section id="publications">
-    <h2><span class="yrs">1997–2011</span><span class="to">What I wrote</span></h2>
+  <section class="bio">
+    <h2>Where and when</h2>
+    <ul>
+      <li>1997–2001 · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</li>
+      <li>2001–2023 · Usethics, founder and director</li>
+      <li>2026 · methodologist</li>
+    </ul>
+  </section>
+
+  <details class="pubwrap">
+    <summary>Publications, 1997–2011</summary>
     <div class="col">
-      <p>Along the way I wrote about what we saw. Three pieces are translated in full on this site, with PDFs; the rest are in Russian unless noted.</p>
       <ol class="pubs">
           <li><span class="yr">1997</span><span class="t"><a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">Subjective Perceptions of Computer Work Among Different Categories of Users</a></span><span class="d">Graduate research, Moscow State University.</span></li>
           <li><span class="yr">1997</span><span class="t"><b>Third European Summer School on New Information Technology and Work Psychology</b></span><span class="d">Psychological Journal, October 1997. <span class="todo">Source to be added.</span></span></li>
@@ -226,7 +283,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
           <li><span class="yr"></span><span class="t"><a href="http://www.visualpharm.ru/articles/scrollbar.html" target="_blank" rel="noopener">A new life for the scrollbar</a></span><span class="d">With Ekaterina Filatova and Ivan Boyko.</span></li>
       </ol>
     </div>
-  </section>
+  </details>
 
   <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online<span class="badge"><picture>
       <source srcset="assets/rider.webp?v=3" type="image/webp">
