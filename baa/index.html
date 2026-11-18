@@ -52,6 +52,7 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .who { display: flex; align-items: center; gap: 16px; margin-bottom: clamp(32px, 6vw, 64px); font-family: var(--sans); font-size: 15px; line-height: 1.35; }
 .who img { width: 72px; height: 72px; display: block; flex: none; border-radius: 50%; object-fit: cover; }
+.who img.mirror { transform: scaleX(-1); }   /* the same portrait, turned to face the one on the left */
 .who p { margin: 0; }
 .intro {
   margin: 0 0 22px;
@@ -136,6 +137,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
   <header class="who">
     <img src="assets/portrait.jpg?v=3" width="72" height="72" alt="Alexander Belyshkin, in profile">
     <p><strong>Alexander Belyshkin</strong><br>Feedback methodologist</p>
+    <img class="mirror" src="assets/portrait.jpg?v=3" width="72" height="72" alt="" aria-hidden="true">
   </header>
   <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997 I have been learning to build such loops, and helping others build them.</h1>
   <p class="lede">I started in a university lab, built them for companies for twenty years, then for myself. Now I make tools that give anyone one.</p>
