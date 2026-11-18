@@ -121,12 +121,11 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
 .site { display: inline-flex; align-items: center; gap: 12px; }
 .badge { flex: none; width: 72px; height: 72px; border: 1px solid var(--fg); border-radius: 50%; display: grid; place-items: center; overflow: hidden; }   /* the portrait's size */
 .badge picture, .badge img { display: block; }
-.badge img { width: auto; height: 56px; }
+.badge picture, .badge img { width: 100%; height: 100%; }   /* the figure is already fitted to the circle in the file */
 @media (max-width: 680px) {
   footer { flex-wrap: nowrap; gap: 10px; font-size: 12px; }
   .site { gap: 8px; }
   .badge { width: 54px; height: 54px; }
-  .badge img { height: 42px; }
 }
 </style>
 <!--head:end-->
@@ -230,8 +229,8 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
   </section>
 
   <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online<span class="badge"><picture>
-      <source srcset="assets/rider.webp?v=2" type="image/webp">
-      <img src="assets/rider.png?v=2" width="33" height="56" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
+      <source srcset="assets/rider.webp?v=3" type="image/webp">
+      <img src="assets/rider.png?v=3" width="70" height="70" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
     </picture></span></span></footer>
 </main>
 <script>
