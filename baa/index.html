@@ -159,6 +159,14 @@ section.you { display: block; padding-block: 18px 56px; }
 @media (max-width: 620px) { .map svg { display: none; } .map ol { display: block; } }
 
 /* ---- four steps ---- */
+details.pubwrap summary { display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 18px; border: 1px solid var(--fg); border-radius: 999px; list-style: none; user-select: none; -webkit-user-select: none; transition: background-color .15s, color .15s; }
+details.pubwrap summary::-webkit-details-marker { display: none; }
+details.pubwrap summary .cnt { font-weight: 500; font-variant-numeric: tabular-nums; }
+details.pubwrap summary .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+details.pubwrap[open] summary .chev { transform: rotate(180deg); }
+@media (hover: hover) { details.pubwrap summary:hover { background: var(--fg); color: var(--bg); } }
+details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { details.pubwrap summary .chev { transition: none; } }
 .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 clamp(40px, 7vw, 72px); font-family: var(--sans); font-size: 15px; }
 .steps a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .steps a:hover span { text-decoration: underline; }
@@ -263,7 +271,7 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
   </section>
 
   <details class="pubwrap">
-    <summary>Publications, 1997–2011</summary>
+    <summary><span>Publications, 1997–2011</span><span class="cnt">13</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>
     <div class="col">
       <ol class="pubs">
           <li><span class="yr">1997</span><span class="t"><a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">Subjective Perceptions of Computer Work Among Different Categories of Users</a></span><span class="d">Graduate research, Moscow State University.</span></li>
