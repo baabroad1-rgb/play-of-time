@@ -51,7 +51,7 @@ a:hover { text-decoration-thickness: 2px; }
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
 .who { display: flex; align-items: center; gap: 16px; margin-bottom: clamp(32px, 6vw, 64px); font-family: var(--sans); font-size: 15px; line-height: 1.35; }
-.who img { width: 96px; height: 96px; display: block; flex: none; border-radius: 50%; object-fit: cover; }
+.who img { width: 72px; height: 72px; display: block; flex: none; border-radius: 50%; object-fit: cover; }
 .who p { margin: 0; }
 .intro {
   margin: 0 0 22px;
@@ -86,12 +86,11 @@ h2 { margin: 0; font-family: var(--sans); font-size: 15px; font-weight: 500; lin
 .pubs .d { font-size: 15px; line-height: 1.4; }
 .col h4 { margin: 12px 0 0; font-family: var(--sans); font-size: 15px; font-weight: 700; }
 .todo { font-style: italic; }
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); font-family: var(--sans); font-size: 14px; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); font-family: var(--sans); font-size: 14px; }
 @media (max-width: 680px) {
   section { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding-block: 14px 44px; }
   h2 { position: static; grid-auto-flow: column; justify-content: start; gap: 10px; }
-  .who img { width: 72px; height: 72px; }
-  .rider img { height: 72px; }
+  .who img { width: 54px; height: 54px; }
   .intro { font-size: clamp(30px, 8.6vw, 40px); }
   .lede { margin-bottom: 56px; }
   .pot-btn { width: 100%; }
@@ -118,8 +117,16 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 .pot-last li.three { color: #2E8B00; }
 .pot-last:has(ol:empty) { display: none; }
 .aloud { display: block; width: 100%; height: 230px; border: 0; background: var(--bg); }
-.rider { margin: 28px 0 0; display: flex; justify-content: flex-end; }
-.rider img { width: auto; height: 96px; display: block; }   /* the size of the portrait at the top */
+.site { display: inline-flex; align-items: center; gap: 12px; }
+.badge { flex: none; width: 72px; height: 72px; border: 1px solid var(--fg); border-radius: 50%; display: grid; place-items: center; overflow: hidden; }   /* the portrait's size */
+.badge picture, .badge img { display: block; }
+.badge img { width: auto; height: 56px; }
+@media (max-width: 680px) {
+  footer { flex-wrap: nowrap; gap: 10px; font-size: 12px; }
+  .site { gap: 8px; }
+  .badge { width: 54px; height: 54px; }
+  .badge img { height: 42px; }
+}
 </style>
 <!--head:end-->
 </head>
@@ -127,7 +134,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
 <!--body:start-->
 <main class="wrap">
   <header class="who">
-    <img src="assets/portrait.jpg?v=3" width="96" height="96" alt="Alexander Belyshkin, in profile">
+    <img src="assets/portrait.jpg?v=3" width="72" height="72" alt="Alexander Belyshkin, in profile">
     <p><strong>Alexander Belyshkin</strong><br>Feedback methodologist</p>
   </header>
   <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997 I have been learning to build such loops, and helping others build them.</h1>
@@ -220,13 +227,10 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6p
     </div>
   </section>
 
-  <footer><span>© 2026 Alexander Belyshkin</span><span>baa.playoftime.online</span></footer>
-  <figure class="rider">
-    <picture>
+  <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online<span class="badge"><picture>
       <source srcset="assets/rider.webp?v=2" type="image/webp">
-      <img src="assets/rider.png?v=2" width="56" height="96" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
-    </picture>
-  </figure>
+      <img src="assets/rider.png?v=2" width="33" height="56" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
+    </picture></span></span></footer>
 </main>
 <script>
 // Play of Time, the same press cycle as the game (StopWatchButton.kt): RUN → STOP → RESET.
