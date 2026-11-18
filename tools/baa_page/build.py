@@ -63,6 +63,11 @@ section.interest .stephead { grid-column: 1; grid-row: 1 / span 2; flex-directio
 section.interest .stephead > span { display: grid; gap: 2px; }
 section.interest > h2, section.interest > .col { grid-column: 2; }
 .stephead .nw { white-space: nowrap; }
+.ringfig { margin: 4px 0 22px; max-width: 460px; }
+.ringfig svg { display: block; width: 100%; height: auto; }
+.ringfig .lbl { font-family: var(--sans); font-size: 16px; fill: var(--fg); }
+.ringfig .nm { font-family: var(--sans); font-size: 13px; font-weight: 700; fill: var(--fg); }
+.ringfig .ctr { font-family: var(--sans); font-size: 17px; font-weight: 700; fill: var(--fg); }
 @media (max-width: 680px) {
   section.interest { display: block; }
   section.interest .stephead { position: static; flex-direction: row; align-items: center; gap: 14px; margin-bottom: 8px; }
@@ -80,14 +85,40 @@ FIG = {
 }
 def svg(k, label): return f'<svg viewBox="0 0 64 40" role="img" aria-label="{label}">{FIG[k]}</svg>'
 
+def ring_fig():
+    # act → see what happened → compare with the aim → correct → act …, clockwise around the aim
+    import math
+    W, H, cx, cy, r = 460, 316, 230, 150, 92
+    nodes = [('act',), ('see what', 'happened'), ('compare', 'with the aim'), ('correct',)]
+    parts = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="The reflex ring: act, see what happened, compare with the aim, correct, and act again">',
+             '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#000"/></marker></defs>']
+    n = len(nodes)
+    for k, lines in enumerate(nodes):
+        a = -math.pi / 2 + k * 2 * math.pi / n
+        a1, a2 = a + 0.24, a + 2 * math.pi / n - 0.24
+        p1 = (cx + r * math.cos(a1), cy + r * math.sin(a1)); p2 = (cx + r * math.cos(a2), cy + r * math.sin(a2))
+        parts.append(f'<path d="M{p1[0]:.1f},{p1[1]:.1f} A{r},{r} 0 0 1 {p2[0]:.1f},{p2[1]:.1f}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>')
+        x, y = cx + r * math.cos(a), cy + r * math.sin(a)
+        parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="13" fill="#fff" stroke="#000" stroke-width="1.5"/>'
+                     f'<text class="nm" x="{x:.1f}" y="{y + 4.5:.1f}" text-anchor="middle">{k + 1}</text>')
+        c, sn = math.cos(a), math.sin(a)
+        lx, ly = cx + (r + 24) * c, cy + (r + 24) * sn
+        anchor = 'middle' if abs(c) < 0.2 else ('start' if c > 0 else 'end')
+        h = 19 * (len(lines) - 1)
+        y0 = ly - 6 - h if sn < -0.9 else (ly + 16 if sn > 0.9 else ly + 5 - h / 2)
+        tsp = ''.join(f'<tspan x="{lx:.1f}" dy="{0 if i == 0 else 19}">{t}</tspan>' for i, t in enumerate(lines))
+        parts.append(f'<text class="lbl" x="{lx:.1f}" y="{y0:.1f}" text-anchor="{anchor}">{tsp}</text>')
+    parts.append(f'<text class="ctr" x="{cx}" y="{cy + 6}" text-anchor="middle">the aim</text></svg>')
+    return '      <figure class="ringfig">' + ''.join(parts) + '</figure>\n'
+
 STEPS = [
   dict(id='arc', fig='arc', term='Reflex arc', q='Do people know what they actually do?',
     body=f'''      <p>In a reflex arc a signal goes in, an action comes out, and nothing comes back. Much of what we do runs this way: we act, and we do not see what we did.</p>
       <p>My first research measured that gap: how different kinds of users picture their own work at a computer, set against what they actually do. Later, at the lab, we interrupted people editing a file in Word with another task, such as finding a number in a phone book, and watched how they got back to the original task. We could see their strategies; the people using them mostly could not.</p>
 '''),
   dict(id='ring', fig='ring', term='Reflex ring', q='Can you correct yourself while you act?',
-    body='''      <p>In the 1920s Nikolai Bernstein recorded blacksmiths at work. Every blow of the hammer took a different path, and every one landed on the chisel. A ready-made command from the brain can’t do that. The hand is steered as it goes: the eye and the feel of the arm keep reporting, and the movement keeps correcting itself. Bernstein called this a reflex ring: act, hear back, correct, act on.</p>
-      <p>The ring works as long as the senses report what matters. They are good with a hammer or a cup, and poor with time, the sound of your own voice or the way you spend a day.</p>
+    body='''      <p>Almost nothing we do is done in one go. You start, see how it is going and adjust, again and again, mostly without noticing. Pouring tea, you watch the level and slow down near the top. On a bike you are never still: every wobble is noticed and corrected. Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: unlike the arc, the result comes back and steers the next move.</p>
+''' + ring_fig() + '''      <p>The ring works as long as the senses report what matters. They are good with a teapot or a bike, and poor with time, the sound of your own voice or the way you spend a day.</p>
       <p>On myself, from 2023 to 2026, I ran the same ring more slowly: I record what I do and come back to the record as an observer. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes; reading it, I watch myself reading. The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself: the same ring, with my voice.</p>
 '''),
   dict(id='co', fig='co', term='Co-regulation', q='Who sees what you can’t?',
