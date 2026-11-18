@@ -9,6 +9,13 @@
 
 ## 18 ноября 2026
 
+### baa: понятная фраза под заголовком и «feedback methodologist» в «Where and when»
+
+Вместо «A loop like that grows in four steps.» — «Four steps, from no
+feedback at all to feedback from a device.»
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b4a553dc7562dad47b69888b809ed66678667c45)
+
 ### baa: фотопроект перенесён в шаг 3 — фотограф как сорегулятор сна
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/003ca80fd7a2e7419461be23f41bc0e903caf176)
@@ -3228,4 +3235,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 317.
+Всего записей: 318.
