@@ -90,6 +90,32 @@ jobs:
           grep -qx "index.html" /tmp/listing.txt || { echo "Это не папка сайта — не заливаю"; exit 1; }
           lftp --env-password -u "$BAA_LOGIN" -e "$conn mirror -R --verbose --exclude-glob '*.md' --exclude-glob '.git*' ./baa/ ./; bye" sftp://infousil.beget.tech
 
+      # Заглушка Beget. 18.11.2026 после перевыпуска доменов и сертификатов Beget
+      # положил в папку сайта свой index.php («Новый сайт успешно создан…»), а наш
+      # index.html пропал: index.php открывается первым, и вместо сайта была
+      # заглушка. Шаг убирает index.php, только если это именно та заглушка, и
+      # заливает index.html заново. Другие файлы не трогает.
+      - name: Убрать заглушку Beget и проверить index.html
+        env:
+          BAA_LOGIN: ${{ secrets.BAA_LOGIN }}
+          LFTP_PASSWORD: ${{ secrets.BAA_PASSWORD }}
+        run: |
+          set -e
+          command -v lftp >/dev/null || sudo apt-get install -y -q lftp >/dev/null
+          conn="set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 3; set net:reconnect-interval-base 5;"
+          lftp --env-password -u "$BAA_LOGIN" -e "$conn cls -1; bye" sftp://infousil.beget.tech > /tmp/ls.txt
+          if grep -qx "index.php" /tmp/ls.txt; then
+            lftp --env-password -u "$BAA_LOGIN" -e "$conn get index.php -o /tmp/remote-index.php; bye" sftp://infousil.beget.tech
+            if grep -q "Новый сайт успешно создан\|successfully created and is ready" /tmp/remote-index.php; then
+              lftp --env-password -u "$BAA_LOGIN" -e "$conn rm index.php; bye" sftp://infousil.beget.tech
+              echo "Заглушка Beget index.php удалена"
+            else
+              echo "::warning title=index.php не заглушка::В папке сайта есть index.php, но это не заглушка Beget — не трогаю"
+            fi
+          fi
+          lftp --env-password -u "$BAA_LOGIN" -e "$conn put baa/index.html -o index.html; bye" sftp://infousil.beget.tech
+          echo "index.html залит"
+
       # Проверка, что страница реально открывается и совпадает с репозиторием.
       # Сертификат на новом поддомене может появиться не сразу, поэтому
       # несколько попыток с паузой.
