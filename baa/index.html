@@ -70,7 +70,6 @@ section {
   grid-template-columns: 10em minmax(0, 1fr);
   column-gap: 32px;
   padding-block: 18px clamp(40px, 6vw, 64px);
-  border-top: 1px solid var(--fg);
 }
 h2 { margin: 0; font-family: var(--sans); font-size: 15px; font-weight: 500; line-height: 1.35; display: grid; gap: 2px; align-self: start; align-content: start; position: sticky; top: 16px; }
 .yrs { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -87,7 +86,7 @@ h2 { margin: 0; font-family: var(--sans); font-size: 15px; font-weight: 500; lin
 .pubs .d { font-size: 15px; line-height: 1.4; }
 .col h4 { margin: 12px 0 0; font-family: var(--sans); font-size: 15px; font-weight: 700; }
 .todo { font-style: italic; }
-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 24px; padding-top: 14px; border-top: 1px solid var(--fg); font-family: var(--sans); font-size: 14px; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 24px; padding-top: 14px; font-family: var(--sans); font-size: 14px; }
 @media (max-width: 680px) {
   section { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding-block: 14px 44px; }
   h2 { position: static; grid-auto-flow: column; justify-content: start; gap: 10px; }
@@ -133,21 +132,21 @@ footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
 .wrap { max-width: 760px; }
 .intro { max-width: none; }
 .lede { max-width: 32em; }
-section.interest { display: block; padding-block: 18px clamp(48px, 7vw, 72px); border-top: 1px solid var(--fg); }
+section.interest { display: block; padding-block: 18px clamp(48px, 7vw, 72px); }
 .interest .num { display: block; font-family: var(--sans); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
 .interest h2 { display: block; position: static; margin: 0 0 18px; font-family: var(--sans); font-size: clamp(28px, 4.2vw, 40px); line-height: 1.08; letter-spacing: -0.025em; font-weight: 700; text-wrap: balance; }
 .interest .col { max-width: none; }
 .where { margin-top: 6px; padding-top: 10px; border-top: 1px dotted var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.45; display: grid; gap: 2px; }
 .where b { font-weight: 700; }
 .back { font-family: var(--sans); font-size: 15px; }
-section.bio { display: block; padding-block: 18px 40px; border-top: 1px solid var(--fg); font-family: var(--sans); font-size: 15px; }
+section.bio { display: block; padding-block: 18px 40px; font-family: var(--sans); font-size: 15px; }
 section.bio h2, details.pubwrap summary { position: static; display: block; font-family: var(--sans); font-size: 15px; font-weight: 700; margin: 0 0 10px; }
 section.bio ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
-details.pubwrap { padding-block: 18px 40px; border-top: 1px solid var(--fg); }
+details.pubwrap { padding-block: 18px 40px; }
 details.pubwrap summary { cursor: pointer; margin: 0; }
 details.pubwrap[open] summary { margin-bottom: 16px; }
 details.pubwrap .col { max-width: none; }
-section.you { display: block; padding-block: 18px 56px; border-top: 1px solid var(--fg); }
+section.you { display: block; padding-block: 18px 56px; }
 /* variant C: the loop map */
 .map { margin: 0 0 clamp(40px, 7vw, 72px); }
 .map svg { display: block; width: 100%; height: auto; }
@@ -172,7 +171,7 @@ section.you { display: block; padding-block: 18px 56px; border-top: 1px solid va
 .fig { fill: none; stroke: #000; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .fig-dot { fill: #000; }
 .fig-dev { fill: #fff; stroke: #000; stroke-width: 1.6; }
-section.myself { display: block; padding-block: 18px clamp(40px, 6vw, 60px); border-top: 1px solid var(--fg); }
+section.myself { display: block; padding-block: 18px clamp(40px, 6vw, 60px); }
 section.myself h2 { position: static; display: block; margin: 0 0 14px; font-family: var(--sans); font-size: clamp(22px, 3vw, 28px); line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; }
 </style>
 <!--head:end-->
@@ -186,7 +185,7 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
     <img class="mirror" src="assets/portrait.jpg?v=3" width="72" height="72" alt="" aria-hidden="true">
   </header>
   <h1 class="intro">People don’t see what they actually do without a useful feedback loop. Since 1997, I have been learning to build such loops and helping others build them.</h1>
-  <p class="lede">A loop like that grows in four steps. Years and places are there only to show where each step came up in my work.</p>
+  <p class="lede">A loop like that grows in four steps.</p>
 
   <nav class="steps" aria-label="Four steps"><a href="#arc"><svg viewBox="0 0 64 40" role="img" aria-label=""><path class="fig" d="M6,30 Q32,2 58,30"/><path class="fig" d="M58,30 l-6,-1.5 m6,1.5 l-1.5,-6"/><circle class="fig-dot" cx="6" cy="30" r="2.4"/></svg><span>Reflex arc</span></a><span class="arr" aria-hidden="true">→</span><a href="#ring"><svg viewBox="0 0 64 40" role="img" aria-label=""><circle class="fig" cx="32" cy="20" r="15"/><path class="fig" d="M47,20 l-3,-5 m3,5 l3,-5"/><circle class="fig-dot" cx="17" cy="20" r="2.4"/></svg><span>Reflex ring</span></a><span class="arr" aria-hidden="true">→</span><a href="#co"><svg viewBox="0 0 64 40" role="img" aria-label=""><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><circle class="fig-dot" cx="57" cy="20" r="2.4"/></svg><span>Co-regulation</span></a><span class="arr" aria-hidden="true">→</span><a href="#auto"><svg viewBox="0 0 64 40" role="img" aria-label=""><circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><rect class="fig-dev" x="52.5" y="15.5" width="9" height="9" rx="1.5"/></svg><span>Automated co-regulation</span></a></nav>
 
@@ -196,7 +195,6 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
     <div class="col">
       <p>In a reflex arc a signal goes in, an action comes out, and nothing comes back. Much of what we do runs this way: we act, and we do not see what we did.</p>
       <p>My first research measured that gap: how different kinds of users picture their own work at a computer, set against what they actually do. Later, at the lab, we interrupted people editing a file in Word with another task, such as finding a number in a phone book, and watched how they got back to the original task. We could see their strategies; the people using them mostly could not.</p>
-      <div class="where"><span><b>1997</b> · graduate research, Moscow State University: <a href="http://usability.ru/Articles/osobennosti.htm" target="_blank" rel="noopener">Subjective Perceptions of Computer Work Among Different Categories of Users</a></span><span><a href="https://medium.com/usethics-doc/-770336b7d596" target="_blank" rel="noopener">How interruptions affect people working at a PC</a>, with Ivan Burmistrov (in Russian)</span></div>
     </div>
   </section>
 
@@ -206,7 +204,6 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
     <div class="col">
       <p>Nikolai Bernstein replaced the arc with a ring: an action is corrected as it goes, by what the senses report back. A hand reaching for a cup is steered all the way by the eye and by the feel of the arm.</p>
       <p>At the Laboratory of Work Psychology at Moscow State University, led by <a href="https://msupsyj.ru/en/author/people/705" target="_blank" rel="noopener">Anna B. Leonova</a>, this was the subject: what operator work at computers demands of a person, how interruptions affect it and how to reduce the damage, how to organise work so that it goes well, methods of self-regulation, and ways to assess and correct a person’s functional state, such as fatigue, stress or monotony.</p>
-      <div class="where"><span><b>1997–2001</b> · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</span><span><b>2001</b> · <a href="https://link.springer.com/chapter/10.1007/978-94-010-0784-9_8" target="_blank" rel="noopener">Psychological Support of Work Safety and Labor Protection</a>, a chapter in a Kluwer volume</span></div>
     </div>
   </section>
 
@@ -216,7 +213,6 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
     <div class="col">
       <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back.</p>
       <p>For twenty years I was that person for companies. At <a href="https://usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients. Now I do the same as a feedback methodologist.</p>
-      <div class="where"><span><b>2001–2023</b> · Usethics, the first Russian company dedicated solely to usability research</span><span><b>2011</b> · <a href="https://link.springer.com/chapter/10.1007/978-0-85729-304-6_17" target="_blank" rel="noopener">Usability in Russia</a>, a chapter in <i>Global Usability</i> (Springer)</span></div>
     </div>
   </section>
 
@@ -239,7 +235,6 @@ section.myself h2 { position: static; display: block; margin: 0 0 14px; font-fam
       </div>
       <p><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Try it on the paragraph below: press the button, allow microphone access, and read it aloud.</p>
       <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
-      <div class="where"><span><b>2025–2026</b> · Play of Time, built on S. G. Gellerstein’s timing drills for athletes · Read Aloud, an e-book reader that listens</span></div>
     </div>
   </section>
 
