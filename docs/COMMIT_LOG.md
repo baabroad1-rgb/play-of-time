@@ -9,6 +9,14 @@
 
 ## 18 ноября 2026
 
+### baa: заголовок про идею, а не про автора
+
+«People don’t see what they actually do unless a useful feedback loop
+shows them.» Описание для поисковиков переписано так же: идея и
+четыре шага, примеры из работы автора.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/6720c08466749b9a54ab62b154f154479c7a0b45)
+
 ### baa: понятная фраза под заголовком и «feedback methodologist» в «Where and when»
 
 Вместо «A loop like that grows in four steps.» — «Four steps, from no
@@ -3235,4 +3243,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 318.
+Всего записей: 319.
