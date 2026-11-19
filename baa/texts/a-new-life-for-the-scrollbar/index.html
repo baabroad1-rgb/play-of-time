@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A new life for the scrollbar — Alexander Belyshkin</title>
+<link rel="icon" href="../../favicon.ico?v=3" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="64x64" href="../../assets/favicon-64.png?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="../../assets/icon-192.png?v=3">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=3">
+<meta name="description" content="How to make the scrollbar more useful: draw the document on it. Examples for text editors, web forms, search, mail, file managers, players and image editors. By Ivan Boyko, Alexander Belyshkin and Ekaterina Filatova.">
+<meta name="color-scheme" content="light">
+<link rel="stylesheet" href="../../assets/fonts/fonts.css?v=1">
+<link rel="stylesheet" href="../article.css?v=2">
+</head>
+<body>
+<main class="wrap">
+  <a class="back" href="../../">← Alexander Belyshkin</a>
+  <h1>A new life for the scrollbar</h1>
+  <p class="meta">Ivan Boyko (VisualPharm), Alexander Belyshkin and Ekaterina Filatova (Usethics). Illustrations by Alexander Khristoforov (VisualPharm). First published on the VisualPharm website, by December 2009. <span class="ai">AI-translated</span> from Russian; <a href="https://visualpharm.ru/articles/scrollbar.html" target="_blank" rel="noopener">the original</a> is on visualpharm.ru. <span class="sep">·</span> <a class="pdf" href="a-new-life-for-the-scrollbar.pdf">Download as PDF</a></p>
+
+  <article>
+    <p class="lead">How do you make a scrollbar more useful? Draw the document on it.</p>
+    <p>The scrollbar is part of most applications today. This interface control has been in use for a very long time, yet in our view its function and ergonomic value have not been fully used and could be much improved by a few additions.</p>
+    <p>A scrollbar has two functions. One is direct: the user moves through the document with it. The other is navigational: from the look of the scrollbar the user can tell where in the document they are. Mice with a scroll wheel have greatly weakened the first function: in most cases it is easier and faster to move through a document with the wheel. So scrollbars have lost some of their value, though not so much that we can do without them. In this situation, not trying to get the most out of the scrollbar seems to us an unjustified waste.</p>
+    <p>There have, of course, been attempts to improve the scrollbar by strengthening its navigational function. But most of these proposals have remained unrealised theory. For example, Ben Shneiderman in his book <i>Designing the User Interface</i> proposes several modifications of the standard scrollbar to get more out of it:</p>
+
+    <figure>
+      <img src="shneiderman.gif" width="420" height="344" alt="Five scrollbars, (a) to (e): the page number on the thumb; a thumb sized to the visible area; bookmark marks on the track; document sections on the track; a track with fixed thumb positions numbered 1 to 6.">
+      <figcaption>Shneiderman’s proposals: (a) the page number shown on the thumb, (b) a thumb proportional to the size of the visible area, (c) bookmarks shown on the scrollbar, (d) the document’s sections shown on the scrollbar, and (e) a scrollbar with fixed positions for the thumb. From Ben Shneiderman, <i>Designing the User Interface</i>, 3rd edition, Addison-Wesley, 1998, p. 451.</figcaption>
+    </figure>
+
+    <p>Unfortunately, none of Shneiderman’s proposals except the proportional thumb has made it into today’s applications. And this despite developers’ obvious wish to give users tools that, in essence, solve the same tasks as a scrollbar with added functions would.</p>
+    <p>The space of the scrollbar can be used not only to show the size of the document, as usual, but also to show its content in symbolic form. Of course, a scrollbar is small, so the picture cannot be detailed. Still, there is enough room to tell parts of the document apart, for example its pages, and to jump to the one you need quickly and directly.</p>
+    <p>Besides, it is best to adapt the scrollbar to the type of application it is used in. In different contexts this improved control can solve a number of extra tasks the user needs.</p>
+    <p>Here are examples of what an effectively used scrollbar can do in some typical contexts.</p>
+
+    <h2>1. Text editors</h2>
+    <figure>
+      <img src="affordance.png" width="638" height="478" alt="Microsoft Word with page previews drawn on the vertical scrollbar.">
+      <figcaption>Page previews on the scrollbar of a text editor.</figcaption>
+    </figure>
+    <p>Extra functions of the scrollbar in a text editor make it easier to work with the structure of the document, faster and with less effort. Page previews on the scrollbar let the user:</p>
+    <ul>
+      <li>jump straight to the nearest page with a picture or a table, or with a different orientation from the other pages;</li>
+      <li>glance at what is on a page without going to it and losing time;</li>
+      <li>see where the cursor is at the moment;</li>
+      <li>see at once how many corrections there are on each page.</li>
+    </ul>
+
+    <h2>2. Long web forms</h2>
+    <p>In long web forms, page previews on the scrollbar also help the user.</p>
+    <ul>
+      <li>First, marks on the scrollbar show exactly where a mistake was made in filling in the form. Instead of checking a lot of information to find the error, the user can jump to the right field and fix it.</li>
+      <li>Second, the user can quickly find the page they need, see a preview of the whole page and get an idea of it. Because the preview shows the page layout, it is clear at once where the header, footer, subheadings, pictures and so on are.</li>
+    </ul>
+
+    <h2>3. Search</h2>
+    <p>The scrollbar can show where the words found occur in the text. This helps with large amounts of information. Instead of leafing through many pages of text, the user sees the results of the query at once and can quickly find what they are looking for.</p>
+
+    <h2>4. Mail programs</h2>
+    <figure>
+      <img src="outlook.png" width="638" height="478" alt="Microsoft Outlook with dates and colour bands on the scrollbar of the message list.">
+      <figcaption>Dates and colours on the scrollbar of a message list.</figcaption>
+    </figure>
+    <p>Extra scrollbar functions in mail programs bring a good deal of practical benefit and widen what the program offers its users. For example:</p>
+    <ul>
+      <li>In a message, the scrollbar can show the parts written by each correspondent.</li>
+      <li>In the list of messages, the scrollbar can show dates. It helps to show time with colour: from hot red for fresh mail to cold blue for messages that came long ago and have been dealt with.</li>
+    </ul>
+
+    <h2>5. File managers</h2>
+    <figure>
+      <img src="win_explorer_type.png" width="638" height="478" alt="Windows Explorer with the scrollbar coloured by file type.">
+      <figcaption>Files sorted by type: the scrollbar shows where each type begins.</figcaption>
+    </figure>
+    <figure>
+      <img src="win_explorer_a-z.png" width="638" height="478" alt="Windows Explorer with letters of the alphabet on the scrollbar.">
+      <figcaption>Files sorted by name: letters on the scrollbar.</figcaption>
+    </figure>
+    <p>In file folders, the scrollbar can show how the files are sorted and so help find the one you need quickly. This is all the more useful because Windows Explorer can already sort files by several attributes. Combined with an extended scrollbar, this lets you see a set of files in several cross-sections at once.</p>
+    <p>Files can be sorted:</p>
+    <ul>
+      <li>by name, with letters placed on the scrollbar;</li>
+      <li>by type. For example, if the list shows folders first and then files, part of the scrollbar is yellow and the next part grey. To show image files, one could place the Windows Picture and Fax Viewer icon or use a colour, say blue-green; Word files could be light blue, and so on;</li>
+      <li>by date created, for example with colour, as in mail programs;</li>
+      <li>by size, with different colours for different file sizes.</li>
+    </ul>
+
+    <h2>6. Media players</h2>
+    <p>For the user’s convenience, Windows Media Player could mark individual chapters on the scrollbar when playing a DVD. The information is on the disc anyway.</p>
+
+    <h2>7. Images</h2>
+    <figure>
+      <img src="photoshop.jpg" width="638" height="669" alt="An image zoomed to 200% in Photoshop, with a scaled-down outline of the whole picture on the scrollbars; the whole picture is shown below.">
+      <figcaption>A scaled-down outline of the picture on the scrollbars of an image editor.</figcaption>
+    </figure>
+    <p>For images, for example in a popular program such as Photoshop, the scrollbar can show a scaled-down outline of the picture that gives an overall impression of it. This helps when you have to zoom far in while working and horizontal and vertical scrollbars appear.</p>
+    <p>For example, if the picture is a country landscape, the vertical scrollbar shows where the sky ends and the ground begins, and the horizontal one shows where the house is. If the file is a page of a booklet, you can see where the text is and where the pictures are.</p>
+    <p>These are just a few examples of extending what the scrollbar can do, and there is plenty of room for more. Skilful use of extra scrollbar functions can become the highlight of your software product, will certainly improve the quality of the interface and will win users’ sympathy. It is all in your hands!</p>
+  </article>
+
+  <footer><span>© Ivan Boyko, Alexander Belyshkin, Ekaterina Filatova</span><a href="../../">baa.playoftime.online</a></footer>
+</main>
+</body>
+</html>
