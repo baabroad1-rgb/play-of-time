@@ -9,6 +9,10 @@
 
 ## 19 ноября 2026
 
+### Передаточная записка 19.11: Play of Time — договорённости, открытое, грабли, ветки
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d1cf29a2f119b2c5ccf98bd574732bd7ee26fb6a)
+
 ### Measurement: файл передачи дел для новой сессии
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/155d91c0d4f69e44479cb018695276b8b36aa0fd)
@@ -3281,4 +3285,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 324.
+Всего записей: 325.
