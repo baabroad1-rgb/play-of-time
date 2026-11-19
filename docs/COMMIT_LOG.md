@@ -13,6 +13,10 @@
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d1cf29a2f119b2c5ccf98bd574732bd7ee26fb6a)
 
+### docs: передача дел по сайту-визитке baa (договорённости, незаконченное, грабли выкладки)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5c70a0632b8793d2f5d605b9640392f93adef5fe)
+
 ### Measurement: файл передачи дел для новой сессии
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/155d91c0d4f69e44479cb018695276b8b36aa0fd)
@@ -3285,4 +3289,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 325.
+Всего записей: 326.
