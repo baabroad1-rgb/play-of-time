@@ -9,6 +9,10 @@
 
 ## 19 ноября 2026
 
+### baa: шаг 2 — живой пример кольца из Question of the Day (посты 60 и 157)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c1f13e2ddd80c6ed6f6859a74ffd018d77c614fe)
+
 ### baa: шаг 2 — кольцо в Question of the Day (угадать скрытое, сверить, записать новое)
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a06eabd3bc6458d16d2453ccb7f663a4ae498a34)
@@ -3310,4 +3314,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 329.
+Всего записей: 330.
