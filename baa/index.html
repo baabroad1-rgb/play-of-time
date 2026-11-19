@@ -483,7 +483,7 @@ addEventListener("message", function (e) {
   }
   function press(at) {
     if (!on) { on = true; t0 = at; btn.textContent = "Stop"; btn.classList.add("on"); res.textContent = "Counting… press Stop at three."; }
-    else { on = false; btn.textContent = "Again"; btn.classList.remove("on"); var ms = at - t0; if (ms > 10000) res.textContent = "Over ten seconds: try again."; else show(ms); }
+    else { on = false; btn.textContent = "Start"; btn.classList.remove("on"); var ms = at - t0; if (ms > 10000) res.textContent = "Over ten seconds: try again."; else show(ms); }
   }
   function handle(type, at, e) {
     if (type !== lastType && at - lastAt < 500) return;
