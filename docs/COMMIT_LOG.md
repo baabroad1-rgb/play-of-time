@@ -9,6 +9,10 @@
 
 ## 19 ноября 2026
 
+### README и CLAUDE.md: новая сессия начинает с записки своей части от 19.11
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b7dc5fd7841fc39bb5804d4adf70d497e656cef9)
+
 ### Передаточная записка 19.11: Play of Time — договорённости, открытое, грабли, ветки
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d1cf29a2f119b2c5ccf98bd574732bd7ee26fb6a)
@@ -3289,4 +3293,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 326.
+Всего записей: 327.
