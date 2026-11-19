@@ -11,6 +11,18 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/eea82036ed44b5c4c75ee5aa44722349df0643f8)
+
+### baa: в описании канала с цитатами — число книг вместо доли английского (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/cb59a39ac8304b7057f56fcf98f24b9ca45e5a80)
+
+### baa: подробнее о каналах с цитатами и вопросами (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5da09d394a49cfa27ca3664b71f5906b93c59b27)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d613b0135fca5cb9c0246e20b4390405c9b71a10)
 
 ### baa: Publications переименован в Artifacts, туда добавлены «Ревизор» и фотопроект
@@ -3395,4 +3407,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 346.
+Всего записей: 349.
