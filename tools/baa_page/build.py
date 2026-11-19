@@ -189,37 +189,31 @@ def loop_fig(kind):
 STEPS = [
   dict(id='arc', fig='arc', plain='Nothing comes back', term='Reflex arc', q='Do people know what they actually do?',
     body=loop_fig('arc') + f'''      <p>In a reflex arc a signal goes in and an action comes out. Nothing comes back.</p>
-      <p>Much of what we do runs this way. We act, and we never see what we did.</p>
-      <p class="me">My first research measured that gap. I compared how different kinds of users picture their own work at a computer with what they actually do.</p>
-      <p class="me">Later, at the lab, we interrupted people editing a file in Word: find a number in the phone book, now. Then we watched how they found their way back to the text.</p>
-      <p class="me">We could see their strategies. The people using them mostly could not.</p>
+      <p>Much of what we do works this way: we act and never see what we did.</p>
+      <p class="me">My first research measured that gap: how different kinds of users picture their work at a computer, compared with what they actually do.</p>
+      <p class="me">Later, at the lab, we interrupted people editing a Word document with another task, such as finding a number in a phone book, and watched them find their way back. We could see their strategies. They mostly could not.</p>
 '''),
   dict(id='ring', fig='ring', plain='Your own senses', term='Reflex ring', q='Can you correct yourself while you act?',
-    body='''''' + ring_fig() + '''      <p>Almost nothing we do is done in one go. You start, see how it is going and adjust. Again and again, mostly without noticing.</p>
-      <p>Pouring tea, you watch the level and slow down near the top. On a bike you are never still: every wobble is noticed and corrected.</p>
-      <p>Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring. Unlike the arc, the result comes back and steers the next move. Today we would call it a feedback loop.</p>
-      <p>The ring works while the senses report what matters. They are good with a teapot or a bike. They are poor with time, the sound of your own voice or the way you spend a day. There the ring needs help from outside: steps 3 and 4.</p>
-      <p class="me">Since 2023 I have run the same ring on myself, only slower. I record what I do, come back to the record later, compare it with what I meant, and change the next round.</p>
-      <p class="me"><b>Books.</b> I read about 52 a year. I quote not all of them, only the ones that widen my context most, in <a href="https://t.me/baaqod" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>aka mulator</a>, a Telegram channel of quotes: over 800 since 2022, from some 65 books. Most are about how the mind works and where it came from: Vygotsky’s <i>Thinking and Speech</i> and <i>The Psychology of Art</i>, Csikszentmihalyi’s <i>Flow</i>, Jaynes on the bicameral mind, Dunbar, Luria, Uznadze, Lakoff, Pinker, Deutsch. Others are about time, language, money, and what technology does to people. Reading the channel, I watch myself reading.</p>
-      <p class="me"><b>Questions.</b> The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day since December 2023: over 850 so far, in Russian. They are about how we see ourselves and the world: time, meaning, context, inner speech, the way we think and the mistakes we make in it. Many hide an answer or a further question under a tap.</p>
-      <p class="me">Later I reread them and guess what is hidden before I tap. The gap shows how much I have changed. When the new guess is quite different, it becomes a new question linked to the old one, and the rings join into chains.</p>
-      <p class="me">One chain: in <a href="https://t.me/q_of_t_d/60" target="_blank" rel="noopener">January 2024</a> I asked how long it would take me to learn to count off three seconds within 3%. In <a href="https://t.me/q_of_t_d/157" target="_blank" rel="noopener">April</a> I answered under the same post: about three months, and now ten tries in a row within 0.09 s.</p>
+    body='''''' + ring_fig() + '''      <p>Almost nothing is done in one go. You start, see how it is going and adjust, mostly without noticing. Pouring tea, you slow down near the top. On a bike, you correct every wobble.</p>
+      <p>Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: the result comes back and steers the next move. Today we would say feedback loop.</p>
+      <p>The ring works when the senses report what matters. They do with a teapot or a bike, but not with time, your own voice or how you spend a day. There the ring needs help from outside: steps 3 and 4.</p>
+      <p class="me">Since 2023 I have run this ring on myself, only slower. I record what I do, come back to it later, compare it with what I meant, and change the next round.</p>
+      <p class="me"><b>Books.</b> I read about 52 a year and quote the ones that widen my context most in <a href="https://t.me/baaqod" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>aka mulator</a>, a Telegram channel: over 800 quotes from some 65 books since 2022. Most are about how the mind works and where it came from: Vygotsky, Csikszentmihalyi, Jaynes, Dunbar, Luria, Uznadze, Lakoff, Pinker, Deutsch. Others are about time, language, money and technology. Rereading the channel, I watch myself read.</p>
+      <p class="me"><b>Questions.</b> The questions these books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day since December 2023, over 850 so far: about time, meaning, context, inner speech, how we think and where we go wrong. Many hide an answer or a follow-up under a tap.</p>
+      <p class="me">Later I reread them and guess what is hidden before I tap. The gap shows how much I have changed. A guess that turns out very different becomes a new question linked to the old one, so the rings form chains.</p>
+      <p class="me">One chain: in <a href="https://t.me/q_of_t_d/60" target="_blank" rel="noopener">January 2024</a> I asked how long it would take me to learn to count three seconds within 3%. In <a href="https://t.me/q_of_t_d/157" target="_blank" rel="noopener">April</a> I answered under the same post: about three months, and now ten in a row within 0.09 s.</p>
 '''),
   dict(id='co', fig='co', plain='Another person', term='Co-regulation', q='Who sees what you can’t?',
-    body=loop_fig('co') + '''      <p>Some things you cannot see from the inside, however closely you listen to yourself. Then the loop needs another person, included on purpose: someone who watches from the outside and tells you.</p>
-      <p>I call this co&#8209;regulation. Two people keep one loop going: one acts, the other watches and tells.</p>
-      <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it closed in 2023, we watched real people use a product. Then we showed the people who built it what we saw.</p>
-      <p class="me">That was around 2,000 projects for Russian and international clients.</p>
-      <p class="me"><b>Readers.</b> In the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> I retell philosophical texts in plain English. The readers show me where I am still unclear.</p>
+    body=loop_fig('co') + '''      <p>Some things you cannot see from the inside, however closely you listen to yourself. Then the loop needs another person: someone who watches from outside and tells you.</p>
+      <p>I call this co&#8209;regulation: two people run one loop. One acts, the other watches and tells.</p>
+      <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until 2023, we watched real people use products and showed the makers what we saw: about 2,000 projects for Russian and international clients.</p>
+      <p class="me"><b>Readers.</b> In the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> I retell philosophical texts in plain English, and readers show me where I am still unclear.</p>
 '''),
   dict(id='auto', fig='auto', plain='A device', term='Automated co-regulation', q='Can a device be the other?',
-    body=loop_fig('auto') + '''      <p>A person who watches you cannot be there all the time. A device can: software, AI, wearable sensors.</p>
-      <p>The work is to make what it reports useful: instant, and exact enough to act on.</p>
+    body=loop_fig('auto') + '''      <p>Someone watching you cannot be there all the time. A device can: software, AI, wearable sensors. The work is to make what it reports useful: immediate, and exact enough to act on.</p>
       <p>Two of my tools do this for two things the senses report poorly: time and your own voice.</p>
-      <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. By feel you cannot tell how far off you were.</p>
-      <p class="me">After every attempt it tells you how precise you were and whether you rush or hold back. It also shows your Lucky Index: how often you hit the target, divided by how often pure chance would.</p>
-''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. It shows, word by word, which words came out right.</p>
-      <p class="me">Try it below: press the button, allow the microphone, and read the paragraph aloud.</p>
+      <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. By feel you cannot tell how far off you are. After each attempt it shows how precise you were, whether you rush or hold back, and your Lucky Index: how often you hit the target compared with pure chance.</p>
+''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens as you read an English book aloud and shows which words came out right. Try it below: press the button, allow the microphone and read the paragraph.</p>
 ''' + aloud),
 ]
 
@@ -236,15 +230,15 @@ def steps_html():
 ''')
     return ''.join(out)
 
-MAP = ('  <nav class="steps" aria-labelledby="steps-h"><p class="steps-h" id="steps-h">Four ways what you do can come back to you</p><ol>'
+MAP = ('  <nav class="steps" aria-labelledby="steps-h"><p class="steps-h" id="steps-h">Four ways what you do comes back to you</p><ol>'
     + ''.join(f'<li><a href="#{st["id"]}">{svg(st["fig"], "")}<span><b>{st["plain"]}</b><small>{re.sub(r"(\S+-\S+)", r'<span class="nw">\1</span>', st["term"])}</small></span></a></li>' for st in STEPS)
     + '</ol></nav>\n\n')
 
 INTRO = '''  <h1 class="intro">People don’t see much of what they actually do until a useful feedback loop shows them.</h1>
-  <p class="lede lede-try">Check it on yourself. Count three seconds in your head: press Start, then Stop. The timer stays hidden until you stop.</p>
+  <p class="lede lede-try">Try it: press Start, count three seconds in your head, press Stop. The timer stays hidden until you do.</p>
   <div class="blind" id="blind">
     <button type="button" class="blind-btn" id="blind-btn">Start</button>
-    <p class="blind-res" id="blind-res" aria-live="polite">How far off will you be? Most people cannot tell by feel.</p>
+    <p class="blind-res" id="blind-res" aria-live="polite">How far off will you be?</p>
   </div>
 
 '''
@@ -253,15 +247,15 @@ INTRO = '''  <h1 class="intro">People don’t see much of what they actually do 
 TAIL = f'''  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
-      <p>Write with one concrete case: who needs to see what, and what should change once they see it. It can be your team, your users or you yourself. I will reply with a sketch of the loop: what to record, who or what reports it back, and how soon.</p>
-      <p>If you think about the same things, write too. Tell me what you noticed in yourself and how you checked it.</p>
+      <p>Write to me with one concrete case: who needs to see what, and what should change once they do. It can be your team, your users or you. I will reply with a sketch of the loop: what to record, who or what reports back, and how soon.</p>
+      <p>If you think about the same things, write too: what have you noticed in yourself, and how did you check it?</p>
       <p class="mail">{MAIL}</p>
     </div>
   </section>
 
   <section class="bio">
     <h2>Where and when</h2>
-    <p class="about">A feedback methodologist works out how people can get back an exact and timely picture of what they actually do: from their own records, from another person or from a device.</p>
+    <p class="about">A feedback methodologist works out how people can get an exact, timely picture of what they actually do: from their own records, another person or a device.</p>
     <ul>
       <li>1997–2001 · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</li>
       <li>2001–2023 · Usethics, founder and director</li>
