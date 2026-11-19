@@ -11,6 +11,17 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/76772036306d7aaf7f34f5561fb3216cb8f0ddaf)
+
+### baa: ссылки разных типов выглядят по-разному, значки Reddit и Medium (не выложено)
+
+Страница этого сайта — без пометок; другой сайт Алекса — домик перед;
+чужой сайт — значок сервиса, если есть, и ↗ после; почта — конверт.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/824f72a8932e05751f473f0eee3b8e1215e2f51a)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c69d722a62c820f2e5550fe23987e673c7fbf2f3)
 
 ### baa: значок Telegram у ссылок на каналы (не выложено)
@@ -3348,4 +3359,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 336.
+Всего записей: 338.
