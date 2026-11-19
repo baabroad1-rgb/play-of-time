@@ -9,6 +9,14 @@
 
 ## 19 ноября 2026
 
+### merge main
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/335677acca3a2024c1a2cbe7310f19647e0cde3e)
+
+### Записка baa: брать примеры из открытых каналов Алекса, а не спрашивать
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/fb1eb3839acc678e34672704b9cc4c2ed7806e15)
+
 ### baa: шаг 2 — живой пример кольца из Question of the Day (посты 60 и 157)
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c1f13e2ddd80c6ed6f6859a74ffd018d77c614fe)
@@ -3314,4 +3322,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 330.
+Всего записей: 332.
