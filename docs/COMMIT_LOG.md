@@ -11,6 +11,18 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d613b0135fca5cb9c0246e20b4390405c9b71a10)
+
+### baa: Publications переименован в Artifacts, туда добавлены «Ревизор» и фотопроект
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/0722be4d4a0a2539ca08a30688e5acc3291f4baf)
+
+### baa: «Ревизор» и фотопроект вынесены из шагов в свёрнутый список Artifacts (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3b91f9f97b79104e15c876be9f8805af7e35fe1e)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5bc08a1ebb2511f4be9f9c3df2892da95c5eeb25)
 
 ### baa: русский оригинал статьи 2000 года (PDF); пункт 1997 года ведёт на статью, а не на usability.ru (не выложено)
@@ -3383,4 +3395,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 343.
+Всего записей: 346.
