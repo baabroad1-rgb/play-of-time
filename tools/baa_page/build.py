@@ -77,6 +77,29 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .pubs .todo { display: none; }
 /* paragraphs about my own work read as notes to the idea */
 .col p.me { font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+/* ---- v2: plain names, first-screen test ---- */
+.lede.lede-try { margin-bottom: 20px; }
+.blind { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin: 0 0 clamp(48px, 8vw, 96px); font-family: var(--sans); font-size: 16px; line-height: 1.4; }
+.blind-btn { font: inherit; font-size: 18px; font-weight: 700; min-width: 7.5em; min-height: 52px; padding: 0 22px; background: var(--fg); color: var(--bg); border: 1px solid var(--fg); border-radius: 10px; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.blind-btn.on { background: var(--bg); color: var(--fg); }
+.blind-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.blind-res { margin: 0; flex: 1 1 16em; min-width: 0; }
+.blind-res b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.steps { display: block; }
+.steps-h { margin: 0 0 12px; font-weight: 700; }
+.steps ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 20px; counter-reset: st; }
+.steps li { counter-increment: st; min-width: 0; }
+.steps li a { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 4px 10px; min-height: 44px; }
+.steps li a span { display: grid; gap: 1px; }
+.steps li a span b::before { content: counter(st) ". "; }
+.steps li a small { font-size: 13px; }
+.steps li a:hover b { text-decoration: underline; }
+.stephead .plain { font-family: var(--sans); font-size: 15px; font-weight: 700; }
+.stephead .term { font-weight: 400 !important; font-size: 13px !important; }
+.bio .about { margin: 0 0 12px; max-width: 34em; font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+.you .mail { font-size: 20px; }
+details.pubwrap summary { min-height: 44px; }
+@media (max-width: 760px) { .steps ol { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 680px) {
   .ringfig { float: none; margin: 4px auto 18px; }
   section.interest { display: block; }
@@ -93,7 +116,9 @@ FIG = {
   'co': '<circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><circle class="fig-dot" cx="57" cy="20" r="2.4"/>',
   'auto': '<circle class="fig" cx="20" cy="20" r="13"/><circle class="fig" cx="44" cy="20" r="13"/><circle class="fig-dot" cx="7" cy="20" r="2.4"/><rect class="fig-dev" x="52.5" y="15.5" width="9" height="9" rx="1.5"/>',
 }
-def svg(k, label): return f'<svg viewBox="0 0 64 40" role="img" aria-label="{label}">{FIG[k]}</svg>'
+def svg(k, label):
+    a = f'role="img" aria-label="{label}"' if label else 'aria-hidden="true" focusable="false"'
+    return f'<svg viewBox="0 0 64 40" {a}>{FIG[k]}</svg>'
 
 def ring_fig():
     # act → see what happened → compare with the aim → correct → act …, clockwise around the aim
@@ -159,21 +184,21 @@ def loop_fig(kind):
             + defs + body + '</svg></figure>\n')
 
 STEPS = [
-  dict(id='arc', fig='arc', term='Reflex arc', q='Do people know what they actually do?',
+  dict(id='arc', fig='arc', plain='Nothing comes back', term='Reflex arc', q='Do people know what they actually do?',
     body=loop_fig('arc') + f'''      <p>In a reflex arc a signal goes in, an action comes out, and nothing comes back. Much of what we do runs this way: we act, and we do not see what we did.</p>
       <p class="me">My first research measured that gap: how different kinds of users picture their own work at a computer, set against what they actually do. Later, at the lab, we interrupted people editing a file in Word with another task, such as finding a number in a phone book, and watched how they got back to the original task. We could see their strategies; the people using them mostly could not.</p>
 '''),
-  dict(id='ring', fig='ring', term='Reflex ring', q='Can you correct yourself while you act?',
+  dict(id='ring', fig='ring', plain='Your own senses', term='Reflex ring', q='Can you correct yourself while you act?',
     body='''''' + ring_fig() + '''      <p>Almost nothing we do is done in one go. You start, see how it is going and adjust, again and again, mostly without noticing. Pouring tea, you watch the level and slow down near the top. On a bike you are never still: every wobble is noticed and corrected. Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: unlike the arc, the result comes back and steers the next move. Today we would call it a feedback loop.</p>
       <p>The ring works as long as the senses report what matters. They are good with a teapot or a bike, and poor with time, the sound of your own voice or the way you spend a day. For these, the ring needs help from outside. That is what steps 3 and 4 are about.</p>
       <p class="me">On myself, from 2023 to 2026, I ran the same ring more slowly: I record what I do, come back to the record later as an observer, compare it with what I meant to do, and change the next round. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes; reading it, I watch myself reading. The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. Many have a hidden part, an answer or a further question, that opens with a tap. Rereading them later, I try to guess what is hidden before I tap, then check: the gap shows how much I have changed since. When my new guess is quite different, I post it as a new question that links to the old one, and the rings join into chains. In <a href="https://t.me/q_of_t_d/60" target="_blank" rel="noopener">January 2024</a> I asked how long it would take me to learn to count off three seconds within 3%; in <a href="https://t.me/q_of_t_d/157" target="_blank" rel="noopener">April</a> I answered under the same post: about three months, and now ten tries in a row within 0.09 s. I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself: the same ring, with my voice.</p>
 '''),
-  dict(id='co', fig='co', term='Co-regulation', q='Who sees what you can’t?',
+  dict(id='co', fig='co', plain='Another person', term='Co-regulation', q='Who sees what you can’t?',
     body=loop_fig('co') + '''      <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back. I call this co&#8209;regulation: two people keep one loop going, one acts, the other watches and tells.</p>
       <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients.</p>
       <p class="me">On myself: in <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a>, a photographer shot a dream of mine as a series of pictures; they show me from the outside how I looked and what I was thinking in it. I also retell philosophical texts in plain English in the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>, and the readers show me where I am still unclear.</p>
 '''),
-  dict(id='auto', fig='auto', term='Automated co-regulation', q='Can a device be the other?',
+  dict(id='auto', fig='auto', plain='A device', term='Automated co-regulation', q='Can a device be the other?',
     body=loop_fig('auto') + '''      <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this, for two things from step 2 that the senses report poorly: time and your own voice.</p>
       <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. By feel you cannot tell how far off you were. Every attempt tells you how precise you were, whether you are rushing or holding back, and your Lucky Index: how often you hit the target, divided by how often pure chance would.</p>
 ''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud and shows, word by word, which words came out right. Try it on the paragraph below: press the button, allow microphone access, and read it aloud.</p>
@@ -184,7 +209,7 @@ def steps_html():
     out = []
     for k, st in enumerate(STEPS, 1):
         out.append(f'''  <section class="interest" id="{st["id"]}">
-    <div class="stephead">{svg(st["fig"], st["term"])}<span><span class="num">Step {k} of 4</span><span class="term">{re.sub(r"(\S+-\S+)", r'<span class="nw">\1</span>', st["term"])}</span></span></div>
+    <div class="stephead">{svg(st["fig"], st["term"])}<span><span class="num">Step {k} of 4</span><span class="plain">{st["plain"]}</span><span class="term">{re.sub(r"(\S+-\S+)", r'<span class="nw">\1</span>', st["term"])}</span></span></div>
     <h2>{st["q"]}</h2>
     <div class="col">
 {st["body"]}    </div>
@@ -193,24 +218,31 @@ def steps_html():
 ''')
     return ''.join(out)
 
-MAP = '  <nav class="steps" aria-label="Four steps">' + '<span class="arr" aria-hidden="true">→</span>'.join(
-    f'<a href="#{st["id"]}">{svg(st["fig"], "")}<span>{st["term"]}</span></a>' for st in STEPS) + '</nav>\n\n'
+MAP = ('  <nav class="steps" aria-labelledby="steps-h"><p class="steps-h" id="steps-h">Four ways what you do can come back to you</p><ol>'
+    + ''.join(f'<li><a href="#{st["id"]}">{svg(st["fig"], "")}<span><b>{st["plain"]}</b><small>{re.sub(r"(\S+-\S+)", r'<span class="nw">\1</span>', st["term"])}</small></span></a></li>' for st in STEPS)
+    + '</ol></nav>\n\n')
 
-INTRO = '''  <h1 class="intro">People don’t see what they actually do unless a useful feedback loop shows them.</h1>
-  <p class="lede">Four steps: no feedback at all, then your own senses, then another person, then a device.</p>
+INTRO = '''  <h1 class="intro">People don’t see much of what they actually do until a useful feedback loop shows them.</h1>
+  <p class="lede lede-try">Check it on yourself. Count three seconds in your head: press Start, then Stop. The timer stays hidden until you stop.</p>
+  <div class="blind" id="blind">
+    <button type="button" class="blind-btn" id="blind-btn">Start</button>
+    <p class="blind-res" id="blind-res" aria-live="polite">How far off will you be? Most people cannot tell by feel.</p>
+  </div>
 
 '''
 
 TAIL = f'''  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
-      <p>Tell me who needs to see what, and what should change once they see it: your team, your users or you yourself. I will reply with a sketch of the loop: what to record, who or what reports it back, and how soon.</p>
-      <p>{MAIL}</p>
+      <p>Write with one concrete case: who needs to see what, and what should change once they see it. It can be your team, your users or you yourself. I will reply with a sketch of the loop: what to record, who or what reports it back, and how soon.</p>
+      <p>If you think about the same things, write too. Tell me what you noticed in yourself and how you checked it.</p>
+      <p class="mail">{MAIL}</p>
     </div>
   </section>
 
   <section class="bio">
     <h2>Where and when</h2>
+    <p class="about">A feedback methodologist works out how people can get back an exact and timely picture of what they actually do: from their own records, from another person or from a device.</p>
     <ul>
       <li>1997–2001 · Laboratory of Work Psychology, Faculty of Psychology, Moscow State University</li>
       <li>2001–2023 · Usethics, founder and director</li>
