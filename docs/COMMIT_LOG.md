@@ -9,6 +9,14 @@
 
 ## 19 ноября 2026
 
+### merge main
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c69d722a62c820f2e5550fe23987e673c7fbf2f3)
+
+### baa: значок Telegram у ссылок на каналы (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c4035508af90df871354f687d72b9b706b7f0ad9)
+
 ### baa: тексты шагов короткими абзацами (черновик, на сайт не выложено)
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bdb457243662bf1b88d94775f549b27f4ed16848)
@@ -3340,4 +3348,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 334.
+Всего записей: 336.
