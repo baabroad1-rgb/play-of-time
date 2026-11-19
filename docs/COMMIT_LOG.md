@@ -11,6 +11,22 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d143651a197c63600b0ba7f7ed981ecd740d0cdc)
+
+### baa: кнопка проверки на первом экране после остановки снова Start (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1dd784affa39c91e579d266d351d59cdfeb9efcf)
+
+### baa: переводы двух статей — Вестник МГУ 2000 и «Новая жизнь полосы прокрутки» (не выложено)
+
+Страницы с пометкой AI-translated, местом первой публикации и ссылкой на
+оригинал, PDF, картинки статьи о скролбаре с visualpharm.ru. Ссылки на них
+из списка публикаций; стили рисунков и таблиц в texts/article.css; sitemap.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/67e2c0413c15b94a238397ba2c1f0f018421ae2e)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/76772036306d7aaf7f34f5561fb3216cb8f0ddaf)
 
 ### baa: ссылки разных типов выглядят по-разному, значки Reddit и Medium (не выложено)
@@ -3359,4 +3375,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 338.
+Всего записей: 341.
