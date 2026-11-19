@@ -204,14 +204,12 @@ STEPS = [
       <p class="me"><b>Questions.</b> The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day. Many hide an answer or a further question under a tap.</p>
       <p class="me">Later I reread them and guess what is hidden before I tap. The gap shows how much I have changed. When the new guess is quite different, it becomes a new question linked to the old one, and the rings join into chains.</p>
       <p class="me">One chain: in <a href="https://t.me/q_of_t_d/60" target="_blank" rel="noopener">January 2024</a> I asked how long it would take me to learn to count off three seconds within 3%. In <a href="https://t.me/q_of_t_d/157" target="_blank" rel="noopener">April</a> I answered under the same post: about three months, and now ten tries in a row within 0.09 s.</p>
-      <p class="me"><b>Voice.</b> I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself. The same ring, with my voice.</p>
 '''),
   dict(id='co', fig='co', plain='Another person', term='Co-regulation', q='Who sees what you can’t?',
     body=loop_fig('co') + '''      <p>Some things you cannot see from the inside, however closely you listen to yourself. Then the loop needs another person, included on purpose: someone who watches from the outside and tells you.</p>
       <p>I call this co&#8209;regulation. Two people keep one loop going: one acts, the other watches and tells.</p>
       <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it closed in 2023, we watched real people use a product. Then we showed the people who built it what we saw.</p>
       <p class="me">That was around 2,000 projects for Russian and international clients.</p>
-      <p class="me"><b>Pictures.</b> In <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a>, a photographer shot a dream of mine as a series of pictures. They show me from the outside: how I looked and what I was thinking in it.</p>
       <p class="me"><b>Readers.</b> In the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a> I retell philosophical texts in plain English. The readers show me where I am still unclear.</p>
 '''),
   dict(id='auto', fig='auto', plain='A device', term='Automated co-regulation', q='Can a device be the other?',
@@ -251,6 +249,12 @@ INTRO = '''  <h1 class="intro">People don’t see much of what they actually do 
 
 '''
 
+ARTS = ('  <details class="pubwrap arts">\n    <summary><span>Artifacts</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>\n'
+  '    <div class="col">\n      <ol class="pubs">\n'
+  '          <li><span class="yr"></span><span class="t"><a href="revizor/">Gogol’s <i>The Government Inspector</i></a></span><span class="d">A radio play I recorded, reading it myself.</span></li>\n'
+  '          <li><span class="yr"></span><span class="t"><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">A dream in pictures</a></span><span class="d">A photo project: a photographer shot a dream of mine as a series of pictures.</span></li>\n'
+  '      </ol>\n    </div>\n  </details>\n')
+
 TAIL = f'''  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
@@ -270,7 +274,7 @@ TAIL = f'''  <section class="you">
     </ul>
   </section>
 
-''' + pubwrap + '\n'
+''' + pubwrap + '\n' + ARTS + '\n'
 
 # Service marks before links to well-known services (glyphs from simple-icons, CC0).
 # Telegram links carry their mark in the text above; Reddit and Medium get theirs here,
@@ -302,6 +306,7 @@ def mark_links(h):
             inner = ico(MARKS[svc]) + inner
         return a + inner + '<span class="ext" aria-hidden="true">↗</span></a>'
     return re.sub(r'(<a [^>]*>)(.*?)</a>', one, h, flags=re.S)
+
 
 body = mark_links('<main class="wrap">\n' + who + INTRO + MAP + steps_html() + TAIL + footer + '</main>\n') + scripts
 html = src[:src.index('<!--head:start-->')] + '<!--head:start-->\n' + head + '<style>\n' + style + EXTRA \
