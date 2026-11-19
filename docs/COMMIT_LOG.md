@@ -11,6 +11,14 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5bc08a1ebb2511f4be9f9c3df2892da95c5eeb25)
+
+### baa: русский оригинал статьи 2000 года (PDF); пункт 1997 года ведёт на статью, а не на usability.ru (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ab4a930c27b9c8da2da12cf8ecb97fd1be0b4182)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/d143651a197c63600b0ba7f7ed981ecd740d0cdc)
 
 ### baa: кнопка проверки на первом экране после остановки снова Start (не выложено)
@@ -3375,4 +3383,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 341.
+Всего записей: 343.
