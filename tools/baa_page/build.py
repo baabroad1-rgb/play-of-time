@@ -29,7 +29,7 @@ pubwrap = grab('  <details class="pubwrap">', '</details>\n')
 pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Publications, 1997–2011</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
     '<path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>', pubwrap, count=1, flags=re.S)
 href = lambda part: re.search(r'href="([^"]*' + re.escape(part) + r'[^"]*)"', src).group(1)
-U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">[^<]+</a>)', src).group(1)
+U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">.*?</a>)', src, re.S).group(1)
 
 if DRAFT:
     head = re.sub(r'<link rel="canonical"[^>]*>\n', '', head)
@@ -78,6 +78,7 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 /* paragraphs about my own work read as notes to the idea */
 .col p.me { font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 /* Telegram mark before links to the channels */
+.ext { margin-left: 0.15em; font-size: 0.85em; text-decoration: none; display: inline-block; }
 .ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.28em; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
@@ -271,7 +272,38 @@ TAIL = f'''  <section class="you">
 
 ''' + pubwrap + '\n'
 
-body = '<main class="wrap">\n' + who + INTRO + MAP + steps_html() + TAIL + footer + '</main>\n' + scripts
+# Service marks before links to well-known services (glyphs from simple-icons, CC0).
+# Telegram links carry their mark in the text above; Reddit and Medium get theirs here,
+# also inside the publications block, which is taken from the built page, hence the guard.
+MARKS = {'reddit.com': 'M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c1.104 0 1.999.895 1.999 1.999 0 1.105-.895 2-1.999 2-.946 0-1.739-.657-1.947-1.539v.002c-1.147.162-2.032 1.15-2.032 2.341v.007c1.776.067 3.4.567 4.686 1.363.473-.363 1.064-.58 1.707-.58 1.547 0 2.802 1.254 2.802 2.802 0 1.117-.655 2.081-1.601 2.531-.088 3.256-3.637 5.876-7.997 5.876-4.361 0-7.905-2.617-7.998-5.87-.954-.447-1.614-1.415-1.614-2.538 0-1.548 1.255-2.802 2.803-2.802.645 0 1.239.218 1.712.585 1.275-.79 2.881-1.291 4.64-1.365v-.01c0-1.663 1.263-3.034 2.88-3.207.188-.911.993-1.595 1.959-1.595Zm-8.085 8.376c-.784 0-1.459.78-1.506 1.797-.047 1.016.64 1.429 1.426 1.429.786 0 1.371-.369 1.418-1.385.047-1.017-.553-1.841-1.338-1.841Zm7.406 0c-.786 0-1.385.824-1.338 1.841.047 1.017.634 1.385 1.418 1.385.785 0 1.473-.413 1.426-1.429-.046-1.017-.721-1.797-1.506-1.797Zm-3.703 4.013c-.974 0-1.907.048-2.77.135-.147.015-.241.168-.183.305.483 1.154 1.622 1.964 2.953 1.964 1.33 0 2.47-.81 2.953-1.964.057-.137-.037-.29-.184-.305-.863-.087-1.795-.135-2.769-.135Z', 'medium.com': 'M4.21 0A4.201 4.201 0 0 0 0 4.21v15.58A4.201 4.201 0 0 0 4.21 24h15.58A4.201 4.201 0 0 0 24 19.79v-1.093c-.137.013-.278.02-.422.02-2.577 0-4.027-2.146-4.09-4.832a7.592 7.592 0 0 1 .022-.708c.093-1.186.475-2.241 1.105-3.022a3.885 3.885 0 0 1 1.395-1.1c.468-.237 1.127-.367 1.664-.367h.023c.101 0 .202.004.303.01V4.211A4.201 4.201 0 0 0 19.79 0Zm.198 5.583h4.165l3.588 8.435 3.59-8.435h3.864v.146l-.019.004c-.705.16-1.063.397-1.063 1.254h-.003l.003 10.274c.06.676.424.885 1.063 1.03l.02.004v.145h-4.923v-.145l.019-.005c.639-.144.994-.353 1.054-1.03V7.267l-4.745 11.15h-.261L6.15 7.569v9.445c0 .857.358 1.094 1.063 1.253l.02.004v.147H4.405v-.147l.019-.004c.705-.16 1.065-.397 1.065-1.253V6.987c0-.857-.358-1.094-1.064-1.254l-.018-.004zm19.25 3.668c-1.086.023-1.733 1.323-1.813 3.124H24V9.298a1.378 1.378 0 0 0-.342-.047Zm-1.862 3.632c-.1 1.756.86 3.239 2.204 3.634v-3.634z'}
+HOUSE = 'M12 3 2.5 11.2h2.8V21h5.2v-5.6h3V21h5.2v-9.8h2.8z'
+ENVELOPE = 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2 7.4 5.6L19.4 7z'
+OWN = ('playoftime.online', 'dreamsmoker.playoftime.online')
+def ico(d): return f'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="{d}"/></svg>'
+def mark_links(h):
+    # Four kinds of links look different: a page of this site — plain; another site of mine —
+    # a house before; someone else's site — the service mark if there is one and ↗ after;
+    # e-mail — an envelope before. Guards keep it stable, since parts come from the built page.
+    def one(m):
+        a, inner = m.group(1), m.group(2)
+        href = re.search(r'href="([^"]*)"', a).group(1)
+        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner:
+            return m.group(0)
+        if href.startswith('mailto:'):
+            return a + ico(ENVELOPE).replace('class="ico"', 'class="ico mail"') + inner + '</a>'
+        host = re.match(r'https?://([^/]+)', href)
+        if not host or host.group(1) == 'baa.playoftime.online':
+            return m.group(0)
+        host = host.group(1)
+        if host in OWN:
+            return a + ico(HOUSE).replace('class="ico"', 'class="ico own"') + inner + '</a>'
+        svc = next((k for k in MARKS if host.endswith(k)), None)
+        if svc and not inner.startswith('<svg class="ico"'):
+            inner = ico(MARKS[svc]) + inner
+        return a + inner + '<span class="ext" aria-hidden="true">↗</span></a>'
+    return re.sub(r'(<a [^>]*>)(.*?)</a>', one, h, flags=re.S)
+
+body = mark_links('<main class="wrap">\n' + who + INTRO + MAP + steps_html() + TAIL + footer + '</main>\n') + scripts
 html = src[:src.index('<!--head:start-->')] + '<!--head:start-->\n' + head + '<style>\n' + style + EXTRA \
     + '</style>\n' + src[src.index('</style>\n') + len('</style>\n'):src.index('<!--body:start-->')] \
     + '<!--body:start-->\n' + body + src[src.index('<!--body:end-->'):]
