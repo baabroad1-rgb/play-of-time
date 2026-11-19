@@ -26,7 +26,7 @@ footer = grab('  <footer>', '</footer>\n')
 scripts = src[src.index('</main>\n') + len('</main>\n'):src.index('<!--body:end-->')]
 pubwrap = grab('  <details class="pubwrap">', '</details>\n')
 # the toggle: title and a chevron that turns when open
-pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Publications, 1997–2011</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
+pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Artifacts</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
     '<path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>', pubwrap, count=1, flags=re.S)
 href = lambda part: re.search(r'href="([^"]*' + re.escape(part) + r'[^"]*)"', src).group(1)
 U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">.*?</a>)', src, re.S).group(1)
@@ -249,11 +249,6 @@ INTRO = '''  <h1 class="intro">People don’t see much of what they actually do 
 
 '''
 
-ARTS = ('  <details class="pubwrap arts">\n    <summary><span>Artifacts</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>\n'
-  '    <div class="col">\n      <ol class="pubs">\n'
-  '          <li><span class="yr"></span><span class="t"><a href="revizor/">Gogol’s <i>The Government Inspector</i></a></span><span class="d">A radio play I recorded, reading it myself.</span></li>\n'
-  '          <li><span class="yr"></span><span class="t"><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">A dream in pictures</a></span><span class="d">A photo project: a photographer shot a dream of mine as a series of pictures.</span></li>\n'
-  '      </ol>\n    </div>\n  </details>\n')
 
 TAIL = f'''  <section class="you">
     <div class="col">
@@ -274,7 +269,7 @@ TAIL = f'''  <section class="you">
     </ul>
   </section>
 
-''' + pubwrap + '\n' + ARTS + '\n'
+''' + pubwrap + '\n'
 
 # Service marks before links to well-known services (glyphs from simple-icons, CC0).
 # Telegram links carry their mark in the text above; Reddit and Medium get theirs here,
