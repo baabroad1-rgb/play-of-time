@@ -68,10 +68,13 @@ section.interest > h2, section.interest > .col { grid-column: 2; }
 .ringfig .lbl { font-family: var(--sans); font-size: 15px; fill: var(--fg); }
 .ringfig .nm { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--fg); }
 .ringfig .ctr { font-family: var(--sans); font-size: 16px; font-weight: 700; fill: var(--fg); }
-#ring .col { display: block; }
-#ring .col > p { margin: 0 0 16px; }
-#ring .col > p:last-child { margin-bottom: 0; }
-#ring .col::after { content: ""; display: block; clear: both; }
+section.interest .col { display: block; }
+section.interest .col > p, section.interest .col > .pot { margin: 0 0 16px; }
+section.interest .col > :last-child { margin-bottom: 0; }
+section.interest .col::after { content: ""; display: block; clear: both; }
+section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
+/* sources still being looked for: keep the entry, hide the note */
+.pubs .todo { display: none; }
 /* paragraphs about my own work read as notes to the idea */
 .col p.me { font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 @media (max-width: 680px) {
@@ -118,25 +121,62 @@ def ring_fig():
     parts.append(f'<text class="ctr" x="{cx}" y="{cy + 6}" text-anchor="middle">the aim</text></svg>')
     return '      <figure class="ringfig">' + ''.join(parts) + '</figure>\n'
 
+def loop_fig(kind):
+    # Small figures for steps 1, 3 and 4, in the style of the ring in step 2.
+    # arc: a signal goes in, an action comes out, nothing comes back;
+    # co / auto: what you do goes to another person or a device, and what they see comes back.
+    mk = f'ah-{kind}'
+    defs = (f'<defs><marker id="{mk}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
+            '<path d="M0,0 L10,5 L0,10 z" fill="#000"/></marker></defs>')
+    line = f'fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#{mk})"'
+    if kind == 'arc':
+        label = 'The reflex arc: a signal goes in, an action comes out, nothing comes back'
+        body = (f'<path d="M48,96 Q160,-4 268,92" {line}/>'
+                '<circle cx="48" cy="96" r="4" fill="#000"/>'
+                '<text class="lbl" x="48" y="122" text-anchor="middle">signal</text>'
+                '<text class="lbl" x="272" y="122" text-anchor="middle">action</text>'
+                '<text class="ctr" x="160" y="74" text-anchor="middle">you</text>'
+                '<path d="M250,140 L70,140" fill="none" stroke="#8C8C8C" stroke-width="1.5" stroke-dasharray="5 5"/>'
+                '<text class="lbl" x="160" y="164" text-anchor="middle" style="fill:#6B6B6B">nothing comes back</text>')
+        H = 172
+    else:
+        other = ('<circle cx="246" cy="86" r="36" fill="#fff" stroke="#000" stroke-width="1.5"/>'
+                 '<text class="lbl" x="246" y="83" text-anchor="middle">another</text><text class="lbl" x="246" y="100" text-anchor="middle">person</text>'
+                 ) if kind == 'co' else (
+                 '<rect x="214" y="58" width="64" height="56" rx="8" fill="#fff" stroke="#000" stroke-width="1.5"/>'
+                 '<text class="lbl" x="246" y="91" text-anchor="middle">device</text>')
+        label = ('Co-regulation: what you do goes to another person, and what they see comes back' if kind == 'co'
+                 else 'Automated co-regulation: what you do goes to a device, and what it measures comes back')
+        back = 'what they see' if kind == 'co' else 'what it measures'
+        body = ('<circle cx="74" cy="86" r="36" fill="#fff" stroke="#000" stroke-width="1.5"/>'
+                '<text class="ctr" x="74" y="92" text-anchor="middle">you</text>' + other +
+                f'<path d="M104,64 Q160,28 212,64" {line}/>'
+                f'<path d="M212,108 Q160,144 104,108" {line}/>'
+                '<text class="lbl" x="160" y="26" text-anchor="middle">what you do</text>'
+                f'<text class="lbl" x="160" y="160" text-anchor="middle">{back}</text>')
+        H = 172
+    return (f'      <figure class="ringfig loopfig"><svg viewBox="0 0 320 {H}" role="img" aria-label="{label}">'
+            + defs + body + '</svg></figure>\n')
+
 STEPS = [
   dict(id='arc', fig='arc', term='Reflex arc', q='Do people know what they actually do?',
-    body=f'''      <p>In a reflex arc a signal goes in, an action comes out, and nothing comes back. Much of what we do runs this way: we act, and we do not see what we did.</p>
+    body=loop_fig('arc') + f'''      <p>In a reflex arc a signal goes in, an action comes out, and nothing comes back. Much of what we do runs this way: we act, and we do not see what we did.</p>
       <p class="me">My first research measured that gap: how different kinds of users picture their own work at a computer, set against what they actually do. Later, at the lab, we interrupted people editing a file in Word with another task, such as finding a number in a phone book, and watched how they got back to the original task. We could see their strategies; the people using them mostly could not.</p>
 '''),
   dict(id='ring', fig='ring', term='Reflex ring', q='Can you correct yourself while you act?',
-    body='''''' + ring_fig() + '''      <p>Almost nothing we do is done in one go. You start, see how it is going and adjust, again and again, mostly without noticing. Pouring tea, you watch the level and slow down near the top. On a bike you are never still: every wobble is noticed and corrected. Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: unlike the arc, the result comes back and steers the next move.</p>
-      <p>The ring works as long as the senses report what matters. They are good with a teapot or a bike, and poor with time, the sound of your own voice or the way you spend a day.</p>
-      <p class="me">On myself, from 2023 to 2026, I ran the same ring more slowly: I record what I do and come back to the record as an observer. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes; reading it, I watch myself reading. The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself: the same ring, with my voice.</p>
+    body='''''' + ring_fig() + '''      <p>Almost nothing we do is done in one go. You start, see how it is going and adjust, again and again, mostly without noticing. Pouring tea, you watch the level and slow down near the top. On a bike you are never still: every wobble is noticed and corrected. Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: unlike the arc, the result comes back and steers the next move. Today we would call it a feedback loop.</p>
+      <p>The ring works as long as the senses report what matters. They are good with a teapot or a bike, and poor with time, the sound of your own voice or the way you spend a day. For these, the ring needs help from outside. That is what steps 3 and 4 are about.</p>
+      <p class="me">On myself, from 2023 to 2026, I ran the same ring more slowly: I record what I do and come back to the record as an observer, to see what I actually did. I read about 52 books a year and keep what I take from them in <a href="https://t.me/baaqod" target="_blank" rel="noopener">aka mulator</a>, a Telegram channel of quotes; reading it, I watch myself reading. The questions the books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener">Question of the Day</a>, one new question every day. I recorded <a href="revizor/">Gogol’s <i>The Government Inspector</i></a> as a radio play, reading it myself: the same ring, with my voice.</p>
 '''),
   dict(id='co', fig='co', term='Co-regulation', q='Who sees what you can’t?',
-    body='''      <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back.</p>
-      <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients. Now I do the same as a feedback methodologist.</p>
-      <p class="me">On myself: in <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a>, the photographer co-regulated a dream of mine; the photos show how I looked and what I was thinking in it. I also retell philosophical texts in plain English in the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>, and the readers show me where I am still unclear.</p>
+    body=loop_fig('co') + '''      <p>Some things a person cannot see from the inside, however closely they listen to themselves. Then the loop needs another person, included on purpose: someone who watches from the outside and reports back. I call this co&#8209;regulation: two people keep one loop going, one acts, the other watches and tells.</p>
+      <p class="me">For twenty years I was that person for companies. At <a href="https://en.usethics.ru/" target="_blank" rel="noopener">Usethics</a>, which I founded in 2001 and ran until it ceased operations in 2023, we watched real people use a product and showed the people who built it what we saw: around 2,000 projects for Russian and international clients.</p>
+      <p class="me">On myself: in <a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener">a photo project</a>, a photographer shot a dream of mine as a series of pictures; they show me from the outside how I looked and what I was thinking in it. I also retell philosophical texts in plain English in the subreddit <a href="https://www.reddit.com/r/English_but_Simple/" target="_blank" rel="noopener">English but Simple</a>, and the readers show me where I am still unclear.</p>
 '''),
   dict(id='auto', fig='auto', term='Automated co-regulation', q='Can a device be the other?',
-    body='''      <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this.</p>
-      <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. Every attempt tells you how precise you were, whether you are rushing or holding back, and your Lucky Index: how often you hit the target, divided by how often pure chance would.</p>
-''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud. Try it on the paragraph below: press the button, allow microphone access, and read it aloud.</p>
+    body=loop_fig('auto') + '''      <p>A person who watches you cannot be there all the time. Technology can: software, AI, wearable sensors, connected devices. The work is to make what they report back useful, which means instant and exact enough to act on. Two of my tools already do this, for two things from step 2 that the senses report poorly: time and your own voice.</p>
+      <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. By feel you cannot tell how far off you were. Every attempt tells you how precise you were, whether you are rushing or holding back, and your Lucky Index: how often you hit the target, divided by how often pure chance would.</p>
+''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens while you read an English book aloud and shows, word by word, which words came out right. Try it on the paragraph below: press the button, allow microphone access, and read it aloud.</p>
 ''' + aloud),
 ]
 
@@ -157,14 +197,15 @@ MAP = '  <nav class="steps" aria-label="Four steps">' + '<span class="arr" aria-
     f'<a href="#{st["id"]}">{svg(st["fig"], "")}<span>{st["term"]}</span></a>' for st in STEPS) + '</nav>\n\n'
 
 INTRO = '''  <h1 class="intro">People don’t see what they actually do unless a useful feedback loop shows them.</h1>
-  <p class="lede">Four steps, from no feedback at all to feedback from a device.</p>
+  <p class="lede">Four steps: no feedback at all, then your own senses, then another person, then a device.</p>
 
 '''
 
 TAIL = f'''  <section class="you">
     <div class="col">
       <p class="ask">What feedback loop do you need to build?</p>
-      <p>Write to me and let’s discuss it: {MAIL}</p>
+      <p>Tell me who needs to see what, and what should change once they see it: your team, your users or you yourself. I will reply with a sketch of the loop: what to record, who or what reports it back, and how soon.</p>
+      <p>{MAIL}</p>
     </div>
   </section>
 
