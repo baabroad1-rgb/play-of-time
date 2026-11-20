@@ -11,6 +11,14 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bca62224cd537d9887c2d32f2f37d668207df14c)
+
+### baa: значки сервисов в фирменных цветах, у Play of Time — анимированный логотип игры
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/26fea8c401104abe3ff5a203a3fd8e18e70aaf72)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4d926725a2da6901c68049e716764377e60f41e6)
 
 ### baa: у секундомера на первом экране — три последние попытки, как у нижнего
@@ -3445,4 +3453,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 358.
+Всего записей: 360.
