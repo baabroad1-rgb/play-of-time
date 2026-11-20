@@ -11,6 +11,16 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4b4937e750976a5703cd70bf1e8887c705fae348)
+
+### baa: логотип Read Aloud (кольцо как у Play of Time, сменяющиеся знаки транскрипции) и значок Usethics
+
+Логотип собирается tools/baa_page/make_read_aloud_logo.py в baa/assets/read-aloud-logo.svg.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/bc562d8460129a7b396344619ca2d1fd4a28154e)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ba5de44d05c6c9be46fae60d1fef8f7db4eb2138)
 
 ### baa: кнопка секундомера на первом экране не меняет размер
@@ -3461,4 +3471,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 362.
+Всего записей: 364.
