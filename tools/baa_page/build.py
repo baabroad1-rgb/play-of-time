@@ -90,6 +90,12 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 /* marks sit closer to their own word than to the neighbouring one */
 .ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0 0 0.04em; vertical-align: -0.04em; }
+/* three random quotes and questions from the channels (api/samples.php) */
+.samples { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; font-family: var(--sans); font-size: 15px; line-height: 1.45; }
+.samples li { border-left: 3px solid #D9D9D9; padding: 2px 0 2px 12px; }
+.samples q { quotes: none; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.samples .src { display: block; margin-top: 3px; font-size: 13px; color: #5A5A5A; }
+.samples .src a { color: inherit; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
 /* ---- v2: plain names, first-screen test ---- */
@@ -220,7 +226,9 @@ STEPS = [
       <p>The ring works when the senses report what matters. They do with a teapot or a bike, but not with time, your own voice or how you spend a day. There the ring needs help from outside: steps 3 and 4.</p>
       <p class="me">Since 2023 I have run this ring on myself, only slower. I record what I do, come back to it later, compare it with what I meant, and change the next round.</p>
       <p class="me"><b>Books.</b> I read about 52 a year and quote the ones that widen my context most in <a href="https://t.me/baaqod" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="#26A5E4"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>aka mulator</a>, a Telegram channel: over 800 quotes from some 65 books since 2022. Most are about how the mind works and where it came from: Vygotsky, Csikszentmihalyi, Jaynes, Dunbar, Luria, Uznadze, Lakoff, Pinker, Deutsch. Others are about time, language, money and technology. Rereading the channel, I watch myself read.</p>
+      <ul class="samples" id="samples-quotes" hidden></ul>
       <p class="me"><b>Questions.</b> The questions these books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="#26A5E4"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day since December 2023, over 850 so far: about time, meaning, context, inner speech, how we think and where we go wrong. Many hide an answer or a follow-up under a tap.</p>
+      <ul class="samples" id="samples-questions" hidden></ul>
       <p class="me">Later I reread them and guess what is hidden before I tap. The gap shows how much I have changed. A guess that turns out very different becomes a new question linked to the old one, so the rings form chains.</p>
 '''),
   dict(id='co', fig='co', plain='Another person', term='Co-regulation', q='Who sees what you can’t?',
