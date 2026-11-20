@@ -91,8 +91,8 @@ img.ico.rider { width: 1.15em; height: 1.15em; vertical-align: -0.24em; border: 
 @keyframes pl-letter { to { transform: rotateY(-360deg); } }
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 /* marks sit closer to their own word than to the neighbouring one */
-.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.02em; vertical-align: -0.04em; }
-.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.03em 0 0.12em; }
+.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0 0 0.04em; vertical-align: -0.04em; }
+.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.06em 0 0; }   /* the space before it is the ordinary word space */
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
