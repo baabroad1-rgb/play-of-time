@@ -252,6 +252,7 @@ INTRO = '''  <h1 class="intro">People don’t see much of what they actually do 
     <div class="pot-side">
       <p class="pot-hint" id="top-hint">The timer stays hidden while it runs. How far off will you be?</p>
       <p class="pot-res" id="top-res" aria-live="polite"></p>
+      <div class="pot-last"><span class="pot-cap">Last three</span><ol id="top-last"></ol></div>
     </div>
   </div>
 

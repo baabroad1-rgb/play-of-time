@@ -267,6 +267,7 @@ details.pubwrap summary { min-height: 44px; }
     <div class="pot-side">
       <p class="pot-hint" id="top-hint">The timer stays hidden while it runs. How far off will you be?</p>
       <p class="pot-res" id="top-res" aria-live="polite"></p>
+      <div class="pot-last"><span class="pot-cap">Last three</span><ol id="top-last"></ol></div>
     </div>
   </div>
 
@@ -487,15 +488,23 @@ addEventListener("message", function (e) {
   var btn = document.getElementById("top-btn");
   if (!btn) return;
   var timeEl = document.getElementById("top-time"), label = document.getElementById("top-label"),
-      icon = document.getElementById("top-icon"), res = document.getElementById("top-res");
+      icon = document.getElementById("top-icon"), res = document.getElementById("top-res"),
+      lastEl = document.getElementById("top-last");
   var ICONS = {
     RUN: '<path d="M20.25,11.567C20.583,11.759 20.583,12.241 20.25,12.433L6.75,20.227C6.417,20.42 6,20.179 6,19.794L6,4.206C6,3.821 6.417,3.58 6.75,3.773L20.25,11.567Z"/>',
     STOP: '<path d="M5,4L19,4A1,1 0,0 1,20 5L20,19A1,1 0,0 1,19 20L5,20A1,1 0,0 1,4 19L4,5A1,1 0,0 1,5 4z"/>',
     RESET: '<path d="M13.711,6.171C13.855,5.681 13.574,5.16 13.07,5.082C11.846,4.893 10.588,5.031 9.426,5.49C7.976,6.064 6.759,7.104 5.968,8.448C5.177,9.791 4.857,11.36 5.059,12.906C5.261,14.452 5.973,15.886 7.082,16.982C8.192,18.077 9.635,18.77 11.183,18.952C12.732,19.134 14.297,18.794 15.63,17.986C16.963,17.177 17.988,15.947 18.542,14.49C18.987,13.322 19.108,12.063 18.903,10.841C18.819,10.338 18.295,10.064 17.807,10.214C17.319,10.364 17.054,10.882 17.114,11.389C17.213,12.211 17.112,13.05 16.814,13.832C16.406,14.904 15.652,15.809 14.671,16.404C13.69,16.999 12.538,17.249 11.399,17.115C10.26,16.982 9.198,16.471 8.381,15.665C7.565,14.86 7.041,13.804 6.893,12.667C6.744,11.529 6.98,10.375 7.562,9.386C8.144,8.398 9.039,7.632 10.106,7.21C10.884,6.902 11.722,6.791 12.545,6.878C13.053,6.932 13.567,6.661 13.711,6.171Z"/><path d="M16.875,7.554C17.009,7.202 17.471,7.119 17.719,7.404L20.421,10.507C20.676,10.8 20.514,11.259 20.132,11.328L15.963,12.069C15.581,12.137 15.27,11.762 15.408,11.399L16.875,7.554Z"/>'
   };
   var state = "RUN", t0 = 0, timer = 0, lastPressAt = -1e9, lastType = "", MAX_MS = 4000;
+  // The last three attempts stay in this browser, as with the stopwatch below (its own list).
+  var KEY = "baa:top-last3";
+  function load() { try { var a = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(a) ? a.slice(0, 3) : []; } catch (e) { return []; } }
+  function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a.slice(0, 3))); } catch (e) {} }
   function cs(ms) { return Math.round(ms / 10); }
   function kind(ms) { var c = cs(ms); return c === 300 ? "three" : c < 300 ? "early" : "late"; }
+  function showLast() {
+    lastEl.innerHTML = load().map(function (ms) { return '<li class="' + kind(ms) + '">' + (cs(ms) / 100).toFixed(2) + "</li>"; }).join("");
+  }
   function setState(s) { state = s; label.textContent = s; icon.innerHTML = ICONS[s]; btn.setAttribute("aria-label", s); }
   function digits(t) { timeEl.classList.remove("counting"); timeEl.textContent = t; }
   function overrun() {
@@ -515,6 +524,7 @@ addEventListener("message", function (e) {
       digits((cs(ms) / 100).toFixed(2)); btn.className = "pot-btn " + k;
       res.innerHTML = k === "three" ? "<b>Exactly 3.00.</b> Can you do it again? Press RESET."
         : "<b>" + (Math.abs(d) / 100).toFixed(2) + " s " + (d < 0 ? "early" : "late") + ".</b> You could not have told by feel. This page is about that gap and what closes it. Press RESET to try again.";
+      var a = load(); a.unshift(ms); save(a); showLast();
       setState("RESET");
     } else {
       btn.className = "pot-btn"; digits("0.00"); res.textContent = "";
@@ -534,7 +544,7 @@ addEventListener("message", function (e) {
   btn.addEventListener("keydown", function (e) {
     if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); press(e.timeStamp || performance.now()); }
   });
-  setState("RUN");
+  setState("RUN"); showLast();
 })();
 </script>
 <!--body:end-->
