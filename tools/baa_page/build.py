@@ -79,6 +79,8 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .col p.me { font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 /* Telegram mark before links to the channels */
 .potlogo { position: relative; width: 1.3em; height: 1.3em; vertical-align: -0.3em; perspective: 300px; }
+.ralogo { width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
+img.ico.img { vertical-align: -0.14em; }
 .potlogo img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .potlogo .pl-ring { animation: pl-ring 5s cubic-bezier(.34,1.56,.64,1) infinite; }
 .potlogo .pl-tri { transform-origin: 50% 50%; animation: pl-tri 3s linear infinite; }
@@ -309,7 +311,7 @@ def mark_links(h):
     def one(m):
         a, inner = m.group(1), m.group(2)
         href = re.search(r'href="([^"]*)"', a).group(1)
-        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner or 'potlogo' in inner:
+        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner or 'potlogo' in inner or 'ralogo' in inner or 'class="ico img"' in inner:
             return m.group(0)
         if href.startswith('mailto:'):
             return a + ico(ENVELOPE).replace('class="ico"', 'class="ico mail"') + inner + '</a>'
@@ -317,11 +319,15 @@ def mark_links(h):
         if not host or host.group(1) == 'baa.playoftime.online':
             return m.group(0)
         host = host.group(1)
+        if href.rstrip('/') == 'https://playoftime.online/aloud':
+            return a + '<img class="ico ralogo" src="assets/read-aloud-logo.svg" alt="" aria-hidden="true">' + inner + '</a>'
         if href.rstrip('/') == 'https://playoftime.online':
             return a + POTLOGO + inner + '</a>'
         if host in OWN:
             return a + ico(HOUSE).replace('class="ico"', 'class="ico own"') + inner + '</a>'
         svc = next((k for k in MARKS if host.endswith(k)), None)
+        if host.endswith('usethics.ru') and 'usethics-mark' not in inner:
+            inner = '<img class="ico img" src="assets/usethics-mark.png" alt="" aria-hidden="true">' + inner
         if svc and not inner.startswith('<svg class="ico"'):
             inner = ico(MARKS[svc], BRAND.get(svc, 'currentColor')) + inner
         return a + inner + '<span class="ext" aria-hidden="true">↗</span></a>'
