@@ -11,6 +11,30 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/77d17449c90f2701c117a2f51d07fff409a9e3db)
+
+### baa: перед значком обычный пробел, значок прижат к своему слову
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/60db6cb87a3c9ced90d78fedfe9a7a36e20ed254)
+
+### baa: всадник из подвала — значком у фотопроекта; значки ещё ближе к словам (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c7deb4c6320e44fff3142252c81fc409b6092b09)
+
+### baa: стандартный значок внешней ссылки вместо стрелки, значки ближе к своему слову (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/11a5dc317eb27c6385a721b80b851486efe004fb)
+
+### CLAUDE.md: никогда не выкладывать то, что Алекс не видел
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2c4baeaa87c8718832908517ea1f06767de6b8f1)
+
+### CLAUDE.md: выкладывать только по прямому слову Алекса, вопросы по одному
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2ad79c79d16192468fca01a46f734c77be98a544)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/9b794610deee869635d00eb7d9d0c300e78279f3)
 
 ### baa: убран пример «One chain» из шага 2
@@ -3479,4 +3503,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 366.
+Всего записей: 372.
