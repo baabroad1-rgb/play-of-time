@@ -11,6 +11,14 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/9b794610deee869635d00eb7d9d0c300e78279f3)
+
+### baa: убран пример «One chain» из шага 2
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/5a3c02159c60301352b3c6a1cc889d48644f109b)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4b4937e750976a5703cd70bf1e8887c705fae348)
 
 ### baa: логотип Read Aloud (кольцо как у Play of Time, сменяющиеся знаки транскрипции) и значок Usethics
@@ -3471,4 +3479,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 364.
+Всего записей: 366.
