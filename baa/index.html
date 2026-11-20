@@ -574,7 +574,7 @@ addEventListener("message", function (e) {
   function fill(ul, items) {
     if (!items || !items.length) return;
     ul.innerHTML = items.map(function (it) {
-      var src = (it.src ? esc(it.src) + " · " : "") + '<a href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(it.url.replace("https://", "")) + EXT + "</a>";
+      var src = (it.src ? esc(it.src) + " · " : "") + (it.ai ? "AI-translated from Russian · " : "") + '<a href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(it.url.replace("https://", "")) + EXT + "</a>";
       return "<li><q>" + esc(it.t.replace(/\n\s*\n+/g, "\n")) + '</q><span class="src">' + src + "</span></li>";
     }).join("");
     ul.hidden = false;

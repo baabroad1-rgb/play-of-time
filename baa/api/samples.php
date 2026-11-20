@@ -74,7 +74,12 @@ function refresh(string $ch, array $data, bool $all = false): array {
         if (!$posts) break;
         $known = false;
         foreach ($posts as $id => $p) {
-            if (isset($data['posts'][(string)$id])) $known = true;
+            $old = $data['posts'][(string)$id] ?? null;
+            if ($old) {
+                $known = true;
+                // keep an English translation made for the same text
+                if (isset($old['en']) && ($old['en_of'] ?? null) === $p['t']) { $p['en'] = $old['en']; $p['en_of'] = $old['en_of']; }
+            }
             $data['posts'][(string)$id] = $p;
         }
         $min = min(array_keys($posts));
@@ -99,14 +104,17 @@ function is_question(array $p): bool {
     return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t']);
 }
 
+// The page is in English: Russian posts are shown only once they have a translation.
+function readable(array $p): bool { return !preg_match('~\p{Cyrillic}~u', $p['t']) || isset($p['en']); }
+
 function pick(string $ch, array $data, callable $ok): array {
     $ids = [];
-    foreach ($data['posts'] as $id => $p) if ($ok($p)) $ids[] = $id;
+    foreach ($data['posts'] as $id => $p) if ($ok($p) && readable($p)) $ids[] = $id;
     shuffle($ids);
     $out = [];
     foreach (array_slice($ids, 0, PICK) as $id) {
         $p = $data['posts'][$id];
-        $out[] = ['t' => $p['t'], 'src' => str_replace('_', ' ', $p['src']), 'url' => "https://t.me/$ch/$id"];
+        $out[] = ['t' => $p['en'] ?? $p['t'], 'ai' => isset($p['en']), 'src' => str_replace('_', ' ', $p['src']), 'url' => "https://t.me/$ch/$id"];
     }
     return $out;
 }
