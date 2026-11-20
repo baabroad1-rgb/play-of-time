@@ -11,6 +11,14 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7493e94f8cdba35bda17a3656929c4415798aad5)
+
+### baa: все значки перед словами одного размера и с одинаковым зазором до слова (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/9799e4f47bb8a817e939f2e6c3ebe45788db3799)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/77d17449c90f2701c117a2f51d07fff409a9e3db)
 
 ### baa: перед значком обычный пробел, значок прижат к своему слову
@@ -3503,4 +3511,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 372.
+Всего записей: 374.
