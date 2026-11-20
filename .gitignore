@@ -45,3 +45,7 @@ _scratch_debug/
 Thumbs.db
 docs/behavioral_trajectory_tools/attempts.json
 docs/behavioral_trajectory_tools/players.json
+
+# baa/api/samples.php: lock and temp files it makes while updating the channel snapshots
+baa/api/data/*.lock
+baa/api/data/*.tmp
