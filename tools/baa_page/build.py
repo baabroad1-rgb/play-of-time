@@ -78,6 +78,15 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 /* paragraphs about my own work read as notes to the idea */
 .col p.me { font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 /* Telegram mark before links to the channels */
+.potlogo { position: relative; width: 1.3em; height: 1.3em; vertical-align: -0.3em; perspective: 300px; }
+.potlogo img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.potlogo .pl-ring { animation: pl-ring 5s cubic-bezier(.34,1.56,.64,1) infinite; }
+.potlogo .pl-tri { transform-origin: 50% 50%; animation: pl-tri 3s linear infinite; }
+.potlogo .pl-letter { transform-origin: 48.5% 50%; animation: pl-letter 3s linear infinite; }
+@keyframes pl-ring { 0%, 8% { transform: rotate(0deg); } 22% { transform: rotate(372deg); } 30% { transform: rotate(355deg); } 36%, 100% { transform: rotate(360deg); } }
+@keyframes pl-tri { to { transform: rotateY(360deg); } }
+@keyframes pl-letter { to { transform: rotateY(-360deg); } }
+@media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 .ext { margin-left: 0.15em; font-size: 0.85em; text-decoration: none; display: inline-block; }
 .ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.28em; }
 /* ---- v2: plain names, first-screen test ---- */
@@ -206,8 +215,8 @@ STEPS = [
       <p>Physiologists of the last century, Nikolai Bernstein among them, called this a reflex ring: the result comes back and steers the next move. Today we would say feedback loop.</p>
       <p>The ring works when the senses report what matters. They do with a teapot or a bike, but not with time, your own voice or how you spend a day. There the ring needs help from outside: steps 3 and 4.</p>
       <p class="me">Since 2023 I have run this ring on myself, only slower. I record what I do, come back to it later, compare it with what I meant, and change the next round.</p>
-      <p class="me"><b>Books.</b> I read about 52 a year and quote the ones that widen my context most in <a href="https://t.me/baaqod" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>aka mulator</a>, a Telegram channel: over 800 quotes from some 65 books since 2022. Most are about how the mind works and where it came from: Vygotsky, Csikszentmihalyi, Jaynes, Dunbar, Luria, Uznadze, Lakoff, Pinker, Deutsch. Others are about time, language, money and technology. Rereading the channel, I watch myself read.</p>
-      <p class="me"><b>Questions.</b> The questions these books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="currentColor"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day since December 2023, over 850 so far: about time, meaning, context, inner speech, how we think and where we go wrong. Many hide an answer or a follow-up under a tap.</p>
+      <p class="me"><b>Books.</b> I read about 52 a year and quote the ones that widen my context most in <a href="https://t.me/baaqod" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="#26A5E4"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>aka mulator</a>, a Telegram channel: over 800 quotes from some 65 books since 2022. Most are about how the mind works and where it came from: Vygotsky, Csikszentmihalyi, Jaynes, Dunbar, Luria, Uznadze, Lakoff, Pinker, Deutsch. Others are about time, language, money and technology. Rereading the channel, I watch myself read.</p>
+      <p class="me"><b>Questions.</b> The questions these books raise go to <a href="https://t.me/q_of_t_d" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="12" fill="#26A5E4"/><path fill="#fff" d="M5.4 11.7 17.2 7.1c.6-.2 1 .1.9.8l-2 9.4c-.1.6-.6.8-1.1.5l-3-2.2-1.5 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5.1c.2-.2 0-.3-.3-.1l-6.9 4.4-3-.9c-.6-.2-.7-.6.1-.9z"/></svg>Question of the Day</a>, one a day since December 2023, over 850 so far: about time, meaning, context, inner speech, how we think and where we go wrong. Many hide an answer or a follow-up under a tap.</p>
       <p class="me">Later I reread them and guess what is hidden before I tap. The gap shows how much I have changed. A guess that turns out very different becomes a new question linked to the old one, so the rings form chains.</p>
       <p class="me">One chain: in <a href="https://t.me/q_of_t_d/60" target="_blank" rel="noopener">January 2024</a> I asked how long it would take me to learn to count three seconds within 3%. In <a href="https://t.me/q_of_t_d/157" target="_blank" rel="noopener">April</a> I answered under the same post: about three months, and now ten in a row within 0.09 s.</p>
 '''),
@@ -287,7 +296,11 @@ MARKS = {'reddit.com': 'M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.4
 HOUSE = 'M12 3 2.5 11.2h2.8V21h5.2v-5.6h3V21h5.2v-9.8h2.8z'
 ENVELOPE = 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2 7.4 5.6L19.4 7z'
 OWN = ('playoftime.online', 'dreamsmoker.playoftime.online')
-def ico(d): return f'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="{d}"/></svg>'
+def ico(d, fill='currentColor'): return f'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="{fill}" d="{d}"/></svg>'
+BRAND = {'reddit.com': '#FF4500', 'medium.com': '#000000'}
+# Play of Time: the animated brand mark of the game (webapp .pot-logo: ring, triangle, letter)
+POTLOGO = ('<span class="ico potlogo" aria-hidden="true"><img src="assets/pot-logo-ring.png" alt="" class="pl-ring">'
+           '<img src="assets/pot-logo-triangle.png" alt="" class="pl-tri"><img src="assets/pot-logo-letter.png" alt="" class="pl-letter"></span>')
 def mark_links(h):
     # Four kinds of links look different: a page of this site — plain; another site of mine —
     # a house before; someone else's site — the service mark if there is one and ↗ after;
@@ -295,7 +308,7 @@ def mark_links(h):
     def one(m):
         a, inner = m.group(1), m.group(2)
         href = re.search(r'href="([^"]*)"', a).group(1)
-        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner:
+        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner or 'potlogo' in inner:
             return m.group(0)
         if href.startswith('mailto:'):
             return a + ico(ENVELOPE).replace('class="ico"', 'class="ico mail"') + inner + '</a>'
@@ -303,11 +316,13 @@ def mark_links(h):
         if not host or host.group(1) == 'baa.playoftime.online':
             return m.group(0)
         host = host.group(1)
+        if href.rstrip('/') == 'https://playoftime.online':
+            return a + POTLOGO + inner + '</a>'
         if host in OWN:
             return a + ico(HOUSE).replace('class="ico"', 'class="ico own"') + inner + '</a>'
         svc = next((k for k in MARKS if host.endswith(k)), None)
         if svc and not inner.startswith('<svg class="ico"'):
-            inner = ico(MARKS[svc]) + inner
+            inner = ico(MARKS[svc], BRAND.get(svc, 'currentColor')) + inner
         return a + inner + '<span class="ext" aria-hidden="true">↗</span></a>'
     return re.sub(r'(<a [^>]*>)(.*?)</a>', one, h, flags=re.S)
 
