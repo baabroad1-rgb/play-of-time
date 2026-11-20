@@ -11,6 +11,14 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/e735f197a1d145f8c60fa9934827842139879525)
+
+### baa: «counting» на секундомере неподвижно, мигают только три точки по очереди
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/195c650a3d8f7a35e303e47db4e2ab274a4d602e)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c296926df297c77ca07dfb439c4910585d306a7e)
 
 ### baa: на первом экране — секундомер как у Play of Time, цифры скрыты, пока он идёт
@@ -3429,4 +3437,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 354.
+Всего записей: 356.
