@@ -7,6 +7,16 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
+## 20 ноября 2026
+
+### merge main
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c296926df297c77ca07dfb439c4910585d306a7e)
+
+### baa: на первом экране — секундомер как у Play of Time, цифры скрыты, пока он идёт
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/1ec81fdf6b969bbc50db7cb81e08f5fdcc58973d)
+
 ## 19 ноября 2026
 
 ### merge main
@@ -3419,4 +3429,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 352.
+Всего записей: 354.
