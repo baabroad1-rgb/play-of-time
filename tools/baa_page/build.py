@@ -82,6 +82,11 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.28em; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
+/* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
+.pot.pot-top { margin: 0 0 clamp(48px, 8vw, 96px); max-width: 40em; font-size: 16px; }
+.pot-time.counting { font-size: 26px; line-height: 46px; letter-spacing: 0.02em; animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .pot-time.counting { animation: none; } }
 .blind { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin: 0 0 clamp(48px, 8vw, 96px); font-family: var(--sans); font-size: 16px; line-height: 1.4; }
 .blind-btn { font: inherit; font-size: 18px; font-weight: 700; min-width: 7.5em; min-height: 52px; padding: 0 22px; background: var(--fg); color: var(--bg); border: 1px solid var(--fg); border-radius: 10px; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 .blind-btn.on { background: var(--bg); color: var(--fg); }
@@ -235,10 +240,16 @@ MAP = ('  <nav class="steps" aria-labelledby="steps-h"><p class="steps-h" id="st
     + '</ol></nav>\n\n')
 
 INTRO = '''  <h1 class="intro">People don’t see much of what they actually do until a useful feedback loop shows them.</h1>
-  <p class="lede lede-try">Try it: press Start, count three seconds in your head, press Stop. The timer stays hidden until you do.</p>
-  <div class="blind" id="blind">
-    <button type="button" class="blind-btn" id="blind-btn">Start</button>
-    <p class="blind-res" id="blind-res" aria-live="polite">How far off will you be?</p>
+  <p class="lede lede-try">Try it: press RUN, count three seconds in your head, press STOP.</p>
+  <div class="pot pot-top" id="top">
+    <button type="button" class="pot-btn" id="top-btn" aria-describedby="top-hint">
+      <span class="pot-time" id="top-time">0.00</span>
+      <span class="pot-act"><svg viewBox="0 0 24 24" aria-hidden="true" id="top-icon"></svg><span id="top-label">RUN</span></span>
+    </button>
+    <div class="pot-side">
+      <p class="pot-hint" id="top-hint">The timer stays hidden while it runs. How far off will you be?</p>
+      <p class="pot-res" id="top-res" aria-live="polite"></p>
+    </div>
   </div>
 
 '''
