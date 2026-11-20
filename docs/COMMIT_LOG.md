@@ -11,6 +11,22 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b9d77406c71b17ed347802def990aff0b7d26ea1)
+
+### gitignore: служебные файлы скрипта цитат baa/api/data
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f3efb3a8ac040727369fd39212342fa2bc911945)
+
+### baa: три случайные цитаты и три вопроса из каналов, подтягиваются с сервера (не выложено)
+
+baa/api/samples.php раз в 6 часов забирает новые посты с t.me/s/<канал>, хранит их в
+baa/api/data/ и отдаёт странице по три случайных. В data/ лежит стартовый снимок
+(php samples.php --seed). Скрытые под спойлером части не показываются.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3b3fdbc7784817446290abdfa477188392295a80)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7493e94f8cdba35bda17a3656929c4415798aad5)
 
 ### baa: все значки перед словами одного размера и с одинаковым зазором до слова (не выложено)
@@ -3511,4 +3527,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 374.
+Всего записей: 377.
