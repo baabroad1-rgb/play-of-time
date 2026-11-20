@@ -90,16 +90,14 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 /* marks sit closer to their own word than to the neighbouring one */
 .ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0 0 0.04em; vertical-align: -0.04em; }
-/* three random quotes and questions from the channels (api/samples.php): set as pull quotes,
-   italic serif with a hanging mark in the margin, the source in a small line under it */
-.samples { list-style: none; margin: 6px 0 24px; padding: 0; display: grid; gap: 20px; }
-.samples li { position: relative; padding-left: 30px; }
-.samples li::before { content: "“"; position: absolute; left: 0; top: -6px; font-family: var(--serif); font-size: 44px; line-height: 1; color: #C8C8C8; }
-#samples-questions li::before { content: "?"; font-family: var(--sans); font-weight: 700; font-size: 30px; top: -2px; left: 4px; }
-.samples q { quotes: none; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;
-  font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.5; color: #1A1A1A; }
-.samples .src { display: block; margin-top: 6px; font-family: var(--sans); font-size: 12.5px; line-height: 1.4; color: #6B6B6B; }
-.samples .src::before { content: "— "; }
+/* three random quotes and questions from the channels (api/samples.php). The page has three
+   levels: the idea (serif), my own notes to it (p.me, smaller sans), and these samples, which are
+   details of the notes: one step quieter still, smaller and grey, indented under their paragraph. */
+.samples { list-style: none; margin: -6px 0 18px 16px; padding: 0; display: grid; gap: 8px;
+  font-family: var(--sans); font-size: 14px; line-height: 1.45; color: #4D4D4D; }
+.samples li { min-width: 0; }
+.samples q { quotes: none; white-space: pre-line; }
+.samples .src { display: block; margin-top: 2px; font-size: 12px; color: #8A8A8A; }
 .samples .src a { color: inherit; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
