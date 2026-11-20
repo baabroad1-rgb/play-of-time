@@ -84,9 +84,12 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
 .pot.pot-top { margin: 0 0 clamp(48px, 8vw, 96px); max-width: 40em; font-size: 16px; }
-.pot-time.counting { font-size: 26px; line-height: 46px; letter-spacing: 0.02em; animation: blink 1s steps(2, start) infinite; }
-@keyframes blink { to { visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) { .pot-time.counting { animation: none; } }
+.pot-time.counting { font-size: 26px; line-height: 46px; letter-spacing: 0.02em; }
+.pot-time.counting i { font-style: normal; opacity: 0; animation: dot 1.2s infinite; }
+.pot-time.counting i:nth-child(2) { animation-delay: 0.3s; }
+.pot-time.counting i:nth-child(3) { animation-delay: 0.6s; }
+@keyframes dot { 0% { opacity: 0; } 20%, 60% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pot-time.counting i { animation: none; opacity: 1; } }
 .blind { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin: 0 0 clamp(48px, 8vw, 96px); font-family: var(--sans); font-size: 16px; line-height: 1.4; }
 .blind-btn { font: inherit; font-size: 18px; font-weight: 700; min-width: 7.5em; min-height: 52px; padding: 0 22px; background: var(--fg); color: var(--bg); border: 1px solid var(--fg); border-radius: 10px; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 .blind-btn.on { background: var(--bg); color: var(--fg); }
