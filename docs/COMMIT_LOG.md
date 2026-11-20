@@ -11,6 +11,18 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/c33d24a29997e2d2376af792d7335eb175d4685c)
+
+### baa: все тексты главной переписаны нормальным английским и сокращены
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b7c3327b4f6e3f39298ab9110adab424ce087eb3)
+
+### baa: в канал с цитатами попадают не все книги, а самые важные (не выложено)
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/e82d977ce006ffae0cd2f8e02b860e152eba6399)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/eea82036ed44b5c4c75ee5aa44722349df0643f8)
 
 ### baa: в описании канала с цитатами — число книг вместо доли английского (не выложено)
@@ -3407,4 +3419,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 349.
+Всего записей: 352.
