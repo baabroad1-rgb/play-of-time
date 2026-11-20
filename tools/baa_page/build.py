@@ -89,8 +89,9 @@ img.ico.img { vertical-align: -0.14em; }
 @keyframes pl-tri { to { transform: rotateY(360deg); } }
 @keyframes pl-letter { to { transform: rotateY(-360deg); } }
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
-.ext { margin-left: 0.15em; font-size: 0.85em; text-decoration: none; display: inline-block; }
-.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.28em; }
+/* marks sit closer to their own word than to the neighbouring one */
+.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.08em; vertical-align: -0.04em; }
+.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.1em 0 0.12em; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
@@ -329,7 +330,7 @@ def mark_links(h):
             inner = '<img class="ico img" src="assets/usethics-mark.png" alt="" aria-hidden="true">' + inner
         if svc and not inner.startswith('<svg class="ico"'):
             inner = ico(MARKS[svc], BRAND.get(svc, 'currentColor')) + inner
-        return a + inner + '<span class="ext" aria-hidden="true">↗</span></a>'
+        return a + inner + '<svg class="ext" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg></a>'
     return re.sub(r'(<a [^>]*>)(.*?)</a>', one, h, flags=re.S)
 
 
