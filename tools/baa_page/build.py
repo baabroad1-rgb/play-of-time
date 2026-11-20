@@ -81,6 +81,7 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .potlogo { position: relative; width: 1.3em; height: 1.3em; vertical-align: -0.3em; perspective: 300px; }
 .ralogo { width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 img.ico.img { vertical-align: -0.14em; }
+img.ico.rider { width: 1.15em; height: 1.15em; vertical-align: -0.24em; border: 1px solid var(--fg); border-radius: 50%; box-sizing: border-box; }
 .potlogo img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .potlogo .pl-ring { animation: pl-ring 5s cubic-bezier(.34,1.56,.64,1) infinite; }
 .potlogo .pl-tri { transform-origin: 50% 50%; animation: pl-tri 3s linear infinite; }
@@ -90,8 +91,8 @@ img.ico.img { vertical-align: -0.14em; }
 @keyframes pl-letter { to { transform: rotateY(-360deg); } }
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 /* marks sit closer to their own word than to the neighbouring one */
-.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.08em; vertical-align: -0.04em; }
-.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.1em 0 0.12em; }
+.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.02em; vertical-align: -0.04em; }
+.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.03em 0 0.12em; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
@@ -311,7 +312,7 @@ def mark_links(h):
     def one(m):
         a, inner = m.group(1), m.group(2)
         href = re.search(r'href="([^"]*)"', a).group(1)
-        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner or 'potlogo' in inner or 'ralogo' in inner or 'class="ico img"' in inner:
+        if href.startswith('#') or 'class="ext"' in inner or 'class="ico own"' in inner or 'class="ico mail"' in inner or 'potlogo' in inner or 'ralogo' in inner or 'class="ico img' in inner:
             return m.group(0)
         if href.startswith('mailto:'):
             return a + ico(ENVELOPE).replace('class="ico"', 'class="ico mail"') + inner + '</a>'
@@ -323,6 +324,8 @@ def mark_links(h):
             return a + '<img class="ico ralogo" src="assets/read-aloud-logo.svg" alt="" aria-hidden="true">' + inner + '</a>'
         if href.rstrip('/') == 'https://playoftime.online':
             return a + POTLOGO + inner + '</a>'
+        if host == 'dreamsmoker.playoftime.online':
+            return a + '<img class="ico img rider" src="assets/rider.png?v=3" alt="" aria-hidden="true">' + inner + '</a>'
         if host in OWN:
             return a + ico(HOUSE).replace('class="ico"', 'class="ico own"') + inner + '</a>'
         svc = next((k for k in MARKS if host.endswith(k)), None)

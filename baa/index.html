@@ -211,6 +211,7 @@ section.interest .col > .pot, section.interest .col > .aloud { clear: both; }
 .potlogo { position: relative; width: 1.3em; height: 1.3em; vertical-align: -0.3em; perspective: 300px; }
 .ralogo { width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 img.ico.img { vertical-align: -0.14em; }
+img.ico.rider { width: 1.15em; height: 1.15em; vertical-align: -0.24em; border: 1px solid var(--fg); border-radius: 50%; box-sizing: border-box; }
 .potlogo img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .potlogo .pl-ring { animation: pl-ring 5s cubic-bezier(.34,1.56,.64,1) infinite; }
 .potlogo .pl-tri { transform-origin: 50% 50%; animation: pl-tri 3s linear infinite; }
@@ -220,8 +221,8 @@ img.ico.img { vertical-align: -0.14em; }
 @keyframes pl-letter { to { transform: rotateY(-360deg); } }
 @media (prefers-reduced-motion: reduce) { .potlogo img { animation: none; } }
 /* marks sit closer to their own word than to the neighbouring one */
-.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.08em; vertical-align: -0.04em; }
-.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.1em 0 0.12em; }
+.ext { display: inline-block; width: 0.78em; height: 0.78em; margin: 0 0.12em 0 0.02em; vertical-align: -0.04em; }
+.ico { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; margin: 0 0.03em 0 0.12em; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
@@ -392,15 +393,12 @@ details.pubwrap summary { min-height: 44px; }
       <h4>Other works</h4>
       <ol class="pubs">
           <li><span class="yr"></span><span class="t"><a href="revizor/">Gogol’s <i>The Government Inspector</i></a></span><span class="d">A radio play I recorded, reading it myself.</span></li>
-          <li><span class="yr"></span><span class="t"><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><svg class="ico own" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3 2.5 11.2h2.8V21h5.2v-5.6h3V21h5.2v-9.8h2.8z"/></svg>A dream in pictures</a></span><span class="d">A photo project: a photographer shot a dream of mine as a series of pictures.</span></li>
+          <li><span class="yr"></span><span class="t"><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><img class="ico img rider" src="assets/rider.png?v=3" alt="" aria-hidden="true">A dream in pictures</a></span><span class="d">A photo project: a photographer shot a dream of mine as a series of pictures.</span></li>
       </ol>
     </div>
   </details>
 
-  <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online<span class="badge"><picture>
-      <source srcset="assets/rider.webp?v=3" type="image/webp">
-      <img src="assets/rider.png?v=3" width="70" height="70" alt="A bronze sculpture: a rider with outstretched arms on a long-legged animal" loading="lazy">
-    </picture></span></span></footer>
+  <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online</span></footer>
 </main>
 <script>
 // Play of Time, the same press cycle as the game (StopWatchButton.kt): RUN → STOP → RESET.
