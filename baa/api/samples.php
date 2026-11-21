@@ -99,9 +99,12 @@ function is_quote(array $p): bool {
     return true;
 }
 
+// Questions: only those written in English to begin with (66 of them by Nov 2026),
+// so no AI translation is needed. Quotes still fall back to translations.
 function is_question(array $p): bool {
     $len = mb_strlen($p['t']);
-    return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t']);
+    return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t'])
+        && !preg_match('~\p{Cyrillic}~u', $p['t']);
 }
 
 // The page is in English: Russian posts are shown only once they have a translation.
