@@ -103,8 +103,8 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 /* a long quote is folded to three lines; "more" opens the rest (an accordion) */
 .samples li.fold q { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .samples .more { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.samples .more::after { content: " ▾"; text-decoration: none; display: inline-block; }
-.samples li.open-all .more::after { content: " ▴"; }
+.samples .more::after { content: "▾"; text-decoration: none; display: inline-block; margin-left: 0.25em; }
+.samples li.open-all .more::after { content: "▴"; }
 .samples .sp { filter: blur(4px); background: #EDEDED; border-radius: 3px; cursor: pointer; transition: filter .25s; }
 .samples .sp.open { filter: none; background: none; cursor: auto; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
