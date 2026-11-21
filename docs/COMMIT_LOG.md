@@ -9,6 +9,14 @@
 
 ## 21 ноября 2026
 
+### baa: gap before the more/less arrow
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4687313c1cfb2f972ffd8365ab1f9a06af5544b9)
+
+### baa: samples indented further; questions and quotes shown whole, long quotes folded to three lines with more/less
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/6dae6d3103052cb5ecce428b3453018a85495818)
+
 ### baa: keep Telegram spoilers in samples, shown blurred until tapped; snapshot re-read with spoilers
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7164d8176596278f7bb94072b5fdff288860548f)
@@ -3567,4 +3575,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 384.
+Всего записей: 386.
