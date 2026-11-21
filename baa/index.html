@@ -580,11 +580,15 @@ addEventListener("message", function (e) {
   var q = document.getElementById("samples-quotes"), a = document.getElementById("samples-questions");
   if (!q || !a || !window.fetch) return;
   function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function day(d) {
+    var p = d.split("-");
+    return +p[2] + " " + "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ")[p[1] - 1] + " " + p[0];
+  }
   function fill(ul, items) {
     if (!items || !items.length) return;
     ul.innerHTML = items.map(function (it) {
-      // a quote shows its book; a question, the day it was posted ("question by 12/12/2025")
-      var src = it.src ? esc(it.src) : it.d ? "question by " + it.d.split("-").reverse().join("/") : "";
+      // a quote shows its book; a question, the day it was posted ("asked 12 Mar 2026")
+      var src = it.src ? esc(it.src) : it.d ? "asked " + day(it.d) : "";
       // text outside \x02...\x03 shows at once; inside is a spoiler, hidden until a tap, as in Telegram
       var html = it.t.split(/\x02|\x03/).map(function (part, i) {
         var t = part.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201C$1\u201D").trim();
