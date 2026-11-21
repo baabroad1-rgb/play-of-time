@@ -11,6 +11,20 @@
 
 ### merge main
 
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/66b9134477090a802ddbbe550521e22af5fc8aca)
+
+### baa: цитаты и вопросы из каналов на английском, с пометкой AI-translated (не выложено)
+
+Русские посты из снимка каналов переведены (93 цитаты, 712 вопросов) и лежат
+в baa/api/data как поле en. Скрипт показывает русский пост только при наличии
+перевода и сохраняет переводы при обновлении снимка. Новые русские посты
+переводятся tools/baa_page/translate_channels.py (OpenRouter) или вручную
+через tools/baa_page/apply_translations.py.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f83d9e85c264060f1be8b0bc8d55a386dd88b10a)
+
+### merge main
+
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/b9d77406c71b17ed347802def990aff0b7d26ea1)
 
 ### gitignore: служебные файлы скрипта цитат baa/api/data
@@ -3527,4 +3541,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 377.
+Всего записей: 379.
