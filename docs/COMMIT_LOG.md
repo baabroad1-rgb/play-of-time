@@ -7,7 +7,29 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
+## 21 ноября 2026
+
+### baa: quote samples also only from posts written in English; translations kept but unused
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/942be04dab0d74e04f1e651bf4b117c0d34d48e6)
+
+### baa: question samples only from posts written in English, no AI translation
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/8e83ee390837d167f3eec64baa1a9ba11c3f8d2c)
+
 ## 20 ноября 2026
+
+### baa: samples as third level under personal notes — smaller grey sans, indented, source on its own line
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/84b2cebac979d57f9c2f93e580550880b0cac15d)
+
+### baa: цитаты и вопросы из каналов набраны как вынесенные цитаты (не выложено)
+
+Курсив с засечками, светлая кавычка (у вопросов — знак вопроса) на полях,
+источник мелкой строкой через тире, без полос и рамок; прямые кавычки
+внутри текста заменяются типографскими.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/64f6b03833060d579eda71d207c8be118af1d65e)
 
 ### merge main
 
@@ -3541,4 +3563,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 379.
+Всего записей: 383.
