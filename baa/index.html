@@ -627,6 +627,30 @@ addEventListener("message", function (e) {
     .then(function (d) { if (d) { fill(q, d.quotes); fill(a, d.questions); } }).catch(function () {});
 })();
 </script>
+<script>
+// The Aloud Reader icon is an SVG whose animation plays once (about 5 s) and stops.
+// Like the Play of Time logo, it should keep moving: while the icon is on screen,
+// replay it every 8 s by loading the same SVG again as a fresh blob URL.
+(function () {
+  var im = document.querySelector("img.ralogo");
+  if (!im || !window.fetch || !window.IntersectionObserver) return;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var svg = null, url = null, timer = null;
+  function replay() {
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    im.src = url;
+  }
+  fetch(im.src).then(function (r) { return r.ok ? r.text() : null; }).then(function (t) {
+    if (!t) return;
+    svg = t;
+    new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { if (!timer) { replay(); timer = setInterval(replay, 8000); } }
+      else if (timer) { clearInterval(timer); timer = null; }
+    }).observe(im);
+  }).catch(function () {});
+})();
+</script>
 <!--body:end-->
 </body>
 </html>
