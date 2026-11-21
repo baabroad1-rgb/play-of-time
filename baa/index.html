@@ -229,6 +229,9 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .samples q { quotes: none; white-space: pre-line; }
 .samples .src { display: block; margin-top: 2px; font-size: 12px; color: #8A8A8A; }
 .samples .src a { color: inherit; }
+/* a spoiler: blurred until tapped, as in the channel */
+.samples .sp { filter: blur(4px); background: #EDEDED; border-radius: 3px; cursor: pointer; transition: filter .25s; }
+.samples .sp.open { filter: none; background: none; cursor: auto; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
 /* ---- v2: plain names, first-screen test ---- */
@@ -578,12 +581,23 @@ addEventListener("message", function (e) {
     if (!items || !items.length) return;
     ul.innerHTML = items.map(function (it) {
       var src = (it.src ? esc(it.src) + " · " : "") + (it.ai ? "AI-translated from Russian · " : "") + '<a href="' + esc(it.url) + '" target="_blank" rel="noopener">' + esc(it.url.replace("https://", "")) + EXT + "</a>";
-      var t = it.t.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201C$1\u201D");
-      if (t.length > 220) t = t.slice(0, t.lastIndexOf(" ", 210)) + "\u2026";
-      return "<li><q>" + esc(t) + '</q><span class="src">' + src + "</span></li>";
+      // text outside \x02...\x03 shows at once; inside is a spoiler, hidden until a tap, as in Telegram
+      var html = it.t.split(/\x02|\x03/).map(function (part, i) {
+        var t = part.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201C$1\u201D").trim();
+        if (!t) return "";
+        if (t.length > 220) t = t.slice(0, t.lastIndexOf(" ", 210)) + "\u2026";
+        return i % 2 ? ' <span class="sp" role="button" tabindex="0" aria-label="hidden text, tap to show">' + esc(t) + "</span>" : esc(t);
+      }).join("");
+      return "<li><q>" + html + '</q><span class="src">' + src + "</span></li>";
     }).join("");
     ul.hidden = false;
   }
+  function reveal(e) {
+    var sp = e.target.closest && e.target.closest(".sp");
+    if (!sp || (e.type === "keydown" && e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault(); sp.classList.add("open"); sp.removeAttribute("role"); sp.removeAttribute("tabindex"); sp.removeAttribute("aria-label");
+  }
+  [q, a].forEach(function (ul) { ul.addEventListener("click", reveal); ul.addEventListener("keydown", reveal); });
   fetch("api/samples.php", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) { if (d) { fill(q, d.quotes); fill(a, d.questions); } }).catch(function () {});
 })();

@@ -99,6 +99,9 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .samples q { quotes: none; white-space: pre-line; }
 .samples .src { display: block; margin-top: 2px; font-size: 12px; color: #8A8A8A; }
 .samples .src a { color: inherit; }
+/* a spoiler: blurred until tapped, as in the channel */
+.samples .sp { filter: blur(4px); background: #EDEDED; border-radius: 3px; cursor: pointer; transition: filter .25s; }
+.samples .sp.open { filter: none; background: none; cursor: auto; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
 /* ---- v2: plain names, first-screen test ---- */

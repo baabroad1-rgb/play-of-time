@@ -44,7 +44,9 @@ function parse_page(string $ch, string $html): array {
         if (!preg_match_all('~<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>~s', $b, $mm)) continue;
         $raw = end($mm[1]);                          // the post's own text, not a quoted reply
         $sp = (bool)preg_match('~<tg-spoiler~', $raw);
-        $raw = preg_replace('~<tg-spoiler>.*?</tg-spoiler>~s', '', $raw);
+        // spoilers (an answer or follow-up hidden under a tap) are kept, marked with
+        // \x02 ... \x03 so the page can hide them the same way
+        $raw = preg_replace('~<tg-spoiler>(.*?)</tg-spoiler>~s', "\x02$1\x03", $raw);
         $tags = [];
         if (preg_match_all('~<a href="\?q=%23[^"]*">#([^<]+)</a>~u', $raw, $tm)) $tags = $tm[1];
         $raw = preg_replace('~<a href="\?q=%23[^"]*">#[^<]+</a>~u', '', $raw);
@@ -91,8 +93,11 @@ function refresh(string $ch, array $data, bool $all = false): array {
     return $data;
 }
 
+// the post's text without its spoilers: length and "?" are judged on what shows at once
+function shown(array $p): string { return trim(preg_replace("~\x02.*?\x03~su", '', $p['t'])); }
+
 function is_quote(array $p): bool {
-    $len = mb_strlen($p['t']);
+    $len = mb_strlen(shown($p));
     if ($len < 60 || $len > 420) return false;
     if (in_array(mb_strtolower($p['src']), NOT_QUOTES, true)) return false;
     if (preg_match('~https?://~', $p['t'])) return false;
@@ -100,8 +105,8 @@ function is_quote(array $p): bool {
 }
 
 function is_question(array $p): bool {
-    $len = mb_strlen($p['t']);
-    return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t']);
+    $len = mb_strlen(shown($p));
+    return $len >= 25 && $len <= 320 && mb_strpos(shown($p), '?') !== false && !preg_match('~https?://~', $p['t']);
 }
 
 // The page is in English: only posts written in English to begin with are shown
