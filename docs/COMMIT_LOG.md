@@ -9,6 +9,10 @@
 
 ## 21 ноября 2026
 
+### baa: keep Telegram spoilers in samples, shown blurred until tapped; snapshot re-read with spoilers
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7164d8176596278f7bb94072b5fdff288860548f)
+
 ### baa: quote samples also only from posts written in English; translations kept but unused
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/942be04dab0d74e04f1e651bf4b117c0d34d48e6)
@@ -3563,4 +3567,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 383.
+Всего записей: 384.
