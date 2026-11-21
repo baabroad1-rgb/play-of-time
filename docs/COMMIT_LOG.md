@@ -9,6 +9,18 @@
 
 ## 21 ноября 2026
 
+### baa: question date as 'asked 12 Mar 2026'
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/271d0d25c21b6fe6b8d27f804d437cb8132ace28)
+
+### baa: every quote shows its book (sources found for 69 old untagged quotes, the other 18 hidden); questions show 'question by <date>'
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/22490b7e9cf9ce4e1a017cbb83cbc256b46527df)
+
+### baa: samples without links to the posts; the book name stays
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/a04348e30a57eb13ae7f9ee8ee547701f688084f)
+
 ### baa: gap before the more/less arrow
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4687313c1cfb2f972ffd8365ab1f9a06af5544b9)
@@ -3575,4 +3587,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 386.
+Всего записей: 389.
