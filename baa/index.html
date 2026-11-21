@@ -238,6 +238,8 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .samples .sp.open { filter: none; background: none; cursor: auto; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
+/* the Aloud Reader app icon is a square tile; rounded as on a phone */
+.ico.ralogo { border-radius: 22%; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
@@ -362,8 +364,8 @@ details.pubwrap summary { min-height: 44px; }
           <div class="pot-last"><span class="pot-cap">Last three</span><ol id="pot-last"></ol></div>
         </div>
       </div>
-      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><img class="ico ralogo" src="assets/read-aloud-logo.svg" alt="" aria-hidden="true"><b>Read Aloud</b></a> listens as you read an English book aloud and shows which words came out right. Try it below: press the button, allow the microphone and read the paragraph.</p>
-      <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Read Aloud: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
+      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><img class="ico ralogo" src="assets/aloud-reader-anim.svg" alt="" aria-hidden="true"><b>Aloud Reader</b></a> listens as you read an English book aloud and shows which words came out right. Try it below: press the button, allow the microphone and read the paragraph.</p>
+      <iframe class="aloud" id="aloud-try" src="https://playoftime.online/aloud/web/try.html" title="Aloud Reader: read this paragraph aloud and see each word scored" allow="microphone" loading="lazy"></iframe>
     </div>
   </section>
 
@@ -500,7 +502,7 @@ details.pubwrap summary { min-height: 44px; }
 })();
 </script>
 <script>
-// The Read Aloud frame reports its height, so it never scrolls inside itself.
+// The Aloud Reader frame reports its height, so it never scrolls inside itself.
 addEventListener("message", function (e) {
   if (e.origin !== "https://playoftime.online" || !e.data || typeof e.data.aloudTryHeight !== "number") return;
   var f = document.getElementById("aloud-try");

@@ -1,6 +1,6 @@
 # Main page of baa.playoftime.online, built around four steps of a feedback loop
 # (reflex arc → reflex ring → co-regulation → automated co-regulation); main since 18.11.2026.
-# Takes the shared parts (portrait header, stopwatch, Read Aloud frame, footer, scripts,
+# Takes the shared parts (portrait header, stopwatch, Aloud Reader frame, footer, scripts,
 # head, styles, publications) from the current baa/index.html and rewrites it.
 # Stable on rebuild.  Run from anywhere:
 #     python3 tools/baa_page/build.py                    -> baa/index.html
@@ -108,6 +108,8 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .samples .sp.open { filter: none; background: none; cursor: auto; }
 /* every mark before a word: one size, one baseline, one gap to the word; the space before it is the ordinary word space */
 .ico, .ico.potlogo, .ico.ralogo, img.ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; margin: 0 0.08em 0 0; }
+/* the Aloud Reader app icon is a square tile; rounded as on a phone */
+.ico.ralogo { border-radius: 22%; }
 /* ---- v2: plain names, first-screen test ---- */
 .lede.lede-try { margin-bottom: 20px; }
 /* the first-screen stopwatch: the same button as Play of Time below, but the time is hidden while it runs */
@@ -251,7 +253,7 @@ STEPS = [
     body=loop_fig('auto') + '''      <p>Someone watching you cannot be there all the time. A device can: software, AI, wearable sensors. The work is to make what it reports useful: immediate, and exact enough to act on.</p>
       <p>Two of my tools do this for two things the senses report poorly: time and your own voice.</p>
       <p class="me"><a href="https://playoftime.online/" target="_blank" rel="noopener"><b>Play of Time</b></a> is a stopwatch you try to stop at exactly three seconds. By feel you cannot tell how far off you are. After each attempt it shows how precise you were, whether you rush or hold back, and your Lucky Index: how often you hit the target compared with pure chance.</p>
-''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Read Aloud</b></a> listens as you read an English book aloud and shows which words came out right. Try it below: press the button, allow the microphone and read the paragraph.</p>
+''' + pot + '''      <p class="me"><a href="https://playoftime.online/aloud/" target="_blank" rel="noopener"><b>Aloud Reader</b></a> listens as you read an English book aloud and shows which words came out right. Try it below: press the button, allow the microphone and read the paragraph.</p>
 ''' + aloud),
 ]
 
@@ -338,7 +340,7 @@ def mark_links(h):
             return m.group(0)
         host = host.group(1)
         if href.rstrip('/') == 'https://playoftime.online/aloud':
-            return a + '<img class="ico ralogo" src="assets/read-aloud-logo.svg" alt="" aria-hidden="true">' + inner + '</a>'
+            return a + '<img class="ico ralogo" src="assets/aloud-reader-anim.svg" alt="" aria-hidden="true">' + inner + '</a>'
         if href.rstrip('/') == 'https://playoftime.online':
             return a + POTLOGO + inner + '</a>'
         if host == 'dreamsmoker.playoftime.online':
