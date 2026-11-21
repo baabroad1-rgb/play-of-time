@@ -99,16 +99,14 @@ function is_quote(array $p): bool {
     return true;
 }
 
-// Questions: only those written in English to begin with (66 of them by Nov 2026),
-// so no AI translation is needed. Quotes still fall back to translations.
 function is_question(array $p): bool {
     $len = mb_strlen($p['t']);
-    return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t'])
-        && !preg_match('~\p{Cyrillic}~u', $p['t']);
+    return $len >= 25 && $len <= 320 && mb_strpos($p['t'], '?') !== false && !preg_match('~https?://~', $p['t']);
 }
 
-// The page is in English: Russian posts are shown only once they have a translation.
-function readable(array $p): bool { return !preg_match('~\p{Cyrillic}~u', $p['t']) || isset($p['en']); }
+// The page is in English: only posts written in English to begin with are shown
+// (by Nov 2026: 171 quotes, 66 questions). Stored AI translations are kept but not used.
+function readable(array $p): bool { return !preg_match('~\p{Cyrillic}~u', $p['t']); }
 
 function pick(string $ch, array $data, callable $ok): array {
     $ids = [];
