@@ -98,7 +98,6 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .samples li { min-width: 0; }
 .samples q { quotes: none; white-space: pre-line; }
 .samples .src { display: block; margin-top: 2px; font-size: 12px; color: #8A8A8A; }
-.samples .src a { color: inherit; }
 /* a spoiler: blurred until tapped, as in the channel */
 /* a long quote is folded to three lines; "more" opens the rest (an accordion) */
 .samples li.fold q { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
