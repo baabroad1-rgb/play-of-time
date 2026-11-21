@@ -113,14 +113,27 @@ function is_question(array $p): bool {
 // (by Nov 2026: 171 quotes, 66 questions). Stored AI translations are kept but not used.
 function readable(array $p): bool { return !preg_match('~\p{Cyrillic}~u', $p['t']); }
 
-function pick(string $ch, array $data, callable $ok): array {
+/** Where a quote comes from: its book hashtag, or (for old posts without one) data/sources.json. */
+function source(string $ch, string $id, array $p): string {
+    static $known = null;
+    if ($known === null) $known = @json_decode(@file_get_contents(__DIR__ . '/data/sources.json'), true) ?: [];
+    return $p['src'] !== '' ? str_replace('_', ' ', $p['src']) : ($known[$ch][$id] ?? '');
+}
+
+function pick(string $ch, array $data, string $kind): array {
     $ids = [];
-    foreach ($data['posts'] as $id => $p) if ($ok($p) && readable($p)) $ids[] = $id;
+    foreach ($data['posts'] as $id => $p) {
+        if (!readable($p)) continue;
+        if ($kind === 'quotes' ? !is_quote($p) || source($ch, (string)$id, $p) === '' : !is_question($p)) continue;
+        $ids[] = (string)$id;
+    }
     shuffle($ids);
     $out = [];
     foreach (array_slice($ids, 0, PICK) as $id) {
         $p = $data['posts'][$id];
-        $out[] = ['t' => $p['en'] ?? $p['t'], 'ai' => isset($p['en']), 'src' => str_replace('_', ' ', $p['src']), 'url' => "https://t.me/$ch/$id"];
+        $out[] = $kind === 'quotes'
+            ? ['t' => $p['t'], 'src' => source($ch, $id, $p)]
+            : ['t' => $p['t'], 'd' => $p['d']];
     }
     return $out;
 }
@@ -150,7 +163,7 @@ foreach (CHANNELS as $kind => $ch) {
         }
         if ($lock) fclose($lock);
     }
-    $result[$kind] = pick($ch, $data, $kind === 'quotes' ? 'is_quote' : 'is_question');
+    $result[$kind] = pick($ch, $data, $kind);
 }
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');

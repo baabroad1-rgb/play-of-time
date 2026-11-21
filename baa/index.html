@@ -583,7 +583,8 @@ addEventListener("message", function (e) {
   function fill(ul, items) {
     if (!items || !items.length) return;
     ul.innerHTML = items.map(function (it) {
-      var src = [it.src ? esc(it.src) : "", it.ai ? "AI-translated from Russian" : ""].filter(Boolean).join(" \u00B7 ");
+      // a quote shows its book; a question, the day it was posted ("question by 12/12/2025")
+      var src = it.src ? esc(it.src) : it.d ? "question by " + it.d.split("-").reverse().join("/") : "";
       // text outside \x02...\x03 shows at once; inside is a spoiler, hidden until a tap, as in Telegram
       var html = it.t.split(/\x02|\x03/).map(function (part, i) {
         var t = part.replace(/\s*\n\s*/g, " ").replace(/"([^"]*)"/g, "\u201C$1\u201D").trim();
