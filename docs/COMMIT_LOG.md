@@ -9,6 +9,10 @@
 
 ## 21 ноября 2026
 
+### baa: replay the Aloud Reader icon animation every 8 s while it is on screen
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/4d0992581a9b1bdd5958074d872a0f9c27b7ae48)
+
 ### baa: Aloud Reader (renamed from Read Aloud) with its animated app icon before the name
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3fcf9a3cf06f0b5ac68b8abb1aeba3bc01ada420)
@@ -3591,4 +3595,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 390.
+Всего записей: 391.
