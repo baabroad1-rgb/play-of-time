@@ -9,6 +9,10 @@
 
 ## 22 ноября 2026
 
+### CLAUDE.md: вопросы по одному и номера версий документов
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3001ab09e862aa3085330afea27750fc2f83d676)
+
 ### baa: Artifacts list always open, no accordion
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7e5fa4232328300effbd107e3d240a53d4410e1b)
@@ -3601,4 +3605,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 392.
+Всего записей: 393.
