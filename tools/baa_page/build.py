@@ -24,10 +24,13 @@ pot = grab('      <div class="pot" id="pot">', '        </div>\n      </div>\n')
 aloud = grab('      <iframe class="aloud"', '</iframe>\n')
 footer = grab('  <footer>', '</footer>\n')
 scripts = src[src.index('</main>\n') + len('</main>\n'):src.index('<!--body:end-->')]
-pubwrap = grab('  <details class="pubwrap">', '</details>\n')
-# the toggle: title and a chevron that turns when open
-pubwrap = re.sub(r'<summary>.*?</summary>', '<summary><span>Artifacts</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true">'
-    '<path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>', pubwrap, count=1, flags=re.S)
+# the Artifacts list: open, no accordion (was a <details> toggle until 22.11.2026)
+if '<details class="pubwrap">' in src:
+    pubwrap = grab('  <details class="pubwrap">', '</details>\n')
+else:
+    pubwrap = grab('  <section class="pubwrap">', '  </section>\n')
+pubwrap = pubwrap.replace('<details class="pubwrap">', '<section class="pubwrap">').replace('</details>', '</section>')
+pubwrap = re.sub(r'<summary>.*?</summary>|<h2>Artifacts</h2>', '<h2>Artifacts</h2>', pubwrap, count=1, flags=re.S)
 href = lambda part: re.search(r'href="([^"]*' + re.escape(part) + r'[^"]*)"', src).group(1)
 U_INT = href('770336b7d596'); MAIL = re.search(r'(<a href="mailto:[^"]+">.*?</a>)', src, re.S).group(1)
 
@@ -38,13 +41,9 @@ if DRAFT:
 
 EXTRA = '''
 /* ---- four steps ---- */
-details.pubwrap summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; user-select: none; -webkit-user-select: none; }
-details.pubwrap summary::-webkit-details-marker { display: none; }
-details.pubwrap summary .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
-details.pubwrap[open] summary .chev { transform: rotate(180deg); }
-@media (hover: hover) { details.pubwrap summary:hover span { text-decoration: underline; text-underline-offset: 3px; } }
-details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { details.pubwrap summary .chev { transition: none; } }
+section.pubwrap { display: block; padding-block: 18px 40px; }
+section.pubwrap h2 { position: static; display: block; font-family: var(--sans); font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+section.pubwrap .col { max-width: none; }
 .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 clamp(40px, 7vw, 72px); font-family: var(--sans); font-size: 15px; }
 .steps a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .steps a:hover span { text-decoration: underline; }
@@ -140,7 +139,6 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .stephead .term { font-weight: 400 !important; font-size: 13px !important; }
 .bio .about { margin: 0 0 12px; max-width: 34em; font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 .you .mail { font-size: 20px; }
-details.pubwrap summary { min-height: 44px; }
 @media (max-width: 760px) { .steps ol { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 680px) {
   .ringfig { float: none; margin: 4px auto 18px; }

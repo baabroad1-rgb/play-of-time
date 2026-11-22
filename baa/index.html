@@ -168,13 +168,9 @@ section.you { display: block; padding-block: 18px 56px; }
 @media (max-width: 620px) { .map svg { display: none; } .map ol { display: block; } }
 
 /* ---- four steps ---- */
-details.pubwrap summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; user-select: none; -webkit-user-select: none; }
-details.pubwrap summary::-webkit-details-marker { display: none; }
-details.pubwrap summary .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
-details.pubwrap[open] summary .chev { transform: rotate(180deg); }
-@media (hover: hover) { details.pubwrap summary:hover span { text-decoration: underline; text-underline-offset: 3px; } }
-details.pubwrap summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { details.pubwrap summary .chev { transition: none; } }
+section.pubwrap { display: block; padding-block: 18px 40px; }
+section.pubwrap h2 { position: static; display: block; font-family: var(--sans); font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+section.pubwrap .col { max-width: none; }
 .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 clamp(40px, 7vw, 72px); font-family: var(--sans); font-size: 15px; }
 .steps a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .steps a:hover span { text-decoration: underline; }
@@ -270,7 +266,6 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
 .stephead .term { font-weight: 400 !important; font-size: 13px !important; }
 .bio .about { margin: 0 0 12px; max-width: 34em; font-family: var(--sans); font-size: 16px; line-height: 1.5; }
 .you .mail { font-size: 20px; }
-details.pubwrap summary { min-height: 44px; }
 @media (max-width: 760px) { .steps ol { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 680px) {
   .ringfig { float: none; margin: 4px auto 18px; }
@@ -388,8 +383,8 @@ details.pubwrap summary { min-height: 44px; }
     </ul>
   </section>
 
-  <details class="pubwrap">
-    <summary><span>Artifacts</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary>
+  <section class="pubwrap">
+    <h2>Artifacts</h2>
     <div class="col">
       <ol class="pubs">
           <li><span class="yr">1997</span><span class="t"><b>Subjective Perceptions of Computer Work Among Different Categories of Users</b></span><span class="d">Graduate thesis, Moscow State University. Its results were published in 2000: <a href="texts/subjective-perceptions-of-computer-work/">the article</a>, in English translation and in the Russian original.</span></li>
@@ -415,7 +410,7 @@ details.pubwrap summary { min-height: 44px; }
           <li><span class="yr"></span><span class="t"><a href="https://dreamsmoker.playoftime.online/" target="_blank" rel="noopener"><img class="ico img rider" src="assets/rider.png?v=3" alt="" aria-hidden="true">A dream in pictures</a></span><span class="d">A photo project: a photographer shot a dream of mine as a series of pictures.</span></li>
       </ol>
     </div>
-  </details>
+  </section>
 
   <footer><span>© 2026 Alexander Belyshkin</span><span class="site">baa.playoftime.online</span></footer>
 </main>
