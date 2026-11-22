@@ -9,6 +9,10 @@
 
 ## 21 ноября 2026
 
+### baa: Aloud Reader (renamed from Read Aloud) with its animated app icon before the name
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3fcf9a3cf06f0b5ac68b8abb1aeba3bc01ada420)
+
 ### baa: question date as 'asked 12 Mar 2026'
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/271d0d25c21b6fe6b8d27f804d437cb8132ace28)
@@ -3587,4 +3591,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 389.
+Всего записей: 390.
