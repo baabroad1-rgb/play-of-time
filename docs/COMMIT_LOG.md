@@ -7,6 +7,12 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
+## 22 ноября 2026
+
+### baa: Artifacts list always open, no accordion
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/7e5fa4232328300effbd107e3d240a53d4410e1b)
+
 ## 21 ноября 2026
 
 ### baa: replay the Aloud Reader icon animation every 8 s while it is on screen
@@ -3595,4 +3601,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 391.
+Всего записей: 392.
