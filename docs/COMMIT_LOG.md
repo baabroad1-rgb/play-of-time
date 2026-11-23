@@ -7,6 +7,28 @@
 Сверху самое свежее. Ссылка в конце каждой записи ведёт на точный
 список изменённых строк.
 
+## 23 ноября 2026
+
+### Добавить второе правило владельца
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/2cf532a9b833b9a8e8b5437949cf92243b454875)
+
+### Require explicit reporting of owner-rule conflicts
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/ba8346fe1d6975ad52977ff4a36902d9cd248027)
+
+### Load owner rules and verify FPF citations
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/97dfb3ab3f45a3f9d0994415c7fa3cb570e8c6c3)
+
+### Connect coding assistants to project and FPF instructions
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/3de4b595f306a9702b953ab4f6e3722c9db8bd3c)
+
+### Document shared owner rules
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/f964b5e5d6ea343942eae120686a24393b82820b)
+
 ## 22 ноября 2026
 
 ### CLAUDE.md: вопросы по одному и номера версий документов
@@ -3605,4 +3627,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 393.
+Всего записей: 398.
