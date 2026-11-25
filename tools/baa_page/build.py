@@ -96,7 +96,7 @@ img.ico.rider { border: 1px solid var(--fg); border-radius: 50%; box-sizing: bor
   font-family: var(--sans); font-size: 14px; line-height: 1.45; color: #4D4D4D; }
 .samples li { min-width: 0; }
 .samples q { quotes: none; white-space: pre-line; }
-.samples .src { display: block; margin-top: 2px; font-size: 12px; color: #767676; }
+.samples .src { display: block; margin-top: 2px; font-size: 12px; color: #8A8A8A; }
 /* a spoiler: blurred until tapped, as in the channel */
 /* a long quote is folded to three lines; "more" opens the rest (an accordion) */
 .samples li.fold q { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
