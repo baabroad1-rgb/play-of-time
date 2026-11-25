@@ -9,6 +9,12 @@
 
 ## 25 ноября 2026
 
+### Revert "Повысить контраст подписей к цитатам и вопросам"
+
+This reverts commit 0d2525654cc673860887e07103fb9908eb20a40c.
+
+[изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/0be57c34c482e65d487fb0621b54dfafdf76aae6)
+
 ### Повысить контраст подписей к цитатам и вопросам
 
 [изменённые строки](https://github.com/baabroad1-rgb/play-of-time/commit/0d2525654cc673860887e07103fb9908eb20a40c)
@@ -3633,4 +3639,4 @@ PARITY_AUDIT фиксирует 2026-08-13 «was stale on 5 of 11 files», а we
 
 ---
 
-Всего записей: 399.
+Всего записей: 400.
