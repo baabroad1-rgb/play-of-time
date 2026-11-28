@@ -1095,7 +1095,32 @@ function metricsFor(attempts, accOrd){
   });
   const eff = scored.length ? (scored.reduce((s,v)=>s+v,0)/scored.length)/peakScm*100 : null;
 
-  return {n, early, late, earlyMode, lateMode, earlyShare, lateShare, earlyCV, lateCV, earlyTail, lateTail, hit, lucky, focus, consist, gcv, eff};
+  const earlyMisses = errs.filter(e => e < 0).map(e => -e);
+  const lateMisses = errs.filter(e => e > 0);
+  const sum = xs => xs.reduce((total, x) => total + x, 0);
+  const rms = xs => xs.length ? Math.sqrt(sum(xs.map(x => x*x)) / xs.length) : null;
+  const spread = xs => {
+    if (xs.length < 2) return null;
+    const mean = sum(xs) / xs.length;
+    return Math.sqrt(sum(xs.map(x => (x - mean)**2)) / xs.length);
+  };
+  const earlyWeight = sum(earlyMisses), lateWeight = sum(lateMisses);
+  const redShare = earlyWeight + lateWeight ? earlyWeight / (earlyWeight + lateWeight) : null;
+  const earrings = {early:[], late:[]};
+  const cellMs = 1000 / factor;
+  const errorCells = error => Math.floor((3000 + error + cellMs / 2) / cellMs) - 3000 / cellMs;
+  groups.forEach(group => {
+    for (let i = 1; i < group.length; i++){
+      const previous = errorCells(group[i - 1].e);
+      const current = errorCells(group[i].e);
+      if (!previous || !current) continue;
+      const difference = Math.abs(Math.abs(current) - Math.abs(previous));
+      if (difference <= 1) earrings[current < 0 ? "early" : "late"].push(difference === 0 ? "twin" : "neighbor");
+    }
+  });
+  return {n, earlyRms:rms(earlyMisses), lateRms:rms(lateMisses),
+    earlySpread:spread(earlyMisses), lateSpread:spread(lateMisses), redShare, earrings,
+    early, late, earlyMode, lateMode, earlyShare, lateShare, earlyCV, lateCV, earlyTail, lateTail, hit, lucky, focus, consist, gcv, eff};
 }
 
 // Понедельник недели, которой принадлежит дата — ключ бакета для
@@ -2000,140 +2025,40 @@ function chSimple(cfg, set_, before, after){
 // top-3% (Alex 2026-09-18: "сделай так чтобы зеленела при 3%").
 const CH_OPTIMAL_THRESHOLD = 0.97;
 
-function chFaceParamsAt(set_, before, after, override){
-  const v = {};
-  const vReal = {}; // same as v, but NEVER honors override -- see below
-  const realNByFeature = {};
-  Object.keys(CH_FEATURES).forEach(name => {
-    const cfg = CH_FEATURES[name];
-    const realN = cfg.metric === "__overall__" ? chOverall(set_, before, after) : chNorm(cfg.metric, set_, before, after);
-    const n = (override && override.feature === name) ? override.n : realN;
-    v[name] = chSimpleAtN(cfg, n);
-    vReal[name] = chSimpleAtN(cfg, realN);
-    realNByFeature[name] = realN;
-  });
+function faceScale(value, ceiling){
+  return value == null ? 0.5 : Math.max(0, Math.min(1, value / ceiling));
+}
 
-  const forceSym = override && override.symmetric;
-  const symBadReal = (metricSide) => 1 - chNorm(metricSide, set_, before, after);
-  // side is "L"/"R" so a seesaw demo (see chAnimateLegend) can drive each
-  // half with its OWN n instead of forcing both to the same value.
-  const symBad = (key, metricSide, side) => (forceSym && forceSym.includes(key)) ? (1 - (side === "L" ? override.nL : override.nR)) : symBadReal(metricSide);
-  const badBrowL = symBad("brow", CH_SYMMETRIC.brow.metricL, "L");
-  const badBrowR = symBad("brow", CH_SYMMETRIC.brow.metricR, "R");
-  const badEyeL = symBad("eyeOpen", CH_SYMMETRIC.eyeOpen.metricL, "L");
-  const badEyeR = symBad("eyeOpen", CH_SYMMETRIC.eyeOpen.metricR, "R");
-  const badWidthL = symBad("eyeWidth", CH_SYMMETRIC.eyeWidth.metricL, "L");
-  const badWidthR = symBad("eyeWidth", CH_SYMMETRIC.eyeWidth.metricR, "R");
-  const badPupilL = symBad("pupil", CH_SYMMETRIC.pupil.metricL, "L");
-  const badPupilR = symBad("pupil", CH_SYMMETRIC.pupil.metricR, "R");
-  const badEarL = symBad("ears", CH_SYMMETRIC.ears.metricL, "L");
-  const badEarR = symBad("ears", CH_SYMMETRIC.ears.metricR, "R");
-  const dropL_raw = CH_SYMMETRIC.brow.base + badBrowL * CH_SYMMETRIC.brow.amp;
-  const dropR_raw = CH_SYMMETRIC.brow.base + badBrowR * CH_SYMMETRIC.brow.amp;
-  let openL = CH_SYMMETRIC.eyeOpen.base - badEyeL * CH_SYMMETRIC.eyeOpen.amp;
-  let openR = CH_SYMMETRIC.eyeOpen.base - badEyeR * CH_SYMMETRIC.eyeOpen.amp;
-  openL = Math.max(CH_EYE_OPEN_FLOOR, openL); openR = Math.max(CH_EYE_OPEN_FLOOR, openR);
-  const eyeRxL_raw = CH_SYMMETRIC.eyeWidth.base - badWidthL * CH_SYMMETRIC.eyeWidth.amp;
-  const eyeRxR_raw = CH_SYMMETRIC.eyeWidth.base - badWidthR * CH_SYMMETRIC.eyeWidth.amp;
-  const pupilRadL = CH_SYMMETRIC.pupil.base + chDivCurve(badPupilL, CH_PUPIL_DIV_EPS) * CH_SYMMETRIC.pupil.amp;
-  const pupilRadR = CH_SYMMETRIC.pupil.base + chDivCurve(badPupilR, CH_PUPIL_DIV_EPS) * CH_SYMMETRIC.pupil.amp;
-  const earRadL_raw = CH_SYMMETRIC.ears.base + badEarL * CH_SYMMETRIC.ears.amp;
-  const earRadR_raw = CH_SYMMETRIC.ears.base + badEarR * CH_SYMMETRIC.ears.amp;
-
-  // Real (never-overridden) anchors — used ONLY by another feature that
-  // anatomically attaches to this one (brow sits above the eyes at the same
-  // x-offset), so demoing "Eye spacing" can't visibly drag the brow along
-  // with it and look like it controls two features at once (Alex 2026-09-14:
-  // "какой-то другой параметр регулирует сразу две черты" — real bug, found
-  // by literally diffing every row's own DOM footprint against every
-  // other row's). The feature being demoed itself still uses the LIVE
-  // (possibly overridden) value below, same as always — only the
-  // BORROWING feature's math is pinned to reality. Ears are the ONE
-  // exception to this pattern (Alex 2026-09-14: "уши должны разъезжаться-
-  // съезжаться вместе с головой") — they stay attached to the LIVE headW
-  // on purpose, so a "Head width" demo genuinely drags them along, the way
-  // real ears would move with a real head.
-  const realEyeDx = Math.max(vReal.eyeDx, 14);
-  const realOpenL = Math.max(CH_EYE_OPEN_FLOOR, CH_SYMMETRIC.eyeOpen.base - symBadReal(CH_SYMMETRIC.eyeOpen.metricL) * CH_SYMMETRIC.eyeOpen.amp);
-  const realOpenR = Math.max(CH_EYE_OPEN_FLOOR, CH_SYMMETRIC.eyeOpen.base - symBadReal(CH_SYMMETRIC.eyeOpen.metricR) * CH_SYMMETRIC.eyeOpen.amp);
-
-  // Geometry-safety clamps (not part of the config -- these always apply,
-  // independent of how CH_FEATURES/CH_SYMMETRIC get tuned, and independent
-  // of whether the values above came from real data or a forced override):
-  const eyeDx = Math.max(v.eyeDx, 14);              // eyes can't touch/cross
-  const browHalf = Math.min(14, realEyeDx * 0.6);   // brow's OWN length -- real eyeDx, not live
-  const eyeRxL = Math.min(eyeRxL_raw, eyeDx - 3);   // eye can't reach past the midline
-  const eyeRxR = Math.min(eyeRxR_raw, eyeDx - 3);
-  const dropL = Math.min(dropL_raw, Math.max(4.0, 22 - realOpenL)); // brow can't overlap the eye -- real openL
-  const dropR = Math.min(dropR_raw, Math.max(4.0, 22 - realOpenR));
-  const eccSafe = Math.max(0.3, v.eccFactor);
-  const earRadL = Math.max(2.0, Math.min(earRadL_raw, 26)); // never vanishes, never dwarfs the head
-  const earRadR = Math.max(2.0, Math.min(earRadR_raw, 26));
-  // Base multipliers raised ~10% (62->68, 82->90) for the "chuть побольше"
-  // ask, then clamped against the canvas so the bigger typical case is
-  // real but the worst-case extreme stays inside the box instead of
-  // growing the overflow further. earRadL/R already computed above -- the
-  // clamp has to know the widest ear to keep the ear tip on-canvas too,
-  // not just the ellipse itself.
-  const headWRaw = Math.max(35, 68 * v.scaleFactor / Math.sqrt(eccSafe));
-  const headHRaw = Math.max(CH_HEAD_H_FLOOR, 90 * v.scaleFactor * Math.sqrt(eccSafe));
-  const headW = Math.min(headWRaw, CH_CANVAS_HALF - CH_FACE_MARGIN - Math.max(earRadL, earRadR));
-  const headH = Math.min(headHRaw, CH_CANVAS_HALF - CH_FACE_MARGIN);
-
-  // "In the optimal zone" flags — RANK-based, not a fixed absolute bar
-  // (Alex 2026-09-18, correcting the CH_OPTIMAL_THRESHOLD version above:
-  // "все что хуже чем три топ лучших параметров остаётся как есть, все что
-  // входит зеленеет" — exactly the 3 BEST-scoring colorable features on
-  // THIS face turn green, always exactly 3 of them (never more, never
-  // fewer, regardless of how good or mediocre those 3 actually are — no
-  // floor, a purely relative top-3). CH_OPTIMAL_THRESHOLD itself is now
-  // unused for this (kept, harmless, in case an absolute bar is wanted
-  // again later).
-  //
-  // Scored ALWAYS from the REAL, un-overridden goodness (realNByFeature /
-  // chNorm(...) directly), never from the possibly-demo-forced v/symBad
-  // values above, so a legend tap that sweeps a feature to its extreme
-  // can't shuffle the ranking just because the demo momentarily forced
-  // n=1 on the feature being tapped. A shape driven by more than one
-  // metric (head: scaleFactor+eccFactor; mouth: mouthLen+lucky; each eye:
-  // eyeOpen+eyeWidth) is scored by its WEAKER metric — same "whole shape,
-  // not half of it" rule the old threshold version used, just feeding a
-  // ranking instead of a yes/no. eyeDx has no shape of its own to color
-  // (see chFaceSvg — nothing reads ink('eyeDx')), so it's left out of the
-  // ranking pool entirely; its own flag stays around unused, in case a
-  // future caller ever needs it.
-  const slotScores = {
-    noseTilt: realNByFeature.noseTilt,
-    head:     Math.min(realNByFeature.scaleFactor, realNByFeature.eccFactor),
-    mouth:    Math.min(realNByFeature.mouthLen, realNByFeature.smile),
-    browL:    chNorm(CH_SYMMETRIC.brow.metricL, set_, before, after),
-    browR:    chNorm(CH_SYMMETRIC.brow.metricR, set_, before, after),
-    eyeL:     Math.min(chNorm(CH_SYMMETRIC.eyeOpen.metricL, set_, before, after), chNorm(CH_SYMMETRIC.eyeWidth.metricL, set_, before, after)),
-    eyeR:     Math.min(chNorm(CH_SYMMETRIC.eyeOpen.metricR, set_, before, after), chNorm(CH_SYMMETRIC.eyeWidth.metricR, set_, before, after)),
-    pupilL:   chNorm(CH_SYMMETRIC.pupil.metricL, set_, before, after),
-    pupilR:   chNorm(CH_SYMMETRIC.pupil.metricR, set_, before, after),
-    earL:     chNorm(CH_SYMMETRIC.ears.metricL, set_, before, after),
-    earR:     chNorm(CH_SYMMETRIC.ears.metricR, set_, before, after),
-  };
-  const CH_OPTIMAL_TOP_N = 3;
-  const topSlots = new Set(
-    Object.keys(slotScores)
-      .sort((a, b) => slotScores[b] - slotScores[a])
-      .slice(0, CH_OPTIMAL_TOP_N)
-  );
-  const optimal = { eyeDx: realNByFeature.eyeDx >= CH_OPTIMAL_THRESHOLD };
-  Object.keys(slotScores).forEach(k => { optimal[k] = topSlots.has(k); });
-
+function facePositions(m){
   return {
-    dropL, dropR, openL, openR, eyeRxL, eyeRxR, eyeDx, browHalf,
-    browDx: realEyeDx,     // brow lines' own x-anchor -- see comment above
-    noseTilt: v.noseTilt,
-    headW, headH,
-    pupilRadL, pupilRadR,
-    earRadL, earRadR,
-    mouthLen: Math.max(6, v.mouthLen),
-    smile: v.smile,
-    optimal,
+    brow: [faceScale(m.earlyRms, 500), faceScale(m.lateRms, 500)],
+    eyeOpen: [faceScale(m.earlySpread, 150), faceScale(m.lateSpread, 150)],
+    noseTilt: [1 - (m.redShare ?? 0.5)],
+    smile: [faceScale(m.lucky, 3)]
+  };
+}
+
+function chFaceParamsAt(set_, before, after, override){
+  const positions = facePositions(set_);
+  if (override?.symmetric) positions[override.symmetric[0]] = [override.nL, override.nR];
+  if (override?.feature) positions[override.feature] = [override.n];
+  const [browL, browR] = positions.brow;
+  const [eyeL, eyeR] = positions.eyeOpen;
+  const [nose] = positions.noseTilt;
+  const [luck] = positions.smile;
+  const index = luck * 3;
+  // Same shallow angle at either end, with a level brow at the midpoint.
+  const browHalf = 14;
+  const browRise = 2 * browHalf * Math.tan(18 * Math.PI / 180);
+  return {
+    dropL: (2 * browL - 1) * browRise, dropR: (2 * browR - 1) * browRise,
+    openL: 11 - 8 * eyeL, openR: 11 - 8 * eyeR,
+    eyeRxL: 13, eyeRxR: 13, eyeDx: 23, browDx: 23, browHalf,
+    noseTilt: (2 * nose - 1) * 20,
+    headW: 62, headH: 80, pupilRadL: 3.5, pupilRadR: 3.5,
+    earrings: set_.earrings,
+    earRadL: 5, earRadR: 5, mouthLen: 32,
+    smile: index <= 1 ? 12 * (index - 1) : 6 * (index - 1)
   };
 }
 function chFaceParams(set_, before, after){ return chFaceParamsAt(set_, before, after, null); }
@@ -2160,7 +2085,7 @@ function chFaceGeometry(p, cx, cy){
   const noseLen = 20;
   const ntx = cx, nty = cy + 6;
   const nbx = ntx + noseLen*Math.sin(tilt), nby = nty + noseLen*Math.cos(tilt);
-  const fx = nbx + 7*Math.cos(tilt), fy = nby - 7*Math.sin(tilt);
+  const fx = nbx, fy = nby;
 
   // Mouth geometry-safety clamps (Alex 2026-09-15: "нос не должен
   // пересекаться со ртом, рот не должен уезжать за границы лица и выше
@@ -2255,6 +2180,20 @@ function chEyeLensPath(cx, cy, rx, ry){
 // вместо перехода. Поэтому buildFaces() считает кадр по БОЛЬШЕЙ из двух голов
 // и передаёт его обеим. Кадр запоминается в data-vb-y, чтобы демо-прогон
 // легенды (chApplySvgParams) его не пересчитал обратно.
+function faceEarringChain(links, x, y, color){
+  if (!links?.length) return "";
+  const step = Math.min(6, 60 / links.length);
+  return `<g fill="none" stroke="${color}" stroke-width="1.3">
+    ${links.map((kind, i) => {
+      const center = (y + (i + 0.65) * step).toFixed(2);
+      const radius = (step * 0.67).toFixed(2);
+      return kind === "twin"
+        ? `<ellipse data-earring="twin" cx="${x}" cy="${center}" rx="3" ry="${radius}"/>`
+        : `<rect data-earring="neighbor" x="${x-2.6}" y="${(Number(center) - Number(radius)).toFixed(2)}" width="5.2" height="${(2 * Number(radius)).toFixed(2)}" rx="0.8"/>`;
+    }).join("")}
+  </g>`;
+}
+
 function chFaceSvg(p, cx, faceId, opts){
   const cy = chHeadCy(p.headH);
   const box = (opts && opts.box) || chFaceCanvasBox(p.headH);
@@ -2305,6 +2244,8 @@ function chFaceSvg(p, cx, faceId, opts){
     </defs>
     <circle data-feature="ears" cx="${(cx-p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadL.toFixed(1)}" fill="var(--surface)" stroke="${ink('earL')}" stroke-width="2"/>
     <circle data-feature="ears" cx="${(cx+p.headW).toFixed(1)}" cy="${eyeY}" r="${p.earRadR.toFixed(1)}" fill="var(--surface)" stroke="${ink('earR')}" stroke-width="2"/>
+    ${faceEarringChain(p.earrings?.early, cx-p.headW-3, eyeY+4, "#c23b43")}
+    ${faceEarringChain(p.earrings?.late, cx+p.headW+3, eyeY+4, "#285fb0")}
     <ellipse data-feature="headW headEcc" cx="${cx}" cy="${cy}" rx="${p.headW.toFixed(1)}" ry="${p.headH.toFixed(1)}" fill="var(--surface)" stroke="${ink('head')}" stroke-width="3"/>
     <line data-feature="brow" x1="${browLX1}" y1="${browLY1}" x2="${browLX2}" y2="${browLY2}" stroke="${ink('browL')}" stroke-width="3.4" stroke-linecap="round"/>
     ${chHitLine(browLX1, browLY1, browLX2, browLY2, "brow")}
@@ -2359,78 +2300,33 @@ function chFaceSvg(p, cx, faceId, opts){
 // (3) "wider EYES OPEN" on the hit-rate row used the same word ("open") as
 //     the separate squint/openness row right above it — reworded to avoid
 //     implying they're the same dimension.
-const CH_LEGEND = {
-  ru: [
-    {feature:"brow",             anim:{symmetric:["brow"]},    name:"Наклон брови (Л/П)",              metricKeys:["early","late"], desc:"Чаще жмёшь СТОП раньше цели — тем сильнее нахмурена бровь слева; чаще позже цели — тем сильнее справа. Реже и то, и другое — обе брови ровнее, лицо симметричнее.",
-      paramTextByKey:{early:"Показывает, как часто ты жмёшь СТОП раньше цели.", late:"Показывает, как часто ты жмёшь СТОП позже цели."},
-      featureTextByKey:{early:"Чем чаще, тем сильнее нахмурена бровь слева; чем реже — обе брови ровнее.", late:"Чем чаще, тем сильнее нахмурена бровь справа; чем реже — обе брови ровнее."}},
-    {feature:"eyeOpen",          anim:{symmetric:["eyeOpen"]}, name:"Прищур глаза (Л/П)",              metricKeys:["earlyShare","lateShare"], desc:"Если ты чаще торопишься (раньше цели), чем опаздываешь, левый глаз чуть прищурен — привычка от повторения; если чаще опаздываешь, прищурен правый. Если и то, и другое случается примерно поровну, оба глаза одинаково открыты.",
-      paramTextByKey:{earlyShare:"Показывает, как часто (а не насколько сильно) ты торопишься и жмёшь СТОП раньше цели.", lateShare:"Показывает, как часто (а не насколько сильно) ты опаздываешь и жмёшь СТОП позже цели."},
-      featureTextByKey:{earlyShare:"Если чаще торопишься, левый глаз чуть прищурен; если примерно поровну — оба глаза одинаково открыты.", lateShare:"Если чаще опаздываешь, прищурен правый глаз; если примерно поровну — оба глаза одинаково открыты."}},
-    {feature:"eyeWidth eyeOpen", anim:{symmetric:["eyeWidth"]}, name:"Ширина глаз (Л/П)",             metricKeys:["earlyCV","lateCV"], desc:"Насколько РОВНО (не насколько сильно) ты промахиваешься в каждую сторону — отдельно для раннего старта и отдельно для позднего. Чем стабильнее по размеру твои ранние ошибки, тем шире левый глаз; чем стабильнее поздние — тем шире правый. Нестабильность именно с одной стороны — признак, что в этом режиме (спешка или расслабленность) тебе не хватает контроля, даже если сами ошибки не самые крупные.",
-      paramTextByKey:{earlyCV:"Показывает, насколько ровно (не насколько сильно) ты промахиваешься, когда торопишься.", lateCV:"Показывает, насколько ровно (не насколько сильно) ты промахиваешься, когда расслабляешься."},
-      featureTextByKey:{earlyCV:"Чем стабильнее по размеру твои ранние ошибки, тем шире левый глаз.", lateCV:"Чем стабильнее поздние ошибки, тем шире правый глаз."}},
-    {feature:"eyeDx eyeWidth eyeOpen", anim:{feature:"eyeDx"}, name:"Расстояние между глазами",        metricKeys:["focus"],         desc:"Чем реже колебания между перевозбуждением и заторможенностью, тем ближе посажены глаза; чем чаще, тем дальше друг от друга.",
-      paramText:"Показывает, как часто ты колеблешься между перевозбуждением и заторможенностью.",
-      featureText:"Чем реже колебания, тем ближе посажены глаза; чем чаще, тем дальше друг от друга."},
-    {feature:"noseTilt",         anim:{feature:"noseTilt"},   name:"Наклон носа",                     metricKeys:["consist"],       desc:"Чем чаще ты используешь результат прошлой попытки, чтобы точнее настроиться на следующую, тем прямее нос; чем реже, тем сильнее наклон.",
-      paramText:"Показывает, как часто ты используешь результат прошлой попытки, чтобы точнее настроиться на следующую.",
-      featureText:"Чем чаще, тем прямее нос; чем реже, тем сильнее наклон."},
-    {feature:"headW headEcc",    anim:{feature:"scaleFactor"}, name:"Ширина головы",                  metricKeys:["gcv"],           desc:"Чем предсказуемее размер твоих ошибок за период, тем шире овал головы; чем менее предсказуем, тем уже.",
-      paramText:"Показывает, насколько предсказуем размер твоих ошибок за период.",
-      featureText:"Чем предсказуемее, тем шире овал головы; чем менее предсказуем, тем уже."},
-    {feature:"headW headEcc",    anim:{feature:"eccFactor"},  name:"Пропорция головы (округлость)",   metricKeys:["hit"],           desc:"Чем чаще точные тройки, тем ближе форма головы к ровному кругу; чем реже, тем более вытянутый овал.",
-      paramText:"Показывает, как часто ты попадаешь точно в тройку.",
-      featureText:"Чем чаще, тем ближе форма головы к ровному кругу; чем реже, тем более вытянутый овал."},
-    {feature:"ears",             anim:{symmetric:["ears"]},   name:"Уши (Л/П)",                       metricKeys:["earlyTail","lateTail"], desc:"Величина твоего САМОГО КРУПНОГО промаха за период — отдельно того, что случился именно из-за спешки, и отдельно того, что случился именно из-за чрезмерного расслабления. Чем крупнее такой худший случай слева (от спешки), тем крупнее левое ухо; чем крупнее справа (от расслабления) — тем крупнее правое. Аккуратные уши — значит, ты держишь контроль даже в свой самый сорванный момент.",
-      paramTextByKey:{earlyTail:"Показывает величину твоего самого крупного промаха именно из-за спешки.", lateTail:"Показывает величину твоего самого крупного промаха именно из-за чрезмерного расслабления."},
-      featureTextByKey:{earlyTail:"Чем крупнее такой худший случай, тем крупнее левое ухо.", lateTail:"Чем крупнее такой худший случай, тем крупнее правое ухо."}},
-    {feature:"pupilR",           anim:{symmetric:["pupil"]},  name:"Размер зрачков (Л/П)",            metricKeys:["earlyMode","lateMode"], desc:"Левый зрачок реагирует на твою самую частую РАННЮЮ ошибку, правый — на самую частую ПОЗДНЮЮ. Чем ближе эта мода к нулю (к чистой тройке), тем крупнее соответствующий зрачок — это хороший знак, значит ты подстроился под свою особенность; чем дальше мода от нуля, тем зрачок мельче.",
-      paramTextByKey:{earlyMode:"Показывает твою самую частую раннюю ошибку — насколько близко она к чистой тройке.", lateMode:"Показывает твою самую частую позднюю ошибку — насколько близко она к чистой тройке."},
-      featureTextByKey:{earlyMode:"Чем ближе эта мода к нулю, тем крупнее левый зрачок.", lateMode:"Чем ближе эта мода к нулю, тем крупнее правый зрачок."}},
-    {feature:"mouthLen smile",   anim:{feature:"mouthLen"},   name:"Длина рта",                       metricKeys:["eff"],           desc:"Чем быстрее со временем растёт точность, тем шире рот; чем медленнее прогресс, тем рот короче.",
-      paramText:"Показывает, как быстро со временем растёт твоя точность.",
-      featureText:"Чем быстрее прогресс, тем шире рот; чем медленнее, тем рот короче."},
-    {feature:"mouthLen smile",   anim:{feature:"smile"},      name:"Изгиб рта",                       metricKeys:["lucky"],         desc:"Коэффициент удачи показывает, насколько твой результат лучше, чем дало бы случайное совпадение. Чем он выше, тем ближе рот к улыбке; чем ниже, тем сильнее уголки опускаются вниз.",
-      paramText:"Показывает, насколько твой результат лучше, чем дало бы случайное совпадение.",
-      featureText:"Чем он выше, тем ближе рот к улыбке; чем ниже, тем сильнее уголки опускаются вниз."},
-  ],
-  en: [
-    {feature:"brow",             anim:{symmetric:["brow"]},    name:"Brow tilt (L/R)",                 metricKeys:["early","late"], desc:"Press STOP too early more often and the left brow furrows more; too late more often and it's the right brow. Do both less often and both brows sit level — the face reads more symmetric.",
-      paramTextByKey:{early:"Shows how often you press STOP too early.", late:"Shows how often you press STOP too late."},
-      featureTextByKey:{early:"The more often, the more the left brow furrows; the less often, the more level both brows sit.", late:"The more often, the more the right brow furrows; the less often, the more level both brows sit."}},
-    {feature:"eyeOpen",          anim:{symmetric:["eyeOpen"]}, name:"Eye squint (L/R)",                metricKeys:["earlyShare","lateShare"], desc:"If you rush (early) more often than you lag (late), the left eye sits a bit more squinted — a habit from repetition; if you lag more often, it's the right eye. If both happen about equally, both eyes stay equally open.",
-      paramTextByKey:{earlyShare:"Shows how often (not how much) you rush and press STOP too early.", lateShare:"Shows how often (not how much) you lag and press STOP too late."},
-      featureTextByKey:{earlyShare:"If you rush more often, the left eye sits more squinted; if it's about equal, both eyes stay equally open.", lateShare:"If you lag more often, the right eye sits more squinted; if it's about equal, both eyes stay equally open."}},
-    {feature:"eyeWidth eyeOpen", anim:{symmetric:["eyeWidth"]}, name:"Eye width (L/R)",               metricKeys:["earlyCV","lateCV"], desc:"How EVENLY (not how much) you miss on each side — separately for early starts and late ones. The more stable your early errors are in size, the wider the left eye; the more stable your late ones, the wider the right. Instability on just one side is a sign that THAT mode (rushing or relaxing) is where you're short on control, even when the misses themselves aren't huge.",
-      paramTextByKey:{earlyCV:"Shows how evenly (not how much) you miss when you're rushing.", lateCV:"Shows how evenly (not how much) you miss when you're relaxing."},
-      featureTextByKey:{earlyCV:"The more stable your early errors are in size, the wider the left eye.", lateCV:"The more stable your late errors are in size, the wider the right eye."}},
-    {feature:"eyeDx eyeWidth eyeOpen", anim:{feature:"eyeDx"}, name:"Eye spacing",                    metricKeys:["focus"],         desc:"The less you swing between overexcitement and sluggishness, the closer the eyes sit; the more you swing, the farther apart they move.",
-      paramText:"Shows how often you swing between overexcitement and sluggishness.",
-      featureText:"The less you swing, the closer the eyes sit; the more you swing, the farther apart they move."},
-    {feature:"noseTilt",         anim:{feature:"noseTilt"},   name:"Nose tilt",                       metricKeys:["consist"],       desc:"The more often you use the previous attempt's result to adjust the next one, the straighter the nose; the less often, the more it tilts.",
-      paramText:"Shows how often you use the previous attempt's result to adjust the next one.",
-      featureText:"The more often, the straighter the nose; the less often, the more it tilts."},
-    {feature:"headW headEcc",    anim:{feature:"scaleFactor"}, name:"Head width",                     metricKeys:["gcv"],           desc:"The more predictable the size of your errors for the period, the wider the head's oval; the less predictable, the narrower it gets.",
-      paramText:"Shows how predictable the size of your errors is for the period.",
-      featureText:"The more predictable, the wider the head's oval; the less predictable, the narrower it gets."},
-    {feature:"headW headEcc",    anim:{feature:"eccFactor"},  name:"Head proportion (roundness)",     metricKeys:["hit"],           desc:"The more often you land a clean three, the closer the head shape is to a perfect circle; the less often, the more elongated the oval.",
-      paramText:"Shows how often you land a clean three.",
-      featureText:"The more often, the closer the head shape is to a perfect circle; the less often, the more elongated the oval."},
-    {feature:"ears",             anim:{symmetric:["ears"]},   name:"Ears (L/R)",                      metricKeys:["earlyTail","lateTail"], desc:"The size of your single WORST miss for the period — separately for the one caused by rushing and the one caused by over-relaxing. The bigger that worst case is on the left (from rushing), the bigger the left ear; the bigger it is on the right (from over-relaxing), the bigger the right ear. Neat, small ears mean you hold control even at your worst moment.",
-      paramTextByKey:{earlyTail:"Shows the size of your single worst miss caused specifically by rushing.", lateTail:"Shows the size of your single worst miss caused specifically by over-relaxing."},
-      featureTextByKey:{earlyTail:"The bigger that worst case, the bigger the left ear.", lateTail:"The bigger that worst case, the bigger the right ear."}},
-    {feature:"pupilR",           anim:{symmetric:["pupil"]},  name:"Pupil size (L/R)",                metricKeys:["earlyMode","lateMode"], desc:"The left pupil reacts to your most frequent EARLY mistake, the right to your most frequent LATE one. The closer that mode is to zero (a clean three), the bigger that pupil — bigger is a good sign, it means you've adapted to your own tendency; the farther from zero, the smaller it gets.",
-      paramTextByKey:{earlyMode:"Shows your most frequent early mistake — how close it sits to a clean three.", lateMode:"Shows your most frequent late mistake — how close it sits to a clean three."},
-      featureTextByKey:{earlyMode:"The closer that mode is to zero, the bigger the left pupil.", lateMode:"The closer that mode is to zero, the bigger the right pupil."}},
-    {feature:"mouthLen smile",   anim:{feature:"mouthLen"},   name:"Mouth length",                    metricKeys:["eff"],           desc:"The faster your accuracy improves over time, the wider the mouth; the slower the progress, the shorter it gets.",
-      paramText:"Shows how fast your accuracy improves over time.",
-      featureText:"The faster the progress, the wider the mouth; the slower it is, the shorter the mouth gets."},
-    {feature:"mouthLen smile",   anim:{feature:"smile"},      name:"Mouth curve",                     metricKeys:["lucky"],         desc:"The Luck Coefficient shows how much better your result is than pure chance would produce. The higher it is, the closer the mouth is to a smile; the lower, the more the corners turn down.",
-      paramText:"Shows how much better your result is than pure chance would produce.",
-      featureText:"The higher it is, the closer the mouth is to a smile; the lower, the more the corners turn down."},
-  ],
-};
+const FACE_GUIDE = [
+  {key:"earlyRms", label:"Ранние промахи", label_en:"Early miss size", favorable:"down"},
+  {key:"lateRms", label:"Поздние промахи", label_en:"Late miss size", favorable:"down"},
+  {key:"earlySpread", label:"Разброс ранних", label_en:"Early spread", favorable:"down"},
+  {key:"lateSpread", label:"Разброс поздних", label_en:"Late spread", favorable:"down"},
+  {key:"redShare", label:"Доля ранних ошибок", label_en:"Early share of error weight", favorable:"balance"},
+  {key:"lucky", label:"Индекс удачи", label_en:"Luck Index", favorable:"up"}
+];
+
+const CH_LEGEND = {en:[], ru:[]};
+[
+  ["brow", {symmetric:["brow"]}, ["earlyRms","lateRms"],
+   "The closer your misses are to three, the higher the brow rises. Left is early, right is late.",
+   "Чем ближе промахи к трём секундам, тем выше бровь. Слева ранние, справа поздние."],
+  ["eyeOpen", {symmetric:["eyeOpen"]}, ["earlySpread","lateSpread"],
+   "The more consistent your misses, the wider the eye. Left is early, right is late.",
+   "Чем ровнее промахи, тем шире открыт глаз. Слева ранние, справа поздние."],
+  ["noseTilt", {feature:"noseTilt"}, ["redShare"],
+   "The nose leans toward the side with more total error. Equal weight keeps it straight.",
+   "Нос наклоняется в сторону, где больше сумма промахов. При равном весе он прямой."],
+  ["smile", {feature:"smile"}, ["lucky"],
+   "A higher Luck Index makes a bigger smile. At the chance baseline the mouth is straight.",
+   "Чем выше индекс удачи, тем шире улыбка. На уровне случайных попаданий рот прямой."]
+].forEach(([feature, anim, metricKeys, en, ru]) => {
+  CH_LEGEND.en.push({feature, anim, metricKeys, desc:en});
+  CH_LEGEND.ru.push({feature, anim, metricKeys, desc:ru});
+});
 
 // earlyMode/lateMode aren't in METRICS (see CH_FAV comment above) — they
 // need their own display names here instead of falling through to the raw
@@ -2886,13 +2782,8 @@ function chApplySvgParams(svg, p, cx){
 // row there's only one instance, so L and R are the same number and the
 // seesaw schedule below never actually gets used for those.
 function chActualN(anim, set_, before, after){
-  if (anim.feature){
-    const cfg = CH_FEATURES[anim.feature];
-    const n = cfg.metric === "__overall__" ? chOverall(set_, before, after) : chNorm(cfg.metric, set_, before, after);
-    return {L: n, R: n};
-  }
-  const cfg = CH_SYMMETRIC[anim.symmetric[0]];
-  return {L: chNorm(cfg.metricL, set_, before, after), R: chNorm(cfg.metricR, set_, before, after)};
+  const [left, right = left] = facePositions(set_)[anim.feature || anim.symmetric[0]];
+  return {L:left, R:right};
 }
 function chBuildOverride(anim, nL, nR){
   return anim.feature ? {feature: anim.feature, n: nL} : {symmetric: anim.symmetric, nL, nR};
@@ -2964,6 +2855,63 @@ function chAnimateLegend(row){
   }
   chAnimHandle = requestAnimationFrame(frame);
 }
+function faceComparison(current, previous, lang){
+  const en = lang === "en";
+  const title = en ? "What changed since last time?" : "Что изменилось с прошлого раза?";
+  const heading = `<strong>${title}</strong>`;
+  const note = en
+    ? "Next time you press STOP, see if you can tell whether you were early or late before the number appears."
+    : "В следующий раз попробуй после СТОП угадать, раньше ты остановился или позже, пока не увидишь число.";
+  const help = CH_LEGEND[lang].map(row =>
+    `<p><button type="button" class="table-show-btn feature-hint" data-key="${row.metricKeys[0]}">${row.desc}</button></p>`
+  ).join("") + (en
+    ? "<p>Earrings link up repeated misses. A ring marks a twin, a square link marks a neighbor. Red is early, blue is late.</p>"
+    : "<p>Серьги образуют цепочки повторяющихся промахов. Кольцо — близнец, квадратное звено — сосед. Красные — ранние, синие — поздние.</p>");
+  if (!current || !previous) return help;
+
+  const change = (key, step) => {
+    if (current[key] == null || previous[key] == null) return null;
+    const delta = current[key] - previous[key];
+    return Math.sign(delta) * Math.round(Math.abs(delta) / step);
+  };
+  const precision = [
+    ["earlyRms", "Early misses", "Ранние промахи", "were closer to three", "were farther from three", "стали ближе к трём секундам", "стали дальше от трёх секунд"],
+    ["lateRms", "Late misses", "Поздние промахи", "were closer to three", "were farther from three", "стали ближе к трём секундам", "стали дальше от трёх секунд"],
+    ["earlySpread", "Early misses", "Ранние промахи", "became more consistent", "became less consistent", "стали ровнее", "стали менее ровными"],
+    ["lateSpread", "Late misses", "Поздние промахи", "became more consistent", "became less consistent", "стали ровнее", "стали менее ровными"]
+  ].flatMap(([key, enSide, ruSide, enDown, enUp, ruDown, ruUp]) => {
+    const delta = change(key, 5);
+    if (!delta) return [];
+    return [en ? `${enSide} ${delta < 0 ? enDown : enUp}.` : `${ruSide} ${delta < 0 ? ruDown : ruUp}.`];
+  });
+  let balance = "";
+  if (current.redShare != null && previous.redShare != null){
+    const side = current.redShare - 0.5;
+    const prior = previous.redShare - 0.5;
+    if (Math.abs(side) < 0.025){
+      balance = en ? "The nose is straight or nearly straight. Early and late misses carry about equal weight."
+        : "Нос прямой или почти прямой. Вес ранних и поздних промахов примерно одинаков.";
+    } else if (Math.round((side - prior) / 0.05)){
+      const early = side > 0;
+      balance = en ? `The nose leans toward ${early ? "early" : "late"} misses, which account for more of your total error.`
+        : `Нос наклонён в сторону ${early ? "ранних" : "поздних"} промахов. На них приходится бо́льшая часть ошибки.`;
+    }
+  }
+  const luck = change("lucky", 0.1);
+  const mouth = luck > 0 ? (en ? "Your Luck Index rose." : "Индекс удачи вырос.")
+    : luck < 0 ? (en ? "Your Luck Index fell." : "Индекс удачи снизился.") : "";
+  if (balance && current.redShare != null && previous.redShare != null
+      && Math.abs(previous.redShare - 0.5) - Math.abs(current.redShare - 0.5) >= 0.025){
+    balance += en ? " The gap narrowed." : " Разница стала меньше.";
+  }
+  const comparison = [...precision, balance, mouth].filter(Boolean).join(" ");
+  const canCompare = FACE_GUIDE.some(({key}) => current[key] != null && previous[key] != null);
+  const summary = comparison || (canCompare
+    ? (en ? "Your timing looked much the same." : "Результаты двух периодов примерно одинаковы.")
+    : (en ? "There isn’t enough data to compare yet." : "Пока мало данных для сравнения."));
+  return `${heading}<p>${summary}</p><p>${note}</p><details><summary>${en ? "How to read the face" : "Как читать лицо"}</summary>${help}</details>`;
+}
+
 function render(){
   const S = t();
   // Отчёт Doppelgänger'а (?local=1, Alex 2026-11-08) — заголовок с его именем.
@@ -2985,35 +2933,16 @@ function render(){
     const before = mB ? mB[m.key] : null;
     const after = mA ? mA[m.key] : null;
     const delta = relDelta(before, after);
-    const dir = direction(m.favorable, delta);
+    const dir = m.favorable === "balance"
+      ? direction("down", before == null || after == null ? null : 100 * (Math.abs(after - 0.5) - Math.abs(before - 0.5)))
+      : direction(m.favorable, delta);
     return {...m, before, after, delta, dir};
   };
-  const rows = METRICS.map(buildRow);
-  // The 8 face-only values get their OWN table rows too (Alex 2026-09-14) —
-  // narrate()'s prose below stays scoped to just the 9 official measures
-  // (unchanged), only the table gets the extra rows appended.
-  const extraRows = CH_EXTRA_METRICS.map(buildRow);
-
-  const b = playerBounds();
+  const rows = FACE_GUIDE.map(buildRow);
   const scopeAfter = describeSelection("A", state.lang);
   const scopeBefore = describeSelection("B", state.lang);
-
-  document.getElementById("narrativeText").innerHTML = narrate(rows, scopeAfter, scopeBefore, state.lang, historicalDist);
-
-  // Fixed per-metric ceiling for the faces — this player's own historical
-  // max (reusing historicalDist, already built above for the narrative's
-  // "holding steady" section) rather than whatever the two CURRENTLY
-  // selected periods happen to be. See buildFaces() for why.
+  document.getElementById("narrativeText").innerHTML = faceComparison(mA, mB, state.lang);
   const scaleMax = {};
-  Object.keys(CH_FAV).forEach(k => {
-    const hist = (historicalDist[k]||[]).filter(v => v != null);
-    if (hist.length >= 2){
-      scaleMax[k] = Math.max(...hist, 1e-9);
-    } else {
-      const vals = [mA ? mA[k] : null, mB ? mB[k] : null].filter(v => v != null);
-      scaleMax[k] = vals.length ? Math.max(...vals, 1e-9) : 1e-9;
-    }
-  });
   chCancelAnim(); // about to replace the SVG nodes any running sweep is animating
   document.getElementById("faces").innerHTML = buildFaces(mB, mA, state.lang, scopeBefore, scopeAfter, scaleMax);
   wireFaces();
@@ -3036,7 +2965,7 @@ function render(){
 
   document.getElementById("footNote").textContent = S.footNote(player.acc);
 
-  renderTable(rows.concat(extraRows));
+  renderTable(rows);
 }
 
 function fmtVal(key, v){
@@ -3050,7 +2979,7 @@ function fmtVal(key, v){
   // millisecond magnitude (Alex 2026-09-14: the table needs a real row for
   // every new value the face uses, and a wrong unit is worse than none).
   if (key==="gcv" || key==="earlyCV" || key==="lateCV") return v.toFixed(1)+"%";
-  if (key==="earlyShare" || key==="lateShare") return (v*100).toFixed(1)+"%";
+  if (key==="earlyShare" || key==="lateShare" || key==="redShare") return (v*100).toFixed(1)+"%";
   return v.toFixed(1)+(state.lang==="en"?" ms":" мс");
 }
 function plural(n){
@@ -3117,7 +3046,7 @@ function chLegendEntriesForFeatureTokens(dataFeatureStr, lang){
 // had thrown away the fuller original text instead of building on it — this
 // keeps both halves, just puts the psychological term first).
 function metricLabelForKey(key, lang){
-  const m = METRICS.find(x => x.key === key) || CH_EXTRA_METRICS.find(x => x.key === key);
+  const m = FACE_GUIDE.find(x => x.key === key);
   return m ? (lang === "en" ? m.label_en : m.label) : key;
 }
 function psychTextForEntry(entry, lang){
